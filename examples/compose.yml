@@ -1,0 +1,18 @@
+services:
+  stalwart-app:
+    image: tiredofit/stalwart:latest
+    container_name: stalwart-app
+    volumes:
+      - /data:/data/
+      - /logs:/logs/
+    environment:
+      - TIMEZONE=America/Vancouver
+      - CONTAINER_NAME=stalwart
+
+    networks:
+      - services
+    restart: always
+
+networks:
+  services:
+    external: true
