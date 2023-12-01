@@ -27,13 +27,284 @@ bootstrap_filesystem() {
     esac
 }
 
+configure_common() {
+    common_configure_server() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    common_configure_sieve() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    common_configure_tls() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    common_configure_tracing() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+}
+
+configure_directory() {
+    directory_configure_imap() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+:
+    }
+
+    directory_configure_ldap() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    directory_configure_lmtp() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    directory_configure_memory() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    directory_configure_sql() {
+        ## TODO - Future version to support SQLite, MariaDB, and Postgres
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+}
+
+configure_imap() {
+    imap_configure_listener() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    imap_configure_settings() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+}
+
+configure_jmap() {
+    jmap_configure_auth() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    jmap_configure_listener() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    jmap_configure_oauth() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    jmap_configure_protocol() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    jmap_configure_push() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    jmap_configure_ratelimit() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    jmap_configure_store() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    jmap_configure_websockets() {
+        ## TODO - Future version
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+}
+
+configure_spamfilter() {
+    ## TODO - Future version
+    :
+}
+
+configure_smtp() {
+    smtp_configure_auth() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    smtp_configure_dkim() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    smtp_configure_listener() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    smtp_configure_milter() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    smtp_configure_queue() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    smtp_configure_remote() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    smtp_configure_report() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    smtp_configure_resolver() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    smtp_configure_session() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    smtp_configure_signature() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+
+    smtp_configure_spamfilter() {
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            :
+        else
+            :
+        fi
+    }
+}
+
 setup_container_mode() {
     if [ -f "/tmp/.container/stalwart/.mode-env" ]; then
         print_debug "[setup_container_mode] Importing MODE environment generated variables"
         source /tmp/.container/stalwart/.mode-env
     else
         mkdir -p /tmp/.container/stalwart/
-        elif [ "${MODE,,}" = "aio" ] || [ "${MODE,,}" = "all" ] ; then
+        if [ "${MODE,,}" = "aio" ] || [ "${MODE,,}" = "all" ] ; then
             print_debug "[setup_container_mode] Container Mode: AIO"
             print_debug "[setup_container_mode] Creating MODE environment generated variables"
             echo "ENABLE_SMTP=TRUE" >> /tmp/.container/stalwart/.mode-env
@@ -44,8 +315,7 @@ setup_container_mode() {
             fi
         else
             modes=$(echo "${MODE,,}" | tr "," "\n")
-            for mode in $modes
-            do
+            for mode in $modes; do
                 case "${mode,,}" in
                     "imap" )
                         print_debug "[setup_container_mode] Enabling Container Mode for: SMTP"
