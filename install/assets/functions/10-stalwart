@@ -1,2 +1,80 @@
 #!/command/with-contenv bash
 
+bootstrap_filesystem() {
+    if [ ! -d "${CONFIG_PATH}" ]; then
+        mkdir -p "${CONFIG_PATH}"
+    fi
+    if [ $(stat -c %U "${CONFIG_PATH}") != "stalwart" ] ; then chown -R stalwart:stalwart "${CONFIG_PATH}" ; fi
+    # Only necessary if you want to map some legacy directories
+    #if [ ! -d "/etc/randomconfig" ] ; then
+    #    ln -sf "${CONFIG_PATH}" /etc/randomconfig
+    #fi
+
+    if [ ! -d "${DATA_PATH}" ]; then
+        mkdir -p "${DATA_PATH}"
+    fi
+    if [ $(stat -c %U "") != "stalwart" ] ; then chown stalwart:stalwart "${DATA_PATH}" ; fi
+
+    if [ ! -d "${LOG_PATH}" ]; then
+        mkdir -p "${LOG_PATH}"
+    fi
+    if [ $(stat -c %U "${LOG_PATH}") != "stalwart" ] ; then chown -R stalwart:stalwart "${LOG_PATH}" ; fi
+
+    case "${LOG_TYPE,,}" in
+        file )
+            create_logrotate stalwart "${LOG_PATH}"/"${LOG_FILE}" stalwart stalwart
+        ;;
+    esac
+}
+
+setup_container_mode() {
+    if [ -f "/tmp/.container/stalwart/.mode-env" ]; then
+        print_debug "[setup_container_mode] Importing MODE environment generated variables"
+        source /tmp/.container/stalwart/.mode-env
+    else
+        mkdir -p /tmp/.container/stalwart/
+        elif [ "${MODE,,}" = "aio" ] || [ "${MODE,,}" = "all" ] ; then
+            print_debug "[setup_container_mode] Container Mode: AIO"
+            print_debug "[setup_container_mode] Creating MODE environment generated variables"
+            echo "ENABLE_SMTP=TRUE" >> /tmp/.container/stalwart/.mode-env
+            echo "ENABLE_IMAP=TRUE" >> /tmp/.container/stalwart/.mode-env
+            echo "ENABLE_JMAP=TRUE" >> /tmp/.container/stalwart/.mode-env
+            if [[ "$(grep -cq 'create_log_stalwart=TRUE' /tmp/.container/stalwart/.mode-env)" -eq 0 ]] ; then
+                echo "create_log_stalwart=TRUE" >> /tmp/.container/stalwart/.mode-env
+            fi
+        else
+            modes=$(echo "${MODE,,}" | tr "," "\n")
+            for mode in $modes
+            do
+                case "${mode,,}" in
+                    "imap" )
+                        print_debug "[setup_container_mode] Enabling Container Mode for: SMTP"
+                        echo "ENABLE_IMAP=TRUE" >> /tmp/.container/stalwart/.mode-env
+                        if [[ "$(grep -cq 'create_log_stalwart=TRUE' /tmp/.container/stalwart/.mode-env)" -eq 0 ]] ; then
+                            echo "create_log_stalwart=TRUE" >> /tmp/.container/stalwart/.mode-env
+                        fi
+                    ;;
+                    "jmap" )
+                        print_debug "[setup_container_mode] Enabling Container Mode for: SMTP"
+                        echo "ENABLE_JMAP=TRUE" >> /tmp/.container/stalwart/.mode-env
+                        if [[ "$(grep -cq 'create_log_stalwart=TRUE' /tmp/.container/stalwart/.mode-env)" -eq 0 ]] ; then
+                            echo "create_log_stalwart=TRUE" >> /tmp/.container/stalwart/.mode-env
+                        fi
+                    ;;
+                    "smtp" )
+                        print_debug "[setup_container_mode] Enabling Container Mode for: SMTP"
+                        echo "ENABLE_SMTP=TRUE" >> /tmp/.container/stalwart/.mode-env
+                        if [[ "$(grep -cq 'create_log_stalwart=TRUE' /tmp/.container/stalwart/.mode-env)" -eq 0 ]] ; then
+                            echo "create_log_stalwart=TRUE" >> /tmp/.container/stalwart/.mode-env
+                        fi
+                    ;;
+                    *)
+                        print_error "[setup_container_mode] Unknown 'MODE' environment variable - exitting.."
+                        exit 1
+                    ;;
+                esac
+            done
+        fi
+        source /tmp/.container/stalwart/.mode-env
+    fi
+}
