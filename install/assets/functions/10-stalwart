@@ -307,9 +307,9 @@ setup_container_mode() {
         if [ "${MODE,,}" = "aio" ] || [ "${MODE,,}" = "all" ] ; then
             print_debug "[setup_container_mode] Container Mode: AIO"
             print_debug "[setup_container_mode] Creating MODE environment generated variables"
-            echo "ENABLE_SMTP=TRUE" >> /tmp/.container/stalwart/.mode-env
             echo "ENABLE_IMAP=TRUE" >> /tmp/.container/stalwart/.mode-env
             echo "ENABLE_JMAP=TRUE" >> /tmp/.container/stalwart/.mode-env
+            echo "ENABLE_SMTP=TRUE" >> /tmp/.container/stalwart/.mode-env
             if [[ "$(grep -cq 'create_log_stalwart=TRUE' /tmp/.container/stalwart/.mode-env)" -eq 0 ]] ; then
                 echo "create_log_stalwart=TRUE" >> /tmp/.container/stalwart/.mode-env
             fi
