@@ -45,12 +45,19 @@ RUN source /assets/functions/00-container && \
     \
     clone_git_repo "${STALWART_REPO_URL}" "${STALWART_VERSION}" /usr/src/stalwart && \
     #CARGO_HOME=/opt/rust/cargo /opt/rust/cargo/bin/cargo build --manifest-path=crates/main/Cargo.toml --no-default-features --features foundationdb --release && \
+    CARGO_HOME=/opt/rust/cargo /opt/rust/cargo/bin/cargo build --manifest-path=crates/cli/Cargo.toml --release && \
+    strip /usr/src/stalwart/target/release/stalwart-cli && \
+    cp -R /usr/src/stalwart/target/release/stalwart-cli /usr/sbin && \
+    CARGO_HOME=/opt/rust/cargo /opt/rust/cargo/bin/cargo build --manifest-path=crates/install/Cargo.toml --release && \
+    strip /usr/src/stalwart/target/release/stalwart-install && \
+    cp -R /usr/src/stalwart/target/release/stalwart-install /usr/sbin && \
     CARGO_HOME=/opt/rust/cargo /opt/rust/cargo/bin/cargo build --manifest-path=crates/main/Cargo.toml --release && \
+    strip /usr/src/stalwart/target/release/stalwart-mail && \
     cp -R /usr/src/stalwart/target/release/stalwart-mail /usr/sbin && \
     CARGO_HOME=/opt/rust/cargo /opt/rust/cargo/bin/rustup self uninstall -y && \
     \
     package remove \
-                    "${STALWART_BUILD_DEPS}" \
+                    "${STALWART_BUILD_DEPS}"\
                     #foundationdb-clients \
                     && \
     package cleanup && \

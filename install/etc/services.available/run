@@ -12,5 +12,5 @@ liftoff
 print_start "Starting Stalwart ${STALWART_VERSION}"
 silent exec setuidgid stalwart \
                                 stalwart-mail \
-                                                ${APP_OPTS}
+                                                -c "${CONFIG_PATH}"/"${CONFIG_FILE}"
 
