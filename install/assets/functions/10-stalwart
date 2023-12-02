@@ -28,12 +28,48 @@ bootstrap_filesystem() {
 }
 
 configure_common() {
+
+    local config_dir
+    local config_file
+
+    config_dir="${CONFIG_PATH}/common"
+
     common_configure_server() {
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
+            config_file="server.toml"
+
+            toml_block add server hostname ""server_name""
+
+            toml_block add server.run-as user stalwart
+            toml_block add server.run-as group stalwart
+
+            toml_block add server.socket nodelay true
+            toml_block add server.socket reuse-addr true
+            toml_block add server.socket backlog 1024
+            toml_block add global shared-map "{shard = 32, capacity = 10}"
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# Server configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+${block_server}
+
+${block_server_run_as}
+
+${block_server_socket}
+
+${block_global}
+
+EOF
+            sed -i 'N;/^\n$/D;P;D;' "${config_dir}"/"${config_file}"
         else
             :
         fi
+
+
     }
 
     common_configure_sieve() {
@@ -59,6 +95,8 @@ configure_common() {
             :
         fi
     }
+
+    common_configure_server
 }
 
 configure_directory() {
@@ -347,4 +385,30 @@ setup_container_mode() {
         fi
         source /tmp/.container/stalwart/.mode-env
     fi
+}
+
+toml_block() {
+    ## Usage toml_block <operation> <block> <key> <value>
+    ## Access resulting toml block with 'echo $block_<block>'
+    ## Any periods or hyphens auto converted to underscore
+    case "${1}" in
+        add )
+            local block_name
+            local block_name_sanitized
+            if [ -z "${2}" ]; then exit 1; fi
+            block_name=${2}
+            block_name_sanitized=$(echo "${block_name}" | sed -e "s|\.|_|g" -e "s|-|_|g")
+            if [ -n "${4}" ]; then
+                block_data=$(echo "${block_data}"; cat<<EOF
+${3} = ${4}
+EOF
+                )
+                block_data=$(echo "${block_data}" | sed "/\[.*\]/d" | sed "1s/^/\[${block_name}\]\\n/" | sed "/^$/d")
+            fi
+
+            export "block_$block_name_sanitized=$block_data"
+            #block_contents=block_$block_name_sanitized
+            #echo ${!block_contents}
+        ;;
+    esac
 }

@@ -7,9 +7,7 @@ PROCESS_NAME="stalwart"
 setup_container_mode
 bootstrap_filesystem
 configure_common
-#if [ "${SETUP_TYPE,,}" = "auto" ] || [ ! -f "${CONFIG_PATH}"/"${CONFIG_FILE}" ] ; then
-#
+
 custom_files "${CONTAINER_CUSTOM_PATH}" /
 custom_scripts "${CONTAINER_CUSTOM_SCRIPTS_PATH}"
 liftoff
-
