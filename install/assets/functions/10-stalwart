@@ -18,6 +18,196 @@ bootstrap_filesystem() {
     esac
 }
 
+certificates() {
+    TLS_CA_NAME=${TLS_CA_NAME:-"ca-selfsigned-stalwart"}
+    TLS_CA_SUBJECT=${TLS_CA_SUBJECT:-"/C=ca/ST=tiredofit/L=docker/O=stalwart/CN="}
+    TLS_CA_CERT_SUBJECT=${TLS_CA_CERT_SUBJECT:-${TLS_CA_SUBJECT}${TLS_CA_NAME}}
+    TLS_CA_CERT_FILE=${TLS_CA_CERT_FILE:-"/certs/${TLS_CA_NAME}/${TLS_CA_NAME}.crt"}
+    TLS_CA_KEY_FILE=${TLS_CA_KEY_FILE:-"$(dirname "${TLS_CA_CERT_FILE}")/${TLS_CA_NAME}.key"}
+    TLS_CREATE_CA=${TLS_CREATE_CA:-"TRUE"}
+
+    create_certificate_authority() {
+        if [ ! -f "${TLS_CA_CERT_FILE}" ] ; then
+
+            print_debug "[certificates | create_certificate_authority] Creating Self Signed Certificate Authority"
+            mkdir -p "$(dirname "${TLS_CA_CERT_FILE}")"
+            echo "000a" > "$(dirname "${TLS_CA_CERT_FILE}")"/serial
+            touch "$(dirname "${TLS_CA_CERT_FILE}")"/certindex
+
+            silent eval "${ssl_exec} req \
+                  -newkey rsa:4096 -keyout ${TLS_CA_KEY_FILE} \
+                  -x509 -days 3650 -nodes -out ${TLS_CA_CERT_FILE} \
+                  -subj \"${TLS_CA_CERT_SUBJECT}\""
+
+            cat > "$(dirname "${TLS_CA_CERT_FILE}")"/"${TLS_CA_NAME}".conf << EOF
+            [ ca ]
+            default_ca = ${TLS_CA_NAME}
+
+            [ ${TLS_CA_NAME} ]
+            unique_subject = no
+            new_certs_dir = .
+            certificate = ${TLS_CA_CERT_FILE}
+            database = "$(dirname "${TLS_CA_CERT_FILE}")"/certindex
+            private_key = ${TLS_CA_KEY_FILE}
+            serial = "$(dirname "${TLS_CA_CERT_FILE}")"/serial
+            default_days = 3650
+            default_md = default
+            policy = ${TLS_CA_NAME}_policy
+            x509_extensions = ${TLS_CA_NAME}_extensions
+
+            [ ${TLS_CA_NAME}_policy ]
+            commonName = supplied
+            stateOrProvinceName = supplied
+            countryName = supplied
+            emailAddress = optional
+            organizationName = supplied
+            organizationalUnitName = optional
+
+            [ ${TLS_CA_NAME}_extensions ]
+            basicConstraints = CA:false
+            subjectKeyIdentifier = hash
+            authorityKeyIdentifier = keyid:always
+            keyUsage = digitalSignature,keyEncipherment
+            extendedKeyUsage = serverAuth,clientAuth
+
+            [ req ]
+            default_bits = 2048
+
+            [default_conf]
+            ssl_conf = ssl_sect
+
+            [ssl_sect]
+            system_default = system_default_sect
+
+            [system_default_sect]
+            MinProtocol = TLSv1.1
+            MaxProtocol = TLSv1.3
+            CipherString = DEFAULT
+EOF
+        else
+            print_debug "[certificates | create_certificate_authority] CA Already Exists"
+        fi
+    }
+
+    create_certificate() {
+        if [ "$1" != "" ] ; then
+            if var_true "${TLS_CREATE_CA}" ; then
+                if [ ! -f "${TLS_CA_CERT_FILE}" ] || [ ! -f "${TLS_CA_KEY_FILE}" ] ; then
+                    print_debug "[certificates | create_certificate] No CA Found - Creating before generating certificates"
+                    create_certificate_authority
+                fi
+            fi
+            TLS_CERT_SUBJECT="${TLS_CA_SUBJECT}$(basename "${1%%.*}")"
+
+            if var_true "${TLS_CREATE_CA}" ; then
+                if [ ! -f "${1%%.*}".key ] ; then
+                    print_debug "[certificates | create_certificate] Creating Certificate: ${1}"
+                    silent eval "${ssl_exec} req \
+                            -newkey rsa:2048 -keyout ${1%%.*}.key \
+                          -nodes -out ${1%%.*}.csr \
+                          -subj \"${TLS_CERT_SUBJECT}\""
+                fi
+            else
+                if [ ! -f "${1%%.*}".key ] ; then
+                    print_debug "[certificates | create_certificate] Creating Certificate: ${1}"
+                    silent eval "${ssl_exec} req \
+                          -new -x509 -nodes -days 3650
+                          -config /tmp/openssl.cnf
+                          -out ${1%%.*}.crt \
+                          -keyout ${1%%.*}.key"
+                fi
+            fi
+
+            if var_true "${TLS_CREATE_CA}" ; then
+                if [ ! -f "${1%%.*}".cert ] ; then
+                    print_debug "[certificates | create_certificate] Signing Certificate: ${1}"
+                    silent eval "${ssl_exec} ca -batch -config $(dirname "${TLS_CA_CERT_FILE}")/${CA_NAME}.conf -notext -in ${1%%.*}.csr -out ${1%%.*}.crt"
+                    rm -rf "$(tail -n 1 "$(dirname "${TLS_CA_CERT_FILE}")"/certindex | awk '{print $3}').pem"
+                    rm -rf "${1%%.*}".csr
+                fi
+            fi
+
+            if [ -f "${1%%.*}".crt ] && [ -f "${1%%.*}".key ] ; then
+                print_debug "[certificates | create_certificate] Merging Certificate and Key for: ${1}"
+                   cat "${1%%.*}".crt "${1%%.*}".key > "${1%%.*}".pem
+            fi
+
+            if [ ! -f "${1%%.*}"-public.pem ] ; then
+                print_debug "[certificates | create_certificate] Creating Public Key for: ${1}"
+                silent ${ssl_exec} rsa -in "${1%%.*}".pem -out "${1%%.*}"-public.pem -outform PEM -pubout
+            fi
+        fi
+    }
+
+    check_permissions() {
+        if sudo -u postfix [ ! -r "${1}" ] ; then
+            print_debug "[certificates | check_permissions] Setting Read Permissions on ${1}"
+            chmod 444 "${1}"
+        fi
+    }
+
+    check_certificates() {
+        print_debug "[certificates | check_certificates] Checking Existence of ${1}"
+        if [ ! -f "${1}" ] ; then
+                mkdir -p "$(dirname "${1}")"
+                create_certificate "${1}"
+        fi
+    }
+
+    check_dhparam() {
+        print_debug "[certificates | check_dhparam] Checking Existence of ${TLS_SERVER_DH_PARAM_FILE}"
+        if [ ! -f "${TLS_SERVER_DH_PARAM_FILE}" ] ; then
+                create_dhparam
+        fi
+    }
+
+    create_dhparam() {
+        print_notice "[certificates | create_dhparam] Creating ${TLS_SERVER_DH_PARAM_FILE}"
+        mkdir -p "$(dirname "${TLS_SERVER_DH_PARAM_FILE}")"
+        silent ${ssl_exec} dhparam -out "${TLS_SERVER_DH_PARAM_FILE}" "${TLS_SERVER_DH_PARAM_KEYSIZE}"
+    }
+
+    trust_ca() {
+        if var_true "${TLS_CREATE_CA}" ; then
+            if [ -f "${TLS_CA_CERT_FILE}" ]; then
+                if [ ! -f /usr/local/share/ca-certificates/"$(basename "${TLS_CA_CERT_FILE}")" ] ; then
+                    print_debug "[certificates | trust_ca] Trusting CA ${TLS_CA_NAME}"
+                    ln -sf "${TLS_CA_CERT_FILE}" /usr/local/share/ca-certificates/
+                    silent update-ca-certificates
+                fi
+            fi
+        fi
+    }
+
+    if ! command -v openssl &> /dev/null && ! command -v libressl &> /dev/null ; then
+        print_error "[certificates] Can't find a suitable SSL engine - Exiting.."
+        exit 1
+    fi
+
+    if command -v libressl &> /dev/null ; then
+        ssl_exec="libressl"
+    fi
+
+    if command -v openssl &> /dev/null ; then
+        ssl_exec="openssl"
+    fi
+
+    if command -v openssl &> /dev/null &&  command -v libressl &> /dev/null ; then
+        ssl_exec="openssl"
+    fi
+
+    case "${1,,}" in
+        "dhparam" )
+            check_dhparam
+        ;;
+        *)
+            check_certificates "${1}"
+            check_permissions "${1}"
+            trust_ca
+        ;;
+    esac
+}
+
 configure_common() {
 
     local config_dir
@@ -159,29 +349,26 @@ EOF
         config_file="tls.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            certificates "${TLS_DEFAULT_CERT_FILE}"
+
+            toml_block add server.tls enable true
+            toml_block add server.tls implicit false
+            toml_block add server.tls timeout "\"1m"\"
+            toml_block add server.tls certificate "\"default"\"
+            ## TODO Be able to create arrays
+            toml_block add server.tls ignore-client-order true
+            ## TODO Test if we can do TOML blocks without quotes for certificate
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
 # Common configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-[server.tls]
-enable = true
-implicit = false
-timeout = "1m"
-certificate = "default"
-#sni = [{subject = "", certificate = ""}]
-#protocols = ["TLSv1.2", "TLSv1.3"]
-#ciphers = [ "TLS13_AES_256_GCM_SHA384", "TLS13_AES_128_GCM_SHA256",
-#            "TLS13_CHACHA20_POLY1305_SHA256", "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-#            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256", "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-#            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-#            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"]
-ignore-client-order = true
+${block_server_tls}
 
 [certificate."default"]
-cert = "file:///tmp/cert.pem"
-private-key = "file:///tmp/key.pem"
+cert = "file:///${TLS_DEFAULT_CERT_FILE}"
+private-key = "file:///${TLS_DEFAULT_KEY_FILE}"
 EOF
         else
             :
