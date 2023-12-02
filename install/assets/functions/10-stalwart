@@ -534,6 +534,7 @@ toml_block() {
         add )
             local block_name
             local block_name_sanitized
+            local block_data
             if [ -z "${2}" ]; then exit 1; fi
             block_name=${2}
             block_name_sanitized=$(echo "${block_name}" | sed -e "s|\.|_|g" -e "s|-|_|g")
