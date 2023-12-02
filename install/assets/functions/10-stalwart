@@ -31,15 +31,15 @@ configure_common() {
             config_file="server.toml"
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            toml_block add server hostname ""server_name""
+            toml_block add server hostname "\"${SERVER_NAME}"\"
 
             toml_block add server.run-as user stalwart
             toml_block add server.run-as group stalwart
 
-            toml_block add server.socket nodelay true
-            toml_block add server.socket reuse-addr true
-            toml_block add server.socket backlog 1024
-            toml_block add global shared-map "{shard = 32, capacity = 10}"
+            toml_block add server.socket nodelay ${SERVER_SOCKET_NODELAY}
+            toml_block add server.socket reuse-addr ${SERVER_SOCKET_REUSE_ADDR}
+            toml_block add server.socket backlog ${SERVER_SOCKET_BACKLOG}
+            toml_block add global shared-map "\$"${GLOBAL_SHARED_MAP}"\"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -196,16 +196,16 @@ EOF
             case "${LOG_TYPE,,}" in
                 ## TODO Allow for comma seperated and allow for multiple blocks with same name
                 "console" )
-                    toml_block add global.tracing method \"stdout\"
-                    toml_block add global.tracing level \"${LOG_LEVEL}\"
+                    toml_block add global.tracing method "\"stdout"\"
+                    toml_block add global.tracing level "\"${LOG_LEVEL}"\"
                 ;;
                 "file" )
                     toml_block add global.tracing method log
-                    toml_block add global.tracing path \"${LOG_PATH}\"
-                    toml_block add global.tracing prefix \"${LOG_FILE}\"
-                    toml_block add global.tracing level \"${LOG_LEVEL}\"
-                    toml_block add global.tracing rotate \"never\"
-                    toml block add global.tracing ansi false
+                    toml_block add global.tracing path "\"${LOG_PATH}"\"
+                    toml_block add global.tracing prefix "\"${LOG_FILE}"\"
+                    toml_block add global.tracing level "\"${LOG_LEVEL}"\"
+                    toml_block add global.tracing rotate "\"never\""
+                    toml_block add global.tracing ansi false
                 ;;
             esac
             cat <<EOF > "${config_dir}"/"${config_file}"
@@ -214,7 +214,7 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-${glock_global_tracing}
+${block_global_tracing}
 
 EOF
         else
@@ -223,6 +223,9 @@ EOF
     }
 
     common_configure_server
+    if var_true ${ENABLE_SIEVE} ; then common_configure_sieve; fi
+    if var_true ${ENABLE_TLS} ; then common_configure_tls; fi
+    common_configure_tracing
 }
 
 configure_directory() {
