@@ -3,17 +3,17 @@
 bootstrap_filesystem() {
 
     if [ ! -d "${CONFIG_PATH}" ]; then mkdir -p "${CONFIG_PATH}"; fi
-    if [ $(stat -c %U "${CONFIG_PATH}") != "stalwart" ] ; then chown -R stalwart:stalwart "${CONFIG_PATH}" ; fi
+    if [ "$(stat -c %U "${CONFIG_PATH}")" != "stalwart" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${CONFIG_PATH}" ; fi
 
     if [ ! -d "${DATA_PATH}" ]; then mkdir -p "${DATA_PATH}"; fi
-    if [ $(stat -c %U "${DATA_PATH}") != "stalwart" ] ; then chown stalwart:stalwart "${DATA_PATH}" ; fi
+    if [ "$(stat -c %U "${DATA_PATH}")" != "stalwart" ] ; then chown ${SERVER_USER}:${SERVER_GROUP} "${DATA_PATH}" ; fi
 
     if [ ! -d "${LOG_PATH}" ]; then mkdir -p "${LOG_PATH}" ; fi
-    if [ $(stat -c %U "${LOG_PATH}") != "stalwart" ] ; then chown -R stalwart:stalwart "${LOG_PATH}" ; fi
+    if [ "$(stat -c %U "${LOG_PATH}")" != "stalwart" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${LOG_PATH}" ; fi
 
     case "${LOG_TYPE,,}" in
         file )
-            create_logrotate stalwart "${LOG_PATH}"/"${LOG_FILE}" stalwart stalwart
+            create_logrotate stalwart "${LOG_PATH}"/"${LOG_FILE}" ${SERVER_USER} ${SERVER_GROUP}
         ;;
     esac
 }
@@ -140,7 +140,7 @@ EOF
     }
 
     check_permissions() {
-        if sudo -u postfix [ ! -r "${1}" ] ; then
+        if sudo -u ${SERVER_USER} [ ! -r "${1}" ] ; then
             print_debug "[certificates | check_permissions] Setting Read Permissions on ${1}"
             chmod 444 "${1}"
         fi
@@ -209,7 +209,6 @@ EOF
 }
 
 configure_common() {
-
     local config_dir
     local config_file
 
@@ -223,13 +222,13 @@ configure_common() {
 
             toml_block add server hostname "\"${SERVER_NAME}"\"
 
-            toml_block add server.run-as user stalwart
-            toml_block add server.run-as group stalwart
+            toml_block add server.run-as user ${SERVER_USER}
+            toml_block add server.run-as group ${SERVER_GROUP}
 
             toml_block add server.socket nodelay ${SERVER_SOCKET_NODELAY}
             toml_block add server.socket reuse-addr ${SERVER_SOCKET_REUSE_ADDR}
             toml_block add server.socket backlog ${SERVER_SOCKET_BACKLOG}
-            toml_block add global shared-map "\$"${GLOBAL_SHARED_MAP}"\"
+            toml_block add global shared-map "\"${GLOBAL_SHARED_MAP}"\"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -250,8 +249,6 @@ EOF
         else
             :
         fi
-
-
     }
 
     common_configure_sieve() {
@@ -409,8 +406,8 @@ EOF
         fi
     }
 
-    common_configure_server
     if var_true ${ENABLE_SIEVE} ; then common_configure_sieve; fi
+    common_configure_server
     if var_true ${ENABLE_TLS} ; then common_configure_tls; fi
     common_configure_tracing
 }
@@ -630,6 +627,30 @@ configure_jmap() {
             :
         fi
     }
+}
+
+configure_server() {
+   local config_dir
+   local config_file
+   config_dir="${CONFIG_PATH}"
+   config_file="${CONFIG_FILE}"
+
+    if [ "${SETUP_TYPE,,}" = "auto" ]; then
+        cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# Stalwart configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+[include]
+files = [
+$(for config_file in $(echo ${config_files} | tr "," ",\n") ; do echo "          ${config_file}" ; done)
+        ]
+
+EOF
+    else
+        :
+    fi
 }
 
 configure_spamfilter() {

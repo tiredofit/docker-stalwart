@@ -4,9 +4,11 @@ source /assets/functions/00-container
 prepare_service
 PROCESS_NAME="stalwart"
 
-setup_container_mode
 bootstrap_filesystem
+setup_container_mode
 configure_common
+if var_true "${ENABLE_SMTP}" ; then configure_smtp; fi
+configure_server
 
 custom_files "${CONTAINER_CUSTOM_PATH}" /
 custom_scripts "${CONTAINER_CUSTOM_SCRIPTS_PATH}"
