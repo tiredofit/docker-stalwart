@@ -3,6 +3,7 @@
 CONFIG_PATH=${CONFIG_PATH:-"/config/"}
 DATA_PATH=${DATA_PATH:-"/data/"}
 LOG_FILE=${LOG_FILE:-"log.log"}
+LOG_LEVEL=${LOG_LEVEL:-"INFO"}
 LOG_TYPE=${LOG_TYPE:-"FILE"}
 LOG_PATH=${LOG_PATH:-"/logs/"}
 MODE=${MODE:-"SMTP"}

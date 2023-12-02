@@ -192,33 +192,29 @@ EOF
         config_file="tracing.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+
+            case "${LOG_TYPE,,}" in
+                ## TODO Allow for comma seperated and allow for multiple blocks with same name
+                "console" )
+                    toml_block add global.tracing method \"stdout\"
+                    toml_block add global.tracing level \"${LOG_LEVEL}\"
+                ;;
+                "file" )
+                    toml_block add global.tracing method log
+                    toml_block add global.tracing path \"${LOG_PATH}\"
+                    toml_block add global.tracing prefix \"${LOG_FILE}\"
+                    toml_block add global.tracing level \"${LOG_LEVEL}\"
+                    toml_block add global.tracing rotate \"never\"
+                    toml block add global.tracing ansi false
+                ;;
+            esac
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
-# Common configuration ${config_file}
+# Loggina and Tracing configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-#############################################
-# Tracing & logging configuration
-#############################################
-
-#[global.tracing]
-#method = "stdout"
-#level = "trace"
-
-#[global.tracing]
-#method = "open-telemetry"
-#transport = "http"
-#endpoint = "https://127.0.0.1/otel"
-#headers = ["Authorization: <place_auth_here>"]
-#level = "debug"
-
-[global.tracing]
-method = "log"
-path = "%{BASE_PATH}%/logs"
-prefix = "stalwart.log"
-rotate = "daily"
-level = "info"
+${glock_global_tracing}
 
 EOF
         else
