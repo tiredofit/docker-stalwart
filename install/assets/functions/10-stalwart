@@ -1,23 +1,14 @@
 #!/command/with-contenv bash
 
 bootstrap_filesystem() {
-    if [ ! -d "${CONFIG_PATH}" ]; then
-        mkdir -p "${CONFIG_PATH}"
-    fi
+
+    if [ ! -d "${CONFIG_PATH}" ]; then mkdir -p "${CONFIG_PATH}"; fi
     if [ $(stat -c %U "${CONFIG_PATH}") != "stalwart" ] ; then chown -R stalwart:stalwart "${CONFIG_PATH}" ; fi
-    # Only necessary if you want to map some legacy directories
-    #if [ ! -d "/etc/randomconfig" ] ; then
-    #    ln -sf "${CONFIG_PATH}" /etc/randomconfig
-    #fi
 
-    if [ ! -d "${DATA_PATH}" ]; then
-        mkdir -p "${DATA_PATH}"
-    fi
-    if [ $(stat -c %U "") != "stalwart" ] ; then chown stalwart:stalwart "${DATA_PATH}" ; fi
+    if [ ! -d "${DATA_PATH}" ]; then mkdir -p "${DATA_PATH}"; fi
+    if [ $(stat -c %U "${DATA_PATH}") != "stalwart" ] ; then chown stalwart:stalwart "${DATA_PATH}" ; fi
 
-    if [ ! -d "${LOG_PATH}" ]; then
-        mkdir -p "${LOG_PATH}"
-    fi
+    if [ ! -d "${LOG_PATH}" ]; then mkdir -p "${LOG_PATH}" ; fi
     if [ $(stat -c %U "${LOG_PATH}") != "stalwart" ] ; then chown -R stalwart:stalwart "${LOG_PATH}" ; fi
 
     case "${LOG_TYPE,,}" in
@@ -38,6 +29,7 @@ configure_common() {
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
             config_file="server.toml"
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             toml_block add server hostname ""server_name""
 
@@ -73,24 +65,49 @@ EOF
     }
 
     common_configure_sieve() {
+        config_file="sieve.toml"
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# Common configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
     }
 
     common_configure_tls() {
+        config_file="tls.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# Common configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
     }
 
     common_configure_tracing() {
+        config_file="tracing.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# Common configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
@@ -100,6 +117,12 @@ EOF
 }
 
 configure_directory() {
+
+    local config_dir
+    local config_file
+
+    config_dir="${CONFIG_PATH}/directory"
+
     directory_configure_imap() {
         ## TODO - Future version
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
@@ -111,8 +134,16 @@ configure_directory() {
     }
 
     directory_configure_ldap() {
+        config_file="ldap.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# Common configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
@@ -148,6 +179,11 @@ configure_directory() {
 }
 
 configure_imap() {
+    local config_dir
+    local config_file
+
+    config_dir="${CONFIG_PATH}/imap"
+
     imap_configure_listener() {
         ## TODO - Future version
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
@@ -168,6 +204,11 @@ configure_imap() {
 }
 
 configure_jmap() {
+    local config_dir
+    local config_file
+
+    config_dir="${CONFIG_PATH}/jmap"
+
     jmap_configure_auth() {
         ## TODO - Future version
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
@@ -242,94 +283,192 @@ configure_jmap() {
 }
 
 configure_spamfilter() {
+    local config_dir
+    local config_file
+
+    config_dir="${CONFIG_PATH}/spamfilter"
+
     ## TODO - Future version
     :
 }
 
 configure_smtp() {
+    local config_dir
+    local config_file
+
+    config_dir="${CONFIG_PATH}/smtp"
+
     smtp_configure_auth() {
+        config_file="auth.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# SMTP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
     }
 
     smtp_configure_dkim() {
+        config_file="dkim.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# SMTP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
     }
 
     smtp_configure_listener() {
+        config_file="listener.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# SMTP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
     }
 
     smtp_configure_milter() {
+        config_file="milter.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# SMTP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
     }
 
     smtp_configure_queue() {
+        config_file="queue.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# SMTP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
     }
 
     smtp_configure_remote() {
+        config_file="remote.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# SMTP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
     }
 
     smtp_configure_report() {
+        config_file="report.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# SMTP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
     }
 
     smtp_configure_resolver() {
+        config_file="resolver.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# SMTP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
     }
 
     smtp_configure_session() {
+        config_file="session.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# SMTP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
     }
 
     smtp_configure_signature() {
+        config_file="signature.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# SMTP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi
     }
 
     smtp_configure_spamfilter() {
+        config_file="spamfilter.toml"
+        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# SMTP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+EOF
         else
             :
         fi

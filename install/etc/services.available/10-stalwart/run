@@ -13,4 +13,3 @@ print_start "Starting Stalwart ${STALWART_VERSION}"
 silent exec setuidgid stalwart \
                                 stalwart-mail \
                                                 -c "${CONFIG_PATH}"/"${CONFIG_FILE}"
-
