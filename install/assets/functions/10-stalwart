@@ -220,7 +220,7 @@ configure_common() {
             config_file="server.toml"
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            toml_block add server hostname "\"${SERVER_NAME}"\"
+            toml_block add server hostname quotes "${SERVER_NAME}"
 
             toml_block add server.run-as user ${SERVER_USER}
             toml_block add server.run-as group ${SERVER_GROUP}
@@ -228,7 +228,7 @@ configure_common() {
             toml_block add server.socket nodelay ${SERVER_SOCKET_NODELAY}
             toml_block add server.socket reuse-addr ${SERVER_SOCKET_REUSE_ADDR}
             toml_block add server.socket backlog ${SERVER_SOCKET_BACKLOG}
-            toml_block add global shared-map "\"${GLOBAL_SHARED_MAP}"\"
+            toml_block add global shared-map quotes "${GLOBAL_SHARED_MAP}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -236,13 +236,13 @@ configure_common() {
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-${block_server}
+$(echo -e ${block_server})
 
-${block_server_run_as}
+$(echo -e ${block_server_run_as})
 
-${block_server_socket}
+$(echo -e ${block_server_socket})
 
-${block_global}
+$(echo -e ${block_global})
 
 EOF
             sed -i 'N;/^\n$/D;P;D;' "${config_dir}"/"${config_file}"
@@ -348,10 +348,11 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             certificates "${TLS_DEFAULT_CERT_FILE}"
 
+            ## Todo need variables
             toml_block add server.tls enable true
             toml_block add server.tls implicit false
-            toml_block add server.tls timeout "\"1m"\"
-            toml_block add server.tls certificate "\"default"\"
+            toml_block add server.tls timeout quotes 1m
+            toml_block add server.tls certificate quotes default
             ## TODO Be able to create arrays
             toml_block add server.tls ignore-client-order true
             ## TODO Test if we can do TOML blocks without quotes for certificate
@@ -361,7 +362,7 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-${block_server_tls}
+$(echo -e ${block_server_tls})
 
 [certificate."default"]
 cert = "file:///${TLS_DEFAULT_CERT_FILE}"
@@ -380,15 +381,15 @@ EOF
             case "${LOG_TYPE,,}" in
                 ## TODO Allow for comma seperated and allow for multiple blocks with same name
                 "console" )
-                    toml_block add global.tracing method "\"stdout"\"
-                    toml_block add global.tracing level "\"${LOG_LEVEL}"\"
+                    toml_block add global.tracing method quotes stdout
+                    toml_block add global.tracing level quotes ${LOG_LEVEL,,}
                 ;;
                 "file" )
                     toml_block add global.tracing method log
-                    toml_block add global.tracing path "\"${LOG_PATH}"\"
-                    toml_block add global.tracing prefix "\"${LOG_FILE}"\"
-                    toml_block add global.tracing level "\"${LOG_LEVEL}"\"
-                    toml_block add global.tracing rotate "\"never\""
+                    toml_block add global.tracing path quotes "${LOG_PATH}"
+                    toml_block add global.tracing prefix quotes "${LOG_FILE}"
+                    toml_block add global.tracing level quotes "${LOG_LEVEL,,}"
+                    toml_block add global.tracing rotate quotes "never"
                     toml_block add global.tracing ansi false
                 ;;
             esac
@@ -398,7 +399,7 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-${block_global_tracing}
+$(echo -e ${block_global_tracing})
 
 EOF
         else
