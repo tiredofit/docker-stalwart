@@ -338,8 +338,7 @@ duplicate-expiry = "7d"
 
 EOF
         else
-            :
-        fi
+            :smtp
     }
 
     common_configure_tls() {
@@ -435,42 +434,42 @@ configure_directory() {
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             ## TODO Be able to handle multiple directories
-            toml_block add directory.default type "\"${DIRECTORY_DEFAULT_LDAP_TYPE}"\"
-            toml_block add directory.default address "\"${DIRECTORY_DEFAULT_LDAP_ADDRESS}"\"
-            toml_block add directory.default base-dn "\"${DIRECTORY_DEFAULT_LDAP_BASE_DN}"\"
+            toml_block add directory.default type quotes "${DIRECTORY_DEFAULT_LDAP_TYPE}"
+            toml_block add directory.default address quotes "${DIRECTORY_DEFAULT_LDAP_ADDRESS}"
+            toml_block add directory.default base-dn quotes "${DIRECTORY_DEFAULT_LDAP_BASE_DN}"
 
-            toml_block add directory.default.bind dn "\"${DIRECTORY_DEFAULT_LDAP_BIND_DN}"\"
-            toml_block add directory.default.bind secret "\"${DIRECTORY_DEFAULT_LDAP_BIND_SECRET}"\"
+            toml_block add directory.default.bind dn quotes "${DIRECTORY_DEFAULT_LDAP_BIND_DN}"
+            toml_block add directory.default.bind secret quotes "${DIRECTORY_DEFAULT_LDAP_BIND_SECRET}"
 
             toml_block add directory.default.cache entries "${DIRECTORY_DEFAULT_LDAP_CACHE_ENTRIES}"
             toml_block add directory.default.cache ttl "${DIRECTORY_DEFAULT_LDAP_CACHE_TTL}"
 
-            toml_block add directory.default.filter name "${DIRECTORY_DEFAULT_LDAP_FILTER_NAME}"
-            toml_block add directory.default.filter email "${DIRECTORY_DEFAULT_LDAP_FILTER_NAME}"
-            toml_block add directory.default.filter verify "${DIRECTORY_DEFAULT_LDAP_FILTER_NAME}"
-            toml_block add directory.default.filter expand "${DIRECTORY_DEFAULT_LDAP_FILTER_NAME}"
-            toml_block add directory.default.filter domains "${DIRECTORY_DEFAULT_LDAP_FILTER_DOMAINS}"
+            toml_block add directory.default.filter name quotes "${DIRECTORY_DEFAULT_LDAP_FILTER_NAME}"
+            toml_block add directory.default.filter email quotes "${DIRECTORY_DEFAULT_LDAP_FILTER_NAME}"
+            toml_block add directory.default.filter verify quotes "${DIRECTORY_DEFAULT_LDAP_FILTER_NAME}"
+            toml_block add directory.default.filter expand quotes "${DIRECTORY_DEFAULT_LDAP_FILTER_NAME}"
+            toml_block add directory.default.filter domains quotes "${DIRECTORY_DEFAULT_LDAP_FILTER_DOMAINS}"
 
             toml_block add directory.default.options catch-all "${DIRECTORY_DEFAULT_LDAP_OPTIONS_CATCH_ALL}"
             toml_block add directory.default.options subaddressing "${DIRECTORY_DEFAULT_LDAP_OPTIONS_SUBADDRESSING}"
-            toml_block add directory.default.options superuser-group "${DIRECTORY_DEFAULT_LDAP_OPTIONS_SUPERUSER_GROUP}"
+            toml_block add directory.default.options superuser-group quotes "${DIRECTORY_DEFAULT_LDAP_OPTIONS_SUPERUSER_GROUP}"
 
             toml_block add directory.default.pool max-connections ${DIRECTORY_DEFAULT_LDAP_POOL_MAX_CONNECTIONS}
             toml_block add directory.default.pool min-connections ${DIRECTORY_DEFAULT_LDAP_POOL_MIN_CONNECTIONS}
-            toml_block add directory.default.pool max-lifetime "\"${DIRECTORY_DEFAULT_LDAP_POOL_MAX_LIFETIME}"\"
-            toml_block add directory.default.pool idle-timeout "\"${DIRECTORY_DEFAULT_LDAP_POOL_IDLE_TIMEOUT}"\"
-            toml_block add directory.default.pool conenct-timeout "\"${DIRECTORY_DEFAULT_LDAP_POOL_CONNECT_TIMEOUT}"\"
+            toml_block add directory.default.pool max-lifetime quotes "${DIRECTORY_DEFAULT_LDAP_POOL_MAX_LIFETIME}"
+            toml_block add directory.default.pool idle-timeout quotes "${DIRECTORY_DEFAULT_LDAP_POOL_IDLE_TIMEOUT}"
+            toml_block add directory.default.pool conenct-timeout quotes "${DIRECTORY_DEFAULT_LDAP_POOL_CONNECT_TIMEOUT}"
 
-            toml_block add directory.default.object-classes user "\"${DIRECTORY_DEFAULT_LDAP_OBJECT_CLASSES_USER}"\"
-            toml_block add directory.default.object-classes group "\"${DIRECTORY_DEFAULT_LDAP_OBJECT_CLASSES_GROUP}"\"
+            toml_block add directory.default.object-classes user quotes "${DIRECTORY_DEFAULT_LDAP_OBJECT_CLASSES_USER}"
+            toml_block add directory.default.object-classes group quotes "${DIRECTORY_DEFAULT_LDAP_OBJECT_CLASSES_GROUP}"
 
-            toml_block add directory.default.attributes uid "\"${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_UID}"\"
-            toml_block add directory.default.attributes description "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_DESCRIPTION}"
-            toml_block add directory.default.attributes secret "\"${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_SECRET}"\"
-            toml_block add directory.default.attributes groups "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_GROUPS}"
-            toml_block add directory.default.attributes email "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_EMAIL}"
-            toml_block add directory.default.attributes email-alias "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_EMAIL_ALIAS}"
-            toml_block add directory.default.attributes quota "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_QUOTA}"
+            toml_block add directory.default.attributes uid quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_UID}"
+            toml_block add directory.default.attributes description quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_DESCRIPTION}"
+            toml_block add directory.default.attributes secret quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_SECRET}"
+            toml_block add directory.default.attributes groups quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_GROUPS}"
+            toml_block add directory.default.attributes email quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_EMAIL}"
+            toml_block add directory.default.attributes email-alias quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_EMAIL_ALIAS}"
+            toml_block add directory.default.attributes quota quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_QUOTA}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -478,21 +477,21 @@ configure_directory() {
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-${block_directory_default}
+$(echo -e ${block_directory_default})
 
-${block_directory_default_bind}
+$(echo -e ${block_directory_default_bind})
 
-${block_directory_default_cache}
+$(echo -e ${block_directory_default_cache})
 
-${block_directory_default_options}
+$(echo -e ${block_directory_default_options})
 
-${block_directory_default_pool}
+$(echo -e ${block_directory_default_pool})
 
-${block_directory_default_filter}
+$(echo -e ${block_directory_default_filter})
 
-${block_directory_default_object_classes}
+$(echo -e ${block_directory_default_object_classes})
 
-${block_directory_default_attributes}
+$(echo -e ${block_directory_default_attributes})
 
 EOF
         else
@@ -684,13 +683,13 @@ configure_smtp() {
             ## TODO Add ENABLE switches
             toml_block add auth.iprev verify "${SMTP_AUTH_IPREV_VERIFY}"
 
-            toml_block add auth.dkim verify "\"${SMTP_AUTH_DKIM_VERIFY}"\"
+            toml_block add auth.dkim verify quotes "${SMTP_AUTH_DKIM_VERIFY}"
             toml_block add auth.dkim sign "${SMTP_AUTH_DKIM_SIGN}"
 
             toml_block add auth.spf.ehlo "${SMTP_AUTH_SPF_VERIFY_EHLO}"
             toml_block add auth.spf.mail-from "${SMTP_AUTH_SPF_VERIFY_MAIL_FROM}"
 
-            toml_block add auth.arc verify "\"${SMTP_AUTH_ARC_SEAL}"\"
+            toml_block add auth.arc verify quotes "${SMTP_AUTH_ARC_SEAL}"
             toml_block add auth.arc seal "${SMTP_AUTH_ARC_SEAL}"
 
             toml_block add auth.dmarc verify "${SMTP_AUTH_DMARC_VERIFY}"
@@ -702,15 +701,15 @@ configure_smtp() {
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-${block_auth_iprev}
+$(echo -e ${block_auth_iprev})
 
-${block_auth_dkim}
+$(echo -e ${block_auth_dkim})
 
-${block_auth_spf_verify}
+$(echo -e ${block_auth_spf_verify})
 
-${block_auth_arc}
+$(echo -e ${block_auth_arc})
 
-${block_auth_dmarc}
+$(echo -e ${block_auth_dmarc})
 
 EOF
         else
@@ -739,8 +738,23 @@ EOF
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
 
-            toml_block add server.listener. x "${SMTP_SERVER_LISTENER_}"
-            toml_block add server.listener. x "\"${SMTP_SERVER_LISTENER_}"\"
+            toml_block add server.listener.dynamic smtp bind array "${SMTP_LISTENER_SMTP_BIND}"
+            toml_block add server.listener.dynamic smtp greeing quotes "${SMTP_LISTENER_SMTP_GREETING}"
+            toml_block add server.listener.dynamic smtp protocol quotes "${SMTP_LISTENER_SMTP_PROTOCOL}"
+
+            toml_block add server.listener.dynamic submission bind array "${SMTP_LISTENER_SUBMISSION_BIND}"
+            toml_block add server.listener.dynamic submission greeing quotes "${SMTP_LISTENER_SUBMISSION_GREETING}"
+            toml_block add server.listener.dynamic submission quotes protocol "${SMTP_LISTENER_SUBMISSION_PROTOCOL}"
+
+            toml_block add server.listener.dynamic submissions bind array "${SMTP_LISTENER_SUBMISSIONS_BIND}"
+            toml_block add server.listener.dynamic submissions greeing quotes "${SMTP_LISTENER_SUBMISSIONS_GREETING}"
+            toml_block add server.listener.dynamic submissions protocol quotes "${SMTP_LISTENER_SUBMISSIONS_PROTOCOL,,}"
+            toml_block add server.listener.dynamic submissions tls.implicit "${SMTP_LISTENER_SUBMISSIONS_TLS_IMPLICIT,,}"
+
+            toml_block add server.listener.dynamic management bind array "['${SMTP_LISTENER_MANAGEMENT_BIND}']"
+            toml_block add server.listener.dynamic management protocol quotes "${SMTP_LISTENER_MANAGEMENT_PROTOCOL,,}"
+
+            toml_block add management directory quotes "${SMTP_MANAGEMENT_DIRECTORY}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -748,26 +762,36 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-[server.listener."smtp"]
-bind = ["[::]:25"]
-#greeting = "Stalwart SMTP at your service"
-protocol = "smtp"
+$(echo -e ${block_server_listener_smtp})
 
-[server.listener."submission"]
-bind = ["[::]:587"]
-protocol = "smtp"
+$(echo -e ${block_server_listener_submission})
 
-[server.listener."submissions"]
-bind = ["[::]:465"]
-protocol = "smtp"
-tls.implicit = true
+$(echo -e ${block_server_listener_submissions})
 
-[server.listener."management"]
-bind = ["127.0.0.1:8080"]
-protocol = "http"
+$(echo -e ${block_server_listener_management})
 
-[management]
-directory = "default"
+$(echo -e ${block_managemnet})
+
+#[server.listener."smtp"]
+#bind = ["[::]:25"]
+##greeting = "Stalwart SMTP at your service"
+#protocol = "smtp"
+#
+#[server.listener."submission"]
+#bind = ["[::]:587"]
+#protocol = "smtp"
+#
+#[server.listener."submissions"]
+#bind = ["[::]:465"]
+#protocol = "smtp"
+#tls.implicit = true
+#
+#[server.listener."management"]
+#bind = ["127.0.0.1:8080"]
+#protocol = "http"
+#
+#[management]
+#directory = "default"
 
 EOF
         else
@@ -780,17 +804,38 @@ EOF
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
 
-            toml_block add session.data.milter. x "${SMTP_SESSION_DATA_MILTER_}"
-            toml_block add server.data.milter. x "\"${SMTP_SESSION_DATA_MILTER_}"\"
+            ## TODO Create ENABLE Blocks
+            toml_block add session.data.milter.dynamic rspamd enable array "${SMTP_SESSION_DATA_MILTER_RSPAMD_ENABLE}"
+            toml_block add session.data.milter.dynamic rspamd hostname quotes "${SMTP_SESSION_DATA_MILTER_RSPAMD_HOSTNAME}"
+            toml_block add session.data.milter.dynamic rspamd port "${SMTP_SESSION_DATA_MILTER_RSPAMD_PORT}"
+            toml_block add session.data.milter.dynamic rspamd tls "${SMTP_SESSION_DATA_MILTER_RSPAMD_TLS}"
+            toml_block add session.data.milter.dynamic rspamd allow-invalid-certs "${SMTP_SESSION_DATA_MILTER_RSPAMD_ALLOW_INVALID_CERTS}"
+
+            toml_block add session.data.milter.dynamic.timeout rspamd connect quotes "${SMTP_SESSION_DATA_MILTER_RSPAMD_TIMEOUT_CONNECT}"
+            toml_block add session.data.milter.dynamic.timeout rspamd command quotes"${SMTP_SESSION_DATA_MILTER_RSPAMD_TIMEOUT_COMMAND}"
+            toml_block add session.data.milter.dynamic.timeout rspamd data quotes "${SMTP_SESSION_DATA_MILTER_RSPAMD_TIMEOUT_DATA}"
+
+            toml_block add session.data.milter.dynamic.options rspamd tempfail-on-error "${SMTP_SESSION_DATA_MILTER_RSPAMD_TEMPFAIL_ON_ERROR}"
+            toml_block add session.data.milter.dynamic.options rspamd max-response-size "${SMTP_SESSION_DATA_MILTER_RSPAMD_MAX_RESPONSE_SIZE}"
+            toml_block add session.data.milter.dynamic.options rspamd version "${SMTP_SESSION_DATA_MILTER_RSPAMD_VERSION}"
+
+            toml_block add session.data.pipe.dynamic spam-assassin command quotes "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_COMMAND}"
+            toml_block add session.data.pipe.dynamic spam-assassin arguments array "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_ARGUMENTS}"
+            toml_block add session.data.pipe.dynamic spam-assassin timeout quotes "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_TIMEOUT}"
+
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
-# SMTP configuration ${config_file}
+# SMTP inbound milter configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-#############################################
-# SMTP inbound Milter configuration
-#############################################
+$(echo -e ${block_data_milter_rspamd})
+
+$(echo -e ${block_data_milter_rspamd_timeout})
+
+$(echo -e ${block_data_milter_rspamd_options})
+
+$(echo -e ${block_data_pipe_spam_assassin})
 
 #[session.data.milter."rspamd"]
 #enable = [ { if = "listener", eq = "smtp", then = true },
@@ -825,63 +870,121 @@ EOF
         config_file="queue.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            toml_block add queue path quotes "${SMTP_QUEUE_PATH}"
+            toml_block add queue hash ${SMTP_QUEUE_HASH}
+
+            toml_block add queue.schedule retry array "${SMTP_QUEUE_SCHEDULE_RETRY}"
+            toml_block add queue.schedule notify array "${SMTP_QUEUE_SCHEDULE_NOTIFY}"
+            toml_block add queue.schedule expire quotes "${SMTP_QUEUE_SCHEDULE_EXPIRE}"
+
+            toml_block add queue.outbound hostname quotes "${SMTP_QUEUE_OUTBOUND_HOSTNAME}"
+            toml_block add queue.outbound next-hop array "${SMTP_QUEUE_OUTBOUND_NEXT_HOP}"
+            toml_block add queue.outbound ip-strategy "${SMTP_QUEUE_OUTBOUND_IP_STRATEGY}"
+
+            toml_block add queue.outbound.tls dane quotes "${SMTP_QUEUE_OUTBOUND_TLS_DANE,,}"
+            toml_block add queue.outbound.tls mta-sts quotes "${SMTP_QUEUE_OUTBOUND_TLS_MTA_STS,,}"
+            toml_block add queue.outbound.tls starttls quotes "${SMTP_QUEUE_OUTBOUND_TLS_STARTTLS,,}"
+            toml_block add queue.outbound.tls allow-invalid-certs "${SMTP_QUEUE_OUTBOUND_TLS_ALLOW_INVALID_CERTS,,}"
+
+            toml_block add queue.outbound.source-ip v4 array "${SMTP_QUEUE_OUTBOUND_SOURCE_IP_V4}"
+            toml_block add queue.outbound.source-ip v6 array "${SMTP_QUEUE_OUTBOUND_SOURCE_IP_V6}"
+
+            toml_block add queue.outbound.limits mx "${SMTP_QUEUE_OUTBOUND_LIMITS_MX}"
+            toml_block add queue.outbound.limits multihomed "${SMTP_QUEUE_OUTBOUND_LIMITS_MULTIHOMED}"
+
+            toml_block add queue.outbound.timeouts quotes connect "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_CONNECT}"
+            toml_block add queue.outbound.timeouts quotes greeting "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_GREETING}"
+            toml_block add queue.outbound.timeouts quotes tls "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_TLS}"
+            toml_block add queue.outbound.timeouts quotes ehlo "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_EHLO}"
+            toml_block add queue.outbound.timeouts quotes mail-from "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_MAIL_FROM}"
+            toml_block add queue.outbound.timeouts quotes rcpt-to "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_RCPT_TO}"
+            toml_block add queue.outbound.timeouts quotes data "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_DATA}"
+            toml_block add queue.outbound.timeouts quotes mta-sts "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_MTA_STS}"
+
+            ## TODO DOUBLE BRACKETS
+            toml_block add queue.quota match "${SMTP_QUEUE_QUOTA_MATCH}"
+            toml_block add queue.quota key array "${SMTP_QUEUE_QUOTA_KEY}"
+            toml_block add queue.quota messages "${SMTP_QUEUE_QUOTA_MESSAGES}"
+            toml_block add queue.quota size "${SMTP_QUEUE_QUOTA_SIZE}"
+
+            toml_block add queue.throttle key array "${SMTP_QUEUE_QUOTA_}"
+            toml_block add queue.throttle rate quotes "${SMTP_QUEUE_QUOTA_RATE}"
+            toml_block add queue.throttle concurrency "${SMTP_QUEUE_QUOTA_CONCURRENCY}"
+
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
-# SMTP configuration ${config_file}
+# SMTP server queue configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-#############################################
-# SMTP server queue configuration
-#############################################
+$(echo -e ${block_queue})
 
-[queue]
-path = "%{BASE_PATH}%/queue"
-hash = 64
+$(echo -e ${block_queue_schedule})
 
-[queue.schedule]
-retry = ["2m", "5m", "10m", "15m", "30m", "1h", "2h"]
-notify = ["1d", "3d"]
-expire = "5d"
+$(echo -e ${block_queue_outbound})
 
-[queue.outbound]
-#hostname = "%{HOST}%"
-next-hop = [ { if = "rcpt-domain", in-list = "default/domains", then = "local" },
-             { else = false } ]
-ip-strategy = "ipv4-then-ipv6"
+$(echo -e ${block_queue_outbound_tls})
 
-[queue.outbound.tls]
-dane = "optional"
-mta-sts = "optional"
-starttls = "require"
-allow-invalid-certs = false
+$(echo -e ${block_queue_outbound_source_ip})
 
-#[queue.outbound.source-ip]
-#v4 = ["10.0.0.10", "10.0.0.11"]
-#v6 = ["a::b", "a::c"]
+$(echo -e ${block_queue_outbound_limits})
 
-[queue.outbound.limits]
-mx = 7
-multihomed = 2
+$(echo -e ${block_queue_outbound_timeouts})
 
-[queue.outbound.timeouts]
-connect = "3m"
-greeting = "3m"
-tls = "2m"
-ehlo = "3m"
-mail-from = "3m"
-rcpt-to = "3m"
-data = "10m"
-mta-sts = "2m"
+### TODO Double Brackets
+$(echo -e ${block_queue_quota})
 
+### TODO Double Brackets
+$(echo -e ${block_queue_throttle})
+
+
+#[queue]
+#path = "%{BASE_PATH}%/queue"
+#hash = 64
+#
+#[queue.schedule]
+#retry = ["2m", "5m", "10m", "15m", "30m", "1h", "2h"]
+#notify = ["1d", "3d"]
+#expire = "5d"
+#
+#[queue.outbound]
+##hostname = "%{HOST}%"
+#next-hop = [ { if = "rcpt-domain", in-list = "default/domains", then = "local" },
+#             { else = false } ]
+#ip-strategy = "ipv4-then-ipv6"
+#
+#[queue.outbound.tls]
+#dane = "optional"
+#mta-sts = "optional"
+#starttls = "require"
+#allow-invalid-certs = false
+#
+##[queue.outbound.source-ip]
+##v4 = ["10.0.0.10", "10.0.0.11"]
+##v6 = ["a::b", "a::c"]
+#
+#[queue.outbound.limits]
+#mx = 7
+#multihomed = 2
+#
+#[queue.outbound.timeouts]
+#connect = "3m"
+#greeting = "3m"
+#tls = "2m"
+#ehlo = "3m"
+#mail-from = "3m"
+#rcpt-to = "3m"
+#data = "10m"
+#mta-sts = "2m"
+#
 [[queue.quota]]
-#match = {if = "sender-domain", eq = "foobar.org"}
-#key = ["rcpt"]
+##match = {if = "sender-domain", eq = "foobar.org"}
+##key = ["rcpt"]
 messages = 100000
 size = 10737418240 # 10gb
 
 [[queue.throttle]]
-key = ["rcpt-domain"]
+#key = ["rcpt-domain"]
 #rate = "100/1h"
 concurrency = 5
 
@@ -895,31 +998,43 @@ EOF
         config_file="remote.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            toml_block add remote.dynamic local address quotes "${SMTP_REMOTE_LOCAL_ADDRESS}"
+            toml_block add remote.dynamic local port "${SMTP_REMOTE_LOCAL_PORT}"
+            toml_block add remote.dynamic local protocol quotes "${SMTP_REMOTE_LOCAL_PROTOCOL}"
+            toml_block add remote.dynamic local concurrency "${SMTP_REMOTE_LOCAL_CONCURRENCY}"
+            toml_block add remote.dynamic local timeout quotes "${SMTP_REMOTE_LOCAL_TIMEOUT}"
 
+            toml_block add remote.dynamic.tls local implicit ${SMTP_REMOTE_LOCAL_TLS_IMPLICIT,,}
+            toml_block add remote.dynamic.tls local allow-invalid-certs ${SMTP_REMOTE_LOCAL_TLS_ALLOW_INVALID_CERTS,,}
+
+            toml_block add remote.dynamic.auth local username quotes "${SMTP_REMOTE_LOCAL_AUTH_USERNAME}"
+            toml_block add remote.dynamic.auth local secret quotes "${SMTP_REMOTE_LOCAL_AUTH_SECRET}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
-# SMTP configuration ${config_file}
+# SMTP remote servers configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
-#############################################
-# SMTP remote servers configuration
-#############################################
 
-[remote."local"]
-address = "127.0.0.1"
-port = 11200
-protocol = "lmtp"
-concurrency = 10
-timeout = "1m"
+$(echo -e ${block_remote_local})
 
-[remote."local".tls]
-implicit = false
-allow-invalid-certs = true
+$(echo -e ${block_remote_local_tls})
 
-#[remote."local".auth]
-#username = ""
-#secret = ""
+$(echo -e ${block_remote_local_auth})
+
+##address = "127.0.0.1"
+##port = 11200
+##protocol = "lmtp"
+##concurrency = 10
+##timeout = "1m"
+##
+##[remote."local".tls]
+##implicit = false
+##allow-invalid-certs = true
+##
+###[remote."local".auth]
+###username = ""
+###secret = ""
 EOF
         else
             :
@@ -930,13 +1045,12 @@ EOF
         config_file="report.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            toml_block add report path "\"${REPORTS_PATH}"\"
+            toml_block add report path quotes "${REPORTS_PATH}"
             toml_block add report hash ${REPORTS_HASH}
-
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
-# SMTP Reports configuration ${config_file}
+# SMTP Reporting configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
@@ -1005,14 +1119,14 @@ EOF
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
 
-            toml_block add resolver type "\"${SMTP_RESOLVER_TYPE}"\"
+            toml_block add resolver type quotes "${SMTP_RESOLVER_TYPE}"
             toml_block add resolver preserve-intermediates ${SMTP_RESOLVER_PRESERVE_INTERMEDIATES}
             toml_block add resolver concurrency ${SMTP_RESOLVER_CONCURRENCY}
-            toml_block add resolver timeout "\"${SMTP_RESOLVER_TIMEOUT}"\"
+            toml_block add resolver timeout quotes "${SMTP_RESOLVER_TIMEOUT}"
             toml_block add resolver attempts ${SMTP_RESOLVER_ATTEMPTS}
             toml_block add resolver try-tcp-on-error ${SMTP_RESOLVER_TRY_TCP_ON_ERROR}
             ## Todo Public Suffix is bad and needs to support multiple values / array
-            toml_block add resolver public-suffix ${SMTP_RESOLVER_PUBLIC_SUFFIX}
+            toml_block add resolver public-suffix array "${SMTP_RESOLVER_PUBLIC_SUFFIX}"
 
             toml_block add resolver.cache txt ${SMTP_RESOLVER_CACHE_TXT}
             toml_block add resolver.cache mx ${SMTP_RESOLVER_CACHE_MX}
@@ -1044,64 +1158,62 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             cat <<EOF > "${config_dir}"/"${config_file}"
 
-            toml_block add session timeout "\"${SMTP_SESSION_TIMEOUT}"\"
-            toml_block add session transfer-limit ${SMTP_SESSION_TRANSFER_LIMIT}
-            toml_block add session duration "\"${SMTP_SESSION_DURATION}"\"
+            toml_block add session timeout quotes "${SMTP_SESSION_TIMEOUT}"
+            toml_block add session transfer-limit "${SMTP_SESSION_TRANSFER_LIMIT}"
+            toml_block add session duration quotes "${SMTP_SESSION_DURATION}"
 
-            toml_block add session.connect script "\"${SMTP_SESSION_CONNECT_SCRIPT}"\"
+            toml_block add session.connect script quotes "${SMTP_SESSION_CONNECT_SCRIPT}"
 
-            toml_block add session.ehlo require ${SMTP_SESSION_EHLO_REQUIRE}
-            toml_block add session.ehlo reject-non-fqdn "\"${SMTP_SESION_EHLO_REJECT_NON_FQDN}"\"
-            toml_block add session.ehlo script "\"${SMTP_SESSION_EHLO_SCRIPT}"\"
+            toml_block add session.ehlo require "${SMTP_SESSION_EHLO_REQUIRE}"
+            toml_block add session.ehlo reject-non-fqdn quotes "${SMTP_SESION_EHLO_REJECT_NON_FQDN}"
+            toml_block add session.ehlo script quotes "${SMTP_SESSION_EHLO_SCRIPT}"
 
             toml_block add session.extensions pipelining ${SMTP_SESSION_EXTENSIONS_PIPELINING}
             toml_block add session.extensions chunking ${SMTP_SESSION_EXTENSIONS_CHUNKING}
             toml_block add session.extensions requiretls ${SMTP_SESSION_EXTENSIONS_REQUIRETLS}
-            toml_block add session.extensions nosoliciting "\"${SMTP_SESSION_EXTENSIONS_NO_SOLICITING}"\"
-            toml_block add session.extensions dsn "\"${SMTP_SESSION_EXTENSTIONS_DSN}"\"
-            toml_block add session.extensions expn "\"${SMTP_SESSION_EXTENSTIONS_EXPN}"\"
-            toml_block add session.extensions vrfy "\"${SMTP_SESSION_EXTENSTIONS_VRFY}"\"
-            toml_block add session.extensions future-release "\"${SMTP_SESSION_EXTENSTIONS_FUTURE_RELEASE}"\"
-            toml_block add session.extensions delivery-by "\"${SMTP_SESSION_EXTENSTIONS_DELIVER_BY}"\"
-            toml_block add session.extensions mt-priority "\"${SMTP_SESSION_EXTENSIONS_MT_PRIORITY}"\"
+            toml_block add session.extensions nosoliciting quotes "${SMTP_SESSION_EXTENSIONS_NO_SOLICITING}"
+            toml_block add session.extensions dsn quotes "${SMTP_SESSION_EXTENSTIONS_DSN}"
+            toml_block add session.extensions expn quotes "${SMTP_SESSION_EXTENSTIONS_EXPN}"
+            toml_block add session.extensions vrfy quotes "${SMTP_SESSION_EXTENSTIONS_VRFY}"
+            toml_block add session.extensions future-release quotes "${SMTP_SESSION_EXTENSTIONS_FUTURE_RELEASE}"
+            toml_block add session.extensions delivery-by quotes "${SMTP_SESSION_EXTENSTIONS_DELIVER_BY}"
+            toml_block add session.extensions mt-priority quotes "${SMTP_SESSION_EXTENSIONS_MT_PRIORITY}"
 
-            toml_block add session.auth mechanisms "\"${SMTP_SESSION_AUTH_MECHANISMS}"\"
-            toml_block add session.auth directory "\"${SMTP_SESSION_AUTH_DIRECTORY}"\"
-            toml_block add session.auth require "\"${SMTP_SESSION_AUTH_REQUIRE}"\"
+            toml_block add session.auth mechanisms quotes "${SMTP_SESSION_AUTH_MECHANISMS}"
+            toml_block add session.auth directory quotes "${SMTP_SESSION_AUTH_DIRECTORY}"
+            toml_block add session.auth require quotes "${SMTP_SESSION_AUTH_REQUIRE}"
             toml_block add session.auth allow-plain-text ${SMTP_SESSION_AUTH_ALLOW_PLAIN_TEXT}
 
             toml_block add session.auth.errors total ${SMTP_SESSSION_AUTH_ERRORS_TOTAL}
-            toml_block add session.auth.errors wait "\"${SMTP_SESSION_AUTH_ERRORS_WAIT}"\"
+            toml_block add session.auth.errors wait quotes "${SMTP_SESSION_AUTH_ERRORS_WAIT}"
 
-            toml_block add session. "\"${SMTP_SESSION_}"\"
-            toml_block add session. "\"${SMTP_SESSION_}"\"
-
-            toml_block add session.mail script "\"${SMTP_SESSION_MAIL_SCRIPT}"\"
+            toml_block add session.mail script quotes "${SMTP_SESSION_MAIL_SCRIPT}"
             toml_block add session.mail rewrite "${SMTP_SESSION_MAIL_REWRITE}"
 
-
-            toml_block add session.rcpt script "\"${SMTP_SESSION_RCPT_SCRIPT}"\"
-            toml_block add session.rcpt relay "${SMTP_SESSION_RCPT_RELAY}"
+            toml_block add session.rcpt script quotes "${SMTP_SESSION_RCPT_SCRIPT}"
+            toml_block add session.rcpt relay array "${SMTP_SESSION_RCPT_RELAY}"
             toml_block add session.rcpt rewrite "${SMTP_SESSION_RCPT_REWRITE}"
             toml_block add session.rcpt max-recipients ${SMTP_SESSION_RCPT_MAX_RECIPIENTS}
-            toml_block add session.rcpt directory "\"${SMTP_SESSION_DIRECTORY}"\"
+            toml_block add session.rcpt directory quotes "${SMTP_SESSION_DIRECTORY}"
 
             toml_block add session.rcpt.errors total ${SMTP_SESSION_RCPT_ERRORS_TOTAL}
-            toml_block add session.rcpt.errors wait "\"${SMTP_SESSION_RCPT_ERRORS_WAIT}"\"
+            toml_block add session.rcpt.errors wait quotes "${SMTP_SESSION_RCPT_ERRORS_WAIT}"
 
-            toml_block add session.data "\"${SMTP_SESSION_DATA_}"\"
+            ## TODO Look these over these 1 look off.
+            toml_block add session.data quotes "${SMTP_SESSION_DATA_}"
 
+            ## TODO Look these over these 3 look off.
             toml_block add session.data.limits messages ${SMTP_SESSION_DATA_LIMITS_MESSAGES}
-            toml_block add session.data.limits ${SMTP_SESSION_DATA_LIMITS_SIZE}
-            toml_block add session.data.limits ${SMTP_SESSION_DATA_LIMITS_RECEIVED_HEADERS}
+            toml_block add session.data.limits size ${SMTP_SESSION_DATA_LIMITS_SIZE}
+            toml_block add session.data.limits received-headers ${SMTP_SESSION_DATA_LIMITS_RECEIVED_HEADERS}
 
             ## TODO Need to support multiple blocks with same name
-            #toml_block add session.throttle "\"${SMTP_SESSION_THROTTLE_}"\"
-            #toml_block add session.throttle "\"${SMTP_SESSION_THROTTLE_}"\"
-            #toml_block add session.throttle "\"${SMTP_SESSION_THROTTLE_}"\"
-            #toml_block add session.throttle "\"${SMTP_SESSION_THROTTLE_}"\"
-            #toml_block add session.throttle "\"${SMTP_SESSION_THROTTLE_}"\"
-            #toml_block add session.throttle "\"${SMTP_SESSION_THROTTLE_}"\"
+            #toml_block add session.throttle quotes "${SMTP_SESSION_THROTTLE_}"
+            #toml_block add session.throttle quotes "${SMTP_SESSION_THROTTLE_}"
+            #toml_block add session.throttle quotes "${SMTP_SESSION_THROTTLE_}"
+            #toml_block add session.throttle quotes "${SMTP_SESSION_THROTTLE_}"
+            #toml_block add session.throttle quotes "${SMTP_SESSION_THROTTLE_}"
+            #toml_block add session.throttle quotes "${SMTP_SESSION_THROTTLE_}"
 
 
 
@@ -1114,29 +1226,29 @@ EOF
 # SMTP inbound session configuration
 #############################################
 
-${block_session}
+$(echo -e ${block_session})
 
-${block_session_connect}
+$(echo -e ${block_session_connect})
 
-${block_session_ehlo}
+$(echo -e ${block_session_ehlo})
 
-${block_session_extensions}
+$(echo -e ${block_session_extensions})
 
-${block_session_auth}
+$(echo -e ${block_session_auth})
 
-${block_session_errors}
+$(echo -e ${block_session_errors})
 
-${block_session_mail}
+$(echo -e ${block_session_mail})
 
-${block_session_rcpt}
+$(echo -e ${block_session_rcpt})
 
-${block_session_rcpt_errors}
+$(echo -e ${block_session_rcpt_errors})
 
-${block_session_data}
+$(echo -e ${block_session_data})
 
-${block_session_data_limits}
+$(echo -e ${block_session_data_limits})
 
-${block_session_data_add_headers}
+$(echo -e ${block_session_data_add_headers})
 
 ## TODO Support multiple blocks
 [[session.throttle]]
@@ -1159,30 +1271,42 @@ EOF
         config_file="signature.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            toml_block add signature.dynamic rsa public-key quotes "${SMTP_SIGNATURE_RSA_PUBLIC_KEY}"
+            toml_block add signature.dynamic rsa private-key quotes "${SMTP_SIGNATURE_RSA_PRIVATE_KEY}"
+            toml_block add signature.dynamic rsa domain quotes "${SMTP_SIGNATURE_RSA_DOMAIN}"
+            toml_block add signature.dynamic rsa selector quotes "${SMTP_SIGNATURE_RSA_SELECTOR}"
+            toml_block add signature.dynamic rsa headers array "${SMTP_SIGNATURE_RSA_HEADERS}"
+            toml_block add signature.dynamic rsa algorithm quotes "${SMTP_SIGNATURE_RSA_ALGORITHM}"
+            toml_block add signature.dynamic rsa canonicalization quotes "${SMTP_SIGNATURE_RSA_CANONICALIZATION}"
+            toml_block add signature.dynamic rsa expire quotes "${SMTP_SIGNATURE_RSA_EXPIRE}"
+            toml_block add signature.dynamic rsa third-party quotes "${THIRD_PARTY}"
+            toml_block add signature.dynamic rsa third-party-algo quotes "${SMTP_SIGNATURE_RSA_THIRD_PARTY_ALGO}"
+            toml_block add signature.dynamic rsa auid quotes "${SMTP_SIGNATURE_RSA_AUID}"
+            toml_block add signature.dynamic rsa set-body-length "${SMTP_SIGNATURE_RSA_SET_BODY_LENGTH}"
+            toml_block add signature.dynamic rsa report "${SMTP_SIGNATURE_RSA_REPORT}"
+
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
-# SMTP configuration ${config_file}
+# SMTP DKIM & ARC signatures configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-#############################################
-# SMTP DKIM & ARC signatures
-#############################################
+$(echo -e ${block_signature_rsa})
 
-[signature."rsa"]
-#public-key = "file://%{BASE_PATH}%/etc/dkim/%{DEFAULT_DOMAIN}%.cert"
-private-key = "file://%{BASE_PATH}%/etc/dkim/%{DEFAULT_DOMAIN}%.key"
-domain = "%{DEFAULT_DOMAIN}%"
-selector = "stalwart"
-headers = ["From", "To", "Date", "Subject", "Message-ID"]
-algorithm = "rsa-sha256"
-canonicalization = "relaxed/relaxed"
-#expire = "10d"
-#third-party = ""
-#third-party-algo = ""
-#auid = ""
-set-body-length = false
-report = true
+#[signature."rsa"]
+##public-key = "file://%{BASE_PATH}%/etc/dkim/%{DEFAULT_DOMAIN}%.cert"
+#private-key = "file://%{BASE_PATH}%/etc/dkim/%{DEFAULT_DOMAIN}%.key"
+#domain = "%{DEFAULT_DOMAIN}%"
+#selector = "stalwart"
+#headers = ["From", "To", "Date", "Subject", "Message-ID"]
+#algorithm = "rsa-sha256"
+#canonicalization = "relaxed/relaxed"
+##expire = "10d"
+##third-party = ""
+##third-party-algo = ""
+##auid = ""
+#set-body-length = false
+#report = true
 
 EOF
         else
@@ -1455,17 +1579,24 @@ toml_block() {
                 block_value=${3}
                 local block_value_blanket
                 case "${block_value}" in
+                    array | brackets)
+                        block_value_blanket_pre="["
+                        block_value_blanket_post="]"
+                    ;;
                     blank )
-                        block_value_blanket=\"
+                        block_value_blanket_pre=\"
+                        block_value_blanket_post=\"
                         block_value=
                     ;;
                     doublequote | double | quotes )
-                        block_value_blanket=\"
+                        block_value_blanket_pre=\"
+                        block_value_blanket_post=\"
                         shift 3
                         block_value=$@
                     ;;
                     singlequote | quote )
-                        block_value_blanket=\'
+                        block_value_blanket_pre=\'
+                        block_value_blanket_post=\'
                         shift 3
                         block_value=$@
                     ;;
@@ -1488,7 +1619,6 @@ toml_block() {
 
             fi
             export block_$block_name_sanitized+="$block_data\n"
-
             #block_contents=block_$block_name_sanitized
             #echo ${!block_contents}
         ;;
