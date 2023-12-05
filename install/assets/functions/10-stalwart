@@ -394,7 +394,7 @@ EOF
             esac
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
-# Loggina and Tracing configuration ${config_file}
+# Logging and Tracing configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
@@ -464,9 +464,9 @@ configure_directory() {
             toml_block add directory.default.object-classes group quotes "${DIRECTORY_DEFAULT_LDAP_OBJECT_CLASSES_GROUP}"
 
             toml_block add directory.default.attributes uid quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_UID}"
-            toml_block add directory.default.attributes description quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_DESCRIPTION}"
+            toml_block add directory.default.attributes description array "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_DESCRIPTION}"
             toml_block add directory.default.attributes secret quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_SECRET}"
-            toml_block add directory.default.attributes groups quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_GROUPS}"
+            toml_block add directory.default.attributes groups array "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_GROUPS}"
             toml_block add directory.default.attributes email quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_EMAIL}"
             toml_block add directory.default.attributes email-alias quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_EMAIL_ALIAS}"
             toml_block add directory.default.attributes quota quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_QUOTA}"
@@ -681,18 +681,18 @@ configure_smtp() {
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             ## TODO Add ENABLE switches
-            toml_block add auth.iprev verify "${SMTP_AUTH_IPREV_VERIFY}"
+            toml_block add auth.iprev verify array "${SMTP_AUTH_IPREV_VERIFY}"
 
             toml_block add auth.dkim verify quotes "${SMTP_AUTH_DKIM_VERIFY}"
-            toml_block add auth.dkim sign "${SMTP_AUTH_DKIM_SIGN}"
+            toml_block add auth.dkim sign array "${SMTP_AUTH_DKIM_SIGN}"
 
-            toml_block add auth.spf.ehlo "${SMTP_AUTH_SPF_VERIFY_EHLO}"
-            toml_block add auth.spf.mail-from "${SMTP_AUTH_SPF_VERIFY_MAIL_FROM}"
+            toml_block add auth.spf.ehlo array "${SMTP_AUTH_SPF_VERIFY_EHLO}"
+            toml_block add auth.spf.mail-from array "${SMTP_AUTH_SPF_VERIFY_MAIL_FROM}"
 
             toml_block add auth.arc verify quotes "${SMTP_AUTH_ARC_SEAL}"
-            toml_block add auth.arc seal "${SMTP_AUTH_ARC_SEAL}"
+            toml_block add auth.arc seal array "${SMTP_AUTH_ARC_SEAL}"
 
-            toml_block add auth.dmarc verify "${SMTP_AUTH_DMARC_VERIFY}"
+            toml_block add auth.dmarc verify array "${SMTP_AUTH_DMARC_VERIFY}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -1165,24 +1165,24 @@ EOF
             toml_block add session.connect script quotes "${SMTP_SESSION_CONNECT_SCRIPT}"
 
             toml_block add session.ehlo require "${SMTP_SESSION_EHLO_REQUIRE}"
-            toml_block add session.ehlo reject-non-fqdn quotes "${SMTP_SESION_EHLO_REJECT_NON_FQDN}"
+            toml_block add session.ehlo reject-non-fqdn array "${SMTP_SESION_EHLO_REJECT_NON_FQDN}"
             toml_block add session.ehlo script quotes "${SMTP_SESSION_EHLO_SCRIPT}"
 
             toml_block add session.extensions pipelining ${SMTP_SESSION_EXTENSIONS_PIPELINING}
             toml_block add session.extensions chunking ${SMTP_SESSION_EXTENSIONS_CHUNKING}
             toml_block add session.extensions requiretls ${SMTP_SESSION_EXTENSIONS_REQUIRETLS}
             toml_block add session.extensions nosoliciting quotes "${SMTP_SESSION_EXTENSIONS_NO_SOLICITING}"
-            toml_block add session.extensions dsn quotes "${SMTP_SESSION_EXTENSTIONS_DSN}"
-            toml_block add session.extensions expn quotes "${SMTP_SESSION_EXTENSTIONS_EXPN}"
-            toml_block add session.extensions vrfy quotes "${SMTP_SESSION_EXTENSTIONS_VRFY}"
-            toml_block add session.extensions future-release quotes "${SMTP_SESSION_EXTENSTIONS_FUTURE_RELEASE}"
-            toml_block add session.extensions delivery-by quotes "${SMTP_SESSION_EXTENSTIONS_DELIVER_BY}"
-            toml_block add session.extensions mt-priority quotes "${SMTP_SESSION_EXTENSIONS_MT_PRIORITY}"
+            toml_block add session.extensions dsn array "${SMTP_SESSION_EXTENSTIONS_DSN}"
+            toml_block add session.extensions expn array "${SMTP_SESSION_EXTENSTIONS_EXPN}"
+            toml_block add session.extensions vrfy array "${SMTP_SESSION_EXTENSTIONS_VRFY}"
+            toml_block add session.extensions future-release array "${SMTP_SESSION_EXTENSTIONS_FUTURE_RELEASE}"
+            toml_block add session.extensions delivery-by array "${SMTP_SESSION_EXTENSTIONS_DELIVER_BY}"
+            toml_block add session.extensions mt-priority array "${SMTP_SESSION_EXTENSIONS_MT_PRIORITY}"
 
-            toml_block add session.auth mechanisms quotes "${SMTP_SESSION_AUTH_MECHANISMS}"
-            toml_block add session.auth directory quotes "${SMTP_SESSION_AUTH_DIRECTORY}"
-            toml_block add session.auth require quotes "${SMTP_SESSION_AUTH_REQUIRE}"
-            toml_block add session.auth allow-plain-text ${SMTP_SESSION_AUTH_ALLOW_PLAIN_TEXT}
+            toml_block add session.auth mechanisms array "${SMTP_SESSION_AUTH_MECHANISMS}"
+            toml_block add session.auth directory array "${SMTP_SESSION_AUTH_DIRECTORY}"
+            toml_block add session.auth require array "${SMTP_SESSION_AUTH_REQUIRE}"
+            toml_block add session.auth allow-plain-text ${SMTP_SESSION_AUTH_ALLOW_PLAIN_TEXT,,}
 
             toml_block add session.auth.errors total ${SMTP_SESSSION_AUTH_ERRORS_TOTAL}
             toml_block add session.auth.errors wait quotes "${SMTP_SESSION_AUTH_ERRORS_WAIT}"
