@@ -256,71 +256,135 @@ EOF
 
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+            toml_block add sieve.untrusted array disable-capabilities "${SIEVE_UNTRUSTED_DISABLE_CAPABILITIES}"
+            toml_block add sieve.untrusted array notification-uris "${SIEVE_UNTRUSTED_NOTIFICATION_URIS}"
+            toml_block add sieve.untrusted array protected-headers "${SIEVE_UNTRUSTED_PROTECTED_HEADERS}"
+
+            toml_block add sieve.untrusted.limits name-length ${SIEVE_UNTRUSTED_LIMITS_NAME_LENGTH}
+            toml_block add sieve.untrusted.limits max-scripts ${SIEVE_UNTRUSTED_LIMITS_MAX_SCRIPTS}
+            toml_block add sieve.untrusted.limits script-size ${SIEVE_UNTRUSTED_LIMITS_SCRIPT_SIZE}
+            toml_block add sieve.untrusted.limits string-length ${SIEVE_UNTRUSTED_LIMITS_STRING_LENGTH}
+            toml_block add sieve.untrusted.limits variable-name-length ${SIEVE_UNTRUSTED_LIMITS_VARIABLE_NAME_LENGTH}
+            toml_block add sieve.untrusted.limits variable-size ${SIEVE_UNTRUSTED_LIMITS_VARIABLE_SIZE}
+            toml_block add sieve.untrusted.limits nested-blocks ${SIEVE_UNTRUSTED_LIMITS_NESTED_BLOCKS}
+            toml_block add sieve.untrusted.limits nested-tests ${SIEVE_UNTRUSTED_LIMITS_NESTED_TESTS}
+            toml_block add sieve.untrusted.limits nested-foreverypart ${SIEVE_UNTRUSTED_LIMITS_NESTED_FOREVERYPART}
+            toml_block add sieve.untrusted.limits match-variables ${SIEVE_UNTRUSTED_LIMITS_MATCH_VARIABLES}
+            toml_block add sieve.untrusted.limits local-variables ${SIEVE_UNTRUSTED_LIMITS_LOCAL_VARIABLES}
+            toml_block add sieve.untrusted.limits header-size ${SIEVE_UNTRUSTED_LIMITS_HEADER_SIZE}
+            toml_block add sieve.untrusted.limits includes ${SIEVE_UNTRUSTED_LIMITS_INCLUDES}
+            toml_block add sieve.untrusted.limits nested-includes ${SIEVE_UNTRUSTED_LIMITS_NESTED_INCLUDES}
+            toml_block add sieve.untrusted.limits cpu ${SIEVE_UNTRUSTED_LIMITS_CPU}
+            toml_block add sieve.untrusted.limits redirects ${SIEVE_UNTRUSTED_LIMITS_REDIRECTS}
+            toml_block add sieve.untrusted.limits received-headers ${SIEVE_UNTRUSTED_LIMITS_RECEIVED_HEADERS}
+            toml_block add sieve.untrusted.limits outgoing-messages ${SIEVE_UNTRUSTED_LIMITS_OUTGOING_MESSAGES}
+
+            toml_block add sieve.untrusted.vacation default-subject quotes "${SIEVE_UNTRUSTED_VACATION_DEFAULT_SUBJECT}"
+            toml_block add sieve.untrusted.vacation subject-prefix quotes "${SIEVE_UNTRUSTED_VACATION_SUBJECT_PREFIX}"
+
+            toml_block add sieve.untrusted.default-expiry vacation quotes "${SIEVE_UNTRUSTED_DEFAULT_EXPIRY_VACATION}"
+            toml_block add sieve.untrusted.default-expiry duplicate quotes "${SIEVE_UNTRUSTED_DEFAULT_EXPIRY_DUPLICATE}"
+
+            toml_block add sieve.trusted from-name quotes "${SIEVE_TRUSTED_FROM_NAME}"
+            toml_block add sieve.trusted from-addr quotes "${SIEVE_TRUSTED_FROM_ADDR}"
+            toml_block add sieve.trusted return-path quotes "${SIEVE_TRUSTED_RETURN_PATH}"
+            toml_block add sieve.trusted hostname quotes "${SIEVE_TRUSTED_HOSTNAME}"
+            toml_block add sieve.trusted no-capability-check "${SIEVE_TRUSTED_NO_CAPABILITY_CHECK}"
+            toml_block add sieve.trusted sign array "${SIEVE_TRUSTED_SIGN}"
+
+            toml_block add sieve.trusted.limits redirects "${SIEVE_TRUSTED_LIMITS_REDIRECTS}"
+            toml_block add sieve.trusted.limits out-messages "${SIEVE_TRUSTED_LIMITS_OUT_MESSAGES}"
+            toml_block add sieve.trusted.limits received-headers "${SIEVE_TRUSTED_LIMITS_RECEIVED_HEADERS}"
+            toml_block add sieve.trusted.limits cpu "${SIEVE_TRUSTED_LIMITS_CPU}"
+            toml_block add sieve.trusted.limits nested-includes "${SIEVE_TRUSTED_LIMITS_NESTED_INCLUDES}"
+            toml_block add sieve.trusted.limits duplicate-expiry quotes "${SIEVE_TRUSTED_LIMITS_DUPLICATE_EXPIRY}"
+
+            toml_block add sieve.trusted.scripts connect triple "${SIEVE_TRUSTED_SCRIPTS_CONNECT}"
+            toml_block add sieve.trusted.scripts ehlo triple "${SIEVE_TRUSTED_SCRIPTS_EHLO}"
+            toml_block add sieve.trusted.scripts mail triple "${SIEVE_TRUSTED_SCRIPTS_MAIL}"
+
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
-# Common configuration ${config_file}
+# Sieve configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
-
 
 #############################################
 # Sieve untrusted runtime configuration
 #############################################
 
-[sieve.untrusted]
-disable-capabilities = []
-notification-uris = ["mailto"]
-protected-headers = ["Original-Subject", "Original-From", "Received", "Auto-Submitted"]
+$(echo -e ${block_sieve_untrusted})
 
-[sieve.untrusted.limits]
-name-length = 512
-max-scripts = 256
-script-size = 102400
-string-length = 4096
-variable-name-length = 32
-variable-size = 4096
-nested-blocks = 15
-nested-tests = 15
-nested-foreverypart = 3
-match-variables = 30
-local-variables = 128
-header-size = 1024
-includes = 3
-nested-includes = 3
-cpu = 5000
-redirects = 1
-received-headers = 10
-outgoing-messages = 3
+$(echo -e ${block_sieve_untrusted_limits})
 
-[sieve.untrusted.vacation]
-default-subject = "Automated reply"
-subject-prefix = "Auto: "
+$(echo -e ${block_sieve_untrusted_vacation})
 
-[sieve.untrusted.default-expiry]
-vacation = "30d"
-duplicate = "7d"
+$(echo -e ${block_sieve_untrusted_default_expiry})
 
 #############################################
 # Sieve trusted runtime configuration
 #############################################
 
-[sieve.trusted]
-from-name = "Automated Message"
-from-addr = "no-reply@%{DEFAULT_DOMAIN}%"
-return-path = ""
-#hostname = "%{HOST}%"
-no-capability-check = true
-sign = ["rsa"]
+$(echo -e ${block_sieve_trusted})
 
-[sieve.trusted.limits]
-redirects = 3
-out-messages = 5
-received-headers = 50
-cpu = 1048576
-nested-includes = 5
-duplicate-expiry = "7d"
+$(echo -e ${block_sieve_trusted_limits})
 
-[sieve.trusted.scripts]
+$(echo -e ${block_sieve_trusted_scripts})
+
+#[sieve.untrusted]
+#disable-capabilities = []
+#notification-uris = ["mailto"]
+#protected-headers = ["Original-Subject", "Original-From", "Received", "Auto-Submitted"]
+#
+#[sieve.untrusted.limits]
+#name-length = 512
+#max-scripts = 256
+#script-size = 102400
+#string-length = 4096
+#variable-name-length = 32
+#variable-size = 4096
+#nested-blocks = 15
+#nested-tests = 15
+#nested-foreverypart = 3
+#match-variables = 30
+#local-variables = 128
+#header-size = 1024
+#includes = 3
+#nested-includes = 3
+#cpu = 5000
+#redirects = 1
+#received-headers = 10
+#outgoing-messages = 3
+#
+#[sieve.untrusted.vacation]
+#default-subject = "Automated reply"
+#subject-prefix = "Auto: "
+#
+#[sieve.untrusted.default-expiry]
+#vacation = "30d"
+#duplicate = "7d"
+
+# #############################################
+# # Sieve trusted runtime configuration
+# #############################################
+#
+# [sieve.trusted]
+# from-name = "Automated Message"
+# from-addr = "no-reply@%{DEFAULT_DOMAIN}%"
+# return-path = ""
+# #hostname = "%{HOST}%"
+# no-capability-check = true
+# sign = ["rsa"]
+#
+# [sieve.trusted.limits]
+# redirects = 3
+# out-messages = 5
+# received-headers = 50
+# cpu = 1048576
+# nested-includes = 5
+# duplicate-expiry = "7d"
+#
+# [sieve.trusted.scripts]
 #connect = '''require ["variables", "extlists", "reject"];
 #    if string :list "${env.remote_ip}" "default/blocked-ips" {
 #        reject "Your IP '${env.remote_ip}' is not welcomed here.";
@@ -338,7 +402,8 @@ duplicate-expiry = "7d"
 
 EOF
         else
-            :smtp
+            :
+        fi
     }
 
     common_configure_tls() {
@@ -348,13 +413,12 @@ EOF
             certificates "${TLS_DEFAULT_CERT_FILE}"
 
             ## Todo need variables
-            toml_block add server.tls enable true
-            toml_block add server.tls implicit false
-            toml_block add server.tls timeout quotes 1m
-            toml_block add server.tls certificate quotes default
-            ## TODO Be able to create arrays
-            toml_block add server.tls ignore-client-order true
-            ## TODO Test if we can do TOML blocks without quotes for certificate
+            toml_block add server.tls enable "${TLS_ENABLE}"
+            toml_block add server.tls implicit "${TLS_IMPLICIT}"
+            toml_block add server.tls timeout quotes "${TLS_TIMEOUT}"
+            toml_block add server.tls certificate quotes "${TLS_CERTIFICATE}"
+            toml_block add server.tls ignore-client-order "${TLS_IGNORE_CLIENT_ORDER}"
+
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
 # Common configuration ${config_file}
@@ -1597,6 +1661,12 @@ toml_block() {
                     singlequote | quote )
                         block_value_blanket_pre=\'
                         block_value_blanket_post=\'
+                        shift 3
+                        block_value=$@
+                    ;;
+                    triplequote | triple )
+                        block_value_blanket_pre=\'\'\'
+                        block_value_blanket_post=\'\'\'
                         shift 3
                         block_value=$@
                     ;;
