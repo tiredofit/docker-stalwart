@@ -1,0 +1,34 @@
+#!/command/with-contenv bash
+
+source /assets/functions/00-container
+source /assets/functions/10-stalwart
+source /assets/defaults/10-stalwart
+
+
+if [ -z "${1}" ] || [ -z "${2}" ] || [ -z "${3}" ] || [[ "${1}" =~ *help* ]]; then
+    cat <<EOF
+
+DKIM Tool - Dave Conroy <www.tiredofit.ca>
+
+Usage:
+
+$(basename $0) <selector> <domain> <type> <rsa_keysize>
+
+- Type can be 'RSA' or 'ED25519'
+- Records will be saved to '${DATA_PATH}/dkim' with the file format of <selector>_<domain>.{cert,key,readme}
+- Tool will not overwrite records if they already exist on the file system
+
+EOF
+    exit 1
+else
+
+    if [ -f "${DATA_PATH}"/dkim/"${1}"_"${2/./_}".key ] || [ -f "${DATA_PATH}"/dkim/"${1}"_"${2/./_}".cert ] || [ -f "${DATA_PATH}"/dkim/"${1}"_"${2/./_}".readme ] ; then
+        print_error "Not creating DKIM selector '${1}' for '${2}' because it already exists"
+        exit 99
+    fi
+
+    dkim generate "${1}" "${2}" "${3}" ${4}
+    echo ""
+    cat "${DATA_PATH}"/dkim/"${1}"_"${2/./_}".readme
+    echo ""
+fi

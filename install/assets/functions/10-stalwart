@@ -785,6 +785,43 @@ EOF
         config_file="dkim.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            print_notice "Configuring DKIM"
+   		    if [ ! -f "${DATA_PATH}"/dkim/"${_dkim_selector}".key ] ; then
+   		    	sudo -u "${SERVER_USER}":"${SERVER_GROUP}" rspamadm dkim_keygen -b "${DKIM_KEY_SIZE}" -s "${_dkim_selector}" -k "${DATA_PATH}"/dkim/"${_dkim_selector}".key | sudo -u "${SERVER_USER}":"${SERVER_GROUP}" tee -a "${DATA_PATH_DATA_LOCATION}"/dkim/"${_dkim_selector}"-dns.txt > /dev/null
+   		    	echo "Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S %Z')" >> "${DATA_PATH}"/dkim/"${_dkim_selector}"-dns.txt
+                sed '1 s|^|local key = [[|' "${DATA_PATH}"/dkim/"${_dkim_selector}".key | sed 's|-----END PRIVATE KEY-----|-----END PRIVATE KEY-----]]|g' > "${DATA_PATH}"/dkim/"${_dkim_selector}".redis
+                print_notice "***"
+   		    	print_notice "DKIM: Key generated - You must add this entry to your Nameserver to complete the step"
+   		    	cat "${DATA_PATH}"/dkim/"${_dkim_selector}"-dns.txt
+   		    	print_notice "It can also be found at ${DATA_PATH}/dkim/${_dkim_selector}-dns.txt"
+   		    	print_notice "***"
+   		    	chmod 440 "${DATA_PATH}"/dkim/*
+   		    fi
+
+            dkim_domains=$(set -o posix ; set | printenv | sort | grep -c "^DKIM.*_DOMAIN=")
+            for (( dkim_pair = 01; dkim_pair <= dkim_domains; dkim_pair++ )); do
+                dkim_domain=DKIM${dkim_pair}_DOMAIN
+                dkim_selector=DKIM${dkim_pair}_SELECTOR
+
+                if [ "${!dkim_domain}" != "" ] ; then
+                    if [ ! -f "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".key ] ; then
+                        sudo -u rspamd rspamadm dkim_keygen -b "${DKIM_KEY_SIZE}" -s "${!dkim_selector}" -k "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".key > "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".dns.txt
+                        echo "Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S %Z')" >> "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".dns.txt
+                        sed '1 s|^|local key = [[|' "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".key | sed 's|-----END PRIVATE KEY-----|-----END PRIVATE KEY-----]]|g' > "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".redis
+                        print_notice "***"
+                        print_notice "DKIM: Key generated for '${!dkim_domain}' with selector '${!dkim_selector}' - You must add this entry to your Nameserver to complete the step"
+                        cat "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".dns.txt
+                        print_notice "It can also be found at '${DATA_PATH}/dkim/${!dkim_domain}-${!dkim_selector}.dns.txt'"
+                        print_notice "***"
+                        chmod 440 "${DATA_PATH}"/dkim/*
+                    fi
+                    dkim_domains=$(echo "${_dkim_domains}" ; cat<<EOF
+domain { ${!dkim_domain} { path = "${DATA_PATH}/dkim/${!dkim_domain}-${!dkim_selector}.key"; selector = "${!dkim_selector}"; }}
+EOF
+                    )
+                fi
+            done
+
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
 # SMTP configuration ${config_file}
@@ -1112,21 +1149,56 @@ EOF
             toml_block add report path quotes "${REPORTS_PATH}"
             toml_block add report hash ${REPORTS_HASH}
 
+            toml_block add report.analysis addresses array "${SMTP_REPORT_ANALYSIS_ADDRESSES}"
+            toml_block add report.analysis forward "${SMTP_REPORT_ANALYSIS_FORWARD}"
+            toml_block add report.analysis store quotes "${SMTP_REPORT_ANALYSIS_STORE}"
+
+            toml_block add report "${SMTP_REPORT_DSN_}"
+            toml_block add report "${SMTP_REPORT_DSN_}"
+            toml_block add report "${SMTP_REPORT_DSN_}"
+
+            toml_block add report "${SMTP_REPORT_DKIM_}"
+            toml_block add report "${SMTP_REPORT_DKIM_}"
+            toml_block add report "${SMTP_REPORT_DKIM_}"
+            toml_block add report "${SMTP_REPORT_DKIM_}"
+            toml_block add report "${SMTP_REPORT_DKIM_}"
+
+            toml_block add report "${SMTP_REPORT_SPF_}"
+            toml_block add report "${SMTP_REPORT_SPF_}"
+            toml_block add report "${SMTP_REPORT_SPF_}"
+            toml_block add report "${SMTP_REPORT_SPF_}"
+            toml_block add report "${SMTP_REPORT_SPF_}"
+
+            toml_block add report "${SMTP_REPORT_DMARC_}"
+            toml_block add report "${SMTP_REPORT_DMARC_}"
+            toml_block add report "${SMTP_REPORT_DMARC_}"
+            toml_block add report "${SMTP_REPORT_DMARC_}"
+            toml_block add report "${SMTP_REPORT_DMARC_}"
+
+            toml_block add report "${SMTP_REPORT_DMARC_AGGREGATE}"
+            toml_block add report "${SMTP_REPORT_DMARC_AGGREGATE}"
+            toml_block add report "${SMTP_REPORT_DMARC_AGGREGATE}"
+            toml_block add report "${SMTP_REPORT_DMARC_AGGREGATE}"
+            toml_block add report "${SMTP_REPORT_DMARC_AGGREGATE}"
+            toml_block add report "${SMTP_REPORT_DMARC_AGGREGATE}"
+
+            toml_block add report "${SMTP_REPORT_TLS_AGGREGATE}"
+            toml_block add report "${SMTP_REPORT_TLS_AGGREGATE}"
+            toml_block add report "${SMTP_REPORT_TLS_AGGREGATE}"
+            toml_block add report "${SMTP_REPORT_TLS_AGGREGATE}"
+            toml_block add report "${SMTP_REPORT_TLS_AGGREGATE}"
+
+
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
 # SMTP Reporting configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-#############################################
-# SMTP reporting configuration
-#############################################
-
-
-[report.analysis]
-addresses = ["dmarc@*", "abuse@*", "postmaster@*"]
-forward = true
-#store = "%{BASE_PATH}%/incoming"
+#[report.analysis]
+#addresses = ["dmarc@*", "abuse@*", "postmaster@*"]
+#forward = true
+##store = "%{BASE_PATH}%/incoming"
 
 [report.dsn]
 from-name = "Mail Delivery Subsystem"
@@ -1510,6 +1582,50 @@ EOF
             :
         fi
     }
+}
+
+dkim() {
+    case "${1,,}" in
+        "generate" )
+            ## Usage generate <selector> <domainname> <type> <rsa_keysize>
+            if [ -z "${4}" ] ; then return 3; fi
+            mkdir -p "${DATA_PATH}"/dkim ## TODO - maybe bootstrap_filesystem function
+            chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/dkim ## TODO - maybe bootstrap_filesystem function
+
+            local _dkim_selector=${2}
+            local _dkim_domain=${3}
+            local _dkim_type=${4:-"${DKIM_TYPE}"}
+            local _dkim_key_size=${5:-"${DKIM_RSA_KEY_SIZE}"}
+
+            if [ -f "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key ] || [ -f "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert ] || [ -f "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".readme ] ; then
+                return 99
+            fi
+
+            case "${_dkim_type,,}" in
+                ed25519 )
+                    openssl genpkey -algorithm ed25519 -out "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key
+                    openssl pkey -in "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key -pubout -outform der | tail -c +13 | openssl base64 -A > "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert
+                ;;
+                rsa )
+                    openssl genrsa -out "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key ${_dkim_key_size}
+                    openssl rsa -in "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key -pubout -outform der | openssl base64 -A > "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert
+                ;;
+            esac
+
+            cat <<EOF > "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".readme
+DKIM Selector: ${_dkim_selector}
+Domain: ${_dkim_domain/./_}
+
+This record was generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S %Z')
+Add the following DNS records to your domain in order to enable DKIM, SPF and DMARC:
+
+${_dkim_selector}._domainkey.${_dkim_domain/./_}. IN TXT "v=DKIM1; k=${DKIM_TYPE,,}; p=$(cat "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert)"
+${_dkim_domain/./_}. IN TXT "v=spf1 a:${SERVER_NAME}.${_dkim_domain/./_} mx -all ra=postmaster"
+${SERVER_NAME}.${_dkim_domain/./_}. IN TXT "v=spf1 a -all ra=postmaster"
+_dmarc.${_dkim_domain/./_}. IN TXT "v=DMARC1; p=none; rua=mailto:postmaster@${_dkim_domain/./_}; ruf=mailto:postmaster@${_dkim_domain/./_}"
+EOF
+        ;;
+    esac
 }
 
 setup_container_mode() {
