@@ -708,14 +708,14 @@ configure_server() {
         ## TODO Add ability to take environment variable for custom additions
         ## TODO Check to see if newer files override older files configuration
         cat <<EOF > "${config_dir}"/"${config_file}"
-##########################################################
+##################################################
 # Stalwart configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+##################################################
 
 [include]
 files = [
-$(for config_file in $(echo ${config_files} | tr "," ",\n") ; do echo "          ${config_file}" ; done)
+$(for config_file in $(echo ${config_files} | tr "," "\",\n") ; do echo "          \"${config_file}," ; done)
         ]
 
 EOF
@@ -1796,8 +1796,9 @@ toml_block() {
                     block_data="[$(echo $block_name)]\n"
                 fi
                 set +x
-                block_data+="$(echo -e "${block_key} = ${block_value_blanket}${block_value}${block_value_blanket}\n")"
-
+                block_data+="$(echo -e "${block_key} = ${block_value_blanket_pre}${block_value}${block_value_blanket_post}\n")"
+                unset block_value_blanket_pre
+                unset block_value_blanket_post
 
                 #block_data=$(echo "${block_data}" | sed "/\[.*\]/d" | sed "1s/^/\[${block_name}\]\\n/" | sed "/^$/d")
                 #block_data=$(echo "${block_data}" | sed "/\[.*\]/d" | sed "1s/^/ \\n/" | sed "/^$/d")
