@@ -225,8 +225,8 @@ configure_common() {
             toml_block add server.run-as user ${SERVER_USER}
             toml_block add server.run-as group ${SERVER_GROUP}
 
-            toml_block add server.socket nodelay ${SERVER_SOCKET_NODELAY}
-            toml_block add server.socket reuse-addr ${SERVER_SOCKET_REUSE_ADDR}
+            toml_block add server.socket nodelay ${SERVER_SOCKET_NODELAY,,}
+            toml_block add server.socket reuse-addr ${SERVER_SOCKET_REUSE_ADDR,,}
             toml_block add server.socket backlog ${SERVER_SOCKET_BACKLOG}
             toml_block add global shared-map quotes "${GLOBAL_SHARED_MAP}"
 
@@ -236,13 +236,13 @@ configure_common() {
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(echo -e ${block_server})
+$(toml_block show "${block_server}")
 
-$(echo -e ${block_server_run_as})
+$(toml_block show "${block_server_run_as}")
 
-$(echo -e ${block_server_socket})
+$(toml_block show "${block_server_socket}")
 
-$(echo -e ${block_global})
+$(toml_block show "${block_global}")
 
 EOF
             sed -i 'N;/^\n$/D;P;D;' "${config_dir}"/"${config_file}"
@@ -313,23 +313,23 @@ EOF
 # Sieve untrusted runtime configuration
 #############################################
 
-$(echo -e ${block_sieve_untrusted})
+$(toml_block show "${block_sieve_untrusted}")
 
-$(echo -e ${block_sieve_untrusted_limits})
+$(toml_block show "${block_sieve_untrusted_limits}")
 
-$(echo -e ${block_sieve_untrusted_vacation})
+$(toml_block show "${block_sieve_untrusted_vacation}")
 
-$(echo -e ${block_sieve_untrusted_default_expiry})
+$(toml_block show "${block_sieve_untrusted_default_expiry}")
 
 #############################################
 # Sieve trusted runtime configuration
 #############################################
 
-$(echo -e ${block_sieve_trusted})
+$(toml_block show "${block_sieve_trusted}")
 
-$(echo -e ${block_sieve_trusted_limits})
+$(toml_block show "${block_sieve_trusted_limits}")
 
-$(echo -e ${block_sieve_trusted_scripts})
+$(toml_block show "${block_sieve_trusted_scripts}")
 
 #[sieve.untrusted]
 #disable-capabilities = []
@@ -413,11 +413,11 @@ EOF
             certificates "${TLS_DEFAULT_CERT_FILE}"
 
             ## Todo need variables
-            toml_block add server.tls enable "${TLS_ENABLE}"
-            toml_block add server.tls implicit "${TLS_IMPLICIT}"
+            toml_block add server.tls enable "${TLS_ENABLE,,}"
+            toml_block add server.tls implicit "${TLS_IMPLICIT,,}"
             toml_block add server.tls timeout quotes "${TLS_TIMEOUT}"
             toml_block add server.tls certificate quotes "${TLS_CERTIFICATE}"
-            toml_block add server.tls ignore-client-order "${TLS_IGNORE_CLIENT_ORDER}"
+            toml_block add server.tls ignore-client-order "${TLS_IGNORE_CLIENT_ORDER,,}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -425,7 +425,7 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(echo -e ${block_server_tls})
+$(toml_block show "${block_server_tls}")
 
 [certificate."default"]
 cert = "file:///${TLS_DEFAULT_CERT_FILE}"
@@ -462,7 +462,7 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(echo -e ${block_global_tracing})
+$(toml_block show "${block_global_tracing}")
 
 EOF
         else
@@ -470,9 +470,9 @@ EOF
         fi
     }
 
-    if var_true ${ENABLE_SIEVE} ; then common_configure_sieve; fi
+    if var_true "${ENABLE_SIEVE}" ; then common_configure_sieve; fi
     common_configure_server
-    if var_true ${ENABLE_TLS} ; then common_configure_tls; fi
+    if var_true "${ENABLE_TLS}" ; then common_configure_tls; fi
     common_configure_tracing
 }
 
@@ -541,21 +541,21 @@ configure_directory() {
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(echo -e ${block_directory_default})
+$(toml_block show "${block_directory_default}")
 
-$(echo -e ${block_directory_default_bind})
+$(toml_block show "${block_directory_default_bind}")
 
-$(echo -e ${block_directory_default_cache})
+$(toml_block show "${block_directory_default_cache}")
 
-$(echo -e ${block_directory_default_options})
+$(toml_block show "${block_directory_default_options}")
 
-$(echo -e ${block_directory_default_pool})
+$(toml_block show "${block_directory_default_pool}")
 
-$(echo -e ${block_directory_default_filter})
+$(toml_block show "${block_directory_default_filter}")
 
-$(echo -e ${block_directory_default_object_classes})
+$(toml_block show "${block_directory_default_object_classes}")
 
-$(echo -e ${block_directory_default_attributes})
+$(toml_block show "${block_directory_default_attributes}")
 
 EOF
         else
@@ -739,6 +739,7 @@ configure_smtp() {
     local config_file
 
     config_dir="${CONFIG_PATH}/smtp"
+    sudo -u "${SERVER_USER}" mkdir -p "${config_dir}"
 
     smtp_configure_auth() {
         config_file="auth.toml"
@@ -765,15 +766,15 @@ configure_smtp() {
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(echo -e ${block_auth_iprev})
+$(toml_block show "${block_auth_iprev}")
 
-$(echo -e ${block_auth_dkim})
+$(toml_block show "${block_auth_dkim}")
 
-$(echo -e ${block_auth_spf_verify})
+$(toml_block show "${block_auth_spf_verify}")
 
-$(echo -e ${block_auth_arc})
+$(toml_block show "${block_auth_arc}")
 
-$(echo -e ${block_auth_dmarc})
+$(toml_block show "${block_auth_dmarc}")
 
 EOF
         else
@@ -785,41 +786,15 @@ EOF
         config_file="dkim.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            print_notice "Configuring DKIM"
-   		    if [ ! -f "${DATA_PATH}"/dkim/"${_dkim_selector}".key ] ; then
-   		    	sudo -u "${SERVER_USER}":"${SERVER_GROUP}" rspamadm dkim_keygen -b "${DKIM_KEY_SIZE}" -s "${_dkim_selector}" -k "${DATA_PATH}"/dkim/"${_dkim_selector}".key | sudo -u "${SERVER_USER}":"${SERVER_GROUP}" tee -a "${DATA_PATH_DATA_LOCATION}"/dkim/"${_dkim_selector}"-dns.txt > /dev/null
-   		    	echo "Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S %Z')" >> "${DATA_PATH}"/dkim/"${_dkim_selector}"-dns.txt
-                sed '1 s|^|local key = [[|' "${DATA_PATH}"/dkim/"${_dkim_selector}".key | sed 's|-----END PRIVATE KEY-----|-----END PRIVATE KEY-----]]|g' > "${DATA_PATH}"/dkim/"${_dkim_selector}".redis
-                print_notice "***"
-   		    	print_notice "DKIM: Key generated - You must add this entry to your Nameserver to complete the step"
-   		    	cat "${DATA_PATH}"/dkim/"${_dkim_selector}"-dns.txt
-   		    	print_notice "It can also be found at ${DATA_PATH}/dkim/${_dkim_selector}-dns.txt"
-   		    	print_notice "***"
-   		    	chmod 440 "${DATA_PATH}"/dkim/*
-   		    fi
+            print_debug "Configuring DKIM"
 
             dkim_domains=$(set -o posix ; set | printenv | sort | grep -c "^DKIM.*_DOMAIN=")
             for (( dkim_pair = 01; dkim_pair <= dkim_domains; dkim_pair++ )); do
                 dkim_domain=DKIM${dkim_pair}_DOMAIN
                 dkim_selector=DKIM${dkim_pair}_SELECTOR
-
-                if [ "${!dkim_domain}" != "" ] ; then
-                    if [ ! -f "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".key ] ; then
-                        sudo -u rspamd rspamadm dkim_keygen -b "${DKIM_KEY_SIZE}" -s "${!dkim_selector}" -k "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".key > "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".dns.txt
-                        echo "Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S %Z')" >> "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".dns.txt
-                        sed '1 s|^|local key = [[|' "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".key | sed 's|-----END PRIVATE KEY-----|-----END PRIVATE KEY-----]]|g' > "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".redis
-                        print_notice "***"
-                        print_notice "DKIM: Key generated for '${!dkim_domain}' with selector '${!dkim_selector}' - You must add this entry to your Nameserver to complete the step"
-                        cat "${DATA_PATH}"/dkim/"${!dkim_domain}"-"${!dkim_selector}".dns.txt
-                        print_notice "It can also be found at '${DATA_PATH}/dkim/${!dkim_domain}-${!dkim_selector}.dns.txt'"
-                        print_notice "***"
-                        chmod 440 "${DATA_PATH}"/dkim/*
-                    fi
-                    dkim_domains=$(echo "${_dkim_domains}" ; cat<<EOF
-domain { ${!dkim_domain} { path = "${DATA_PATH}/dkim/${!dkim_domain}-${!dkim_selector}.key"; selector = "${!dkim_selector}"; }}
-EOF
-                    )
-                fi
+                dkim_type=DKIM${dkim_pair}_TYPE
+                dkim_keysize=DKIM${dkim_pair}_KEY_SIZE
+                dkim generate "${!dkim_selector}" "${!dkim_domain}" "${!dkim_type}" ${!dkim_keysize}
             done
 
             cat <<EOF > "${config_dir}"/"${config_file}"
@@ -840,11 +815,11 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
 
             toml_block add server.listener.dynamic smtp bind array "${SMTP_LISTENER_SMTP_BIND}"
-            toml_block add server.listener.dynamic smtp greeing quotes "${SMTP_LISTENER_SMTP_GREETING}"
+            toml_block add server.listener.dynamic smtp greeting quotes "${SMTP_LISTENER_SMTP_GREETING}"
             toml_block add server.listener.dynamic smtp protocol quotes "${SMTP_LISTENER_SMTP_PROTOCOL}"
 
             toml_block add server.listener.dynamic submission bind array "${SMTP_LISTENER_SUBMISSION_BIND}"
-            toml_block add server.listener.dynamic submission greeing quotes "${SMTP_LISTENER_SUBMISSION_GREETING}"
+            toml_block add server.listener.dynamic submission greeting quotes "${SMTP_LISTENER_SUBMISSION_GREETING}"
             toml_block add server.listener.dynamic submission quotes protocol "${SMTP_LISTENER_SUBMISSION_PROTOCOL}"
 
             toml_block add server.listener.dynamic submissions bind array "${SMTP_LISTENER_SUBMISSIONS_BIND}"
@@ -852,7 +827,7 @@ EOF
             toml_block add server.listener.dynamic submissions protocol quotes "${SMTP_LISTENER_SUBMISSIONS_PROTOCOL,,}"
             toml_block add server.listener.dynamic submissions tls.implicit "${SMTP_LISTENER_SUBMISSIONS_TLS_IMPLICIT,,}"
 
-            toml_block add server.listener.dynamic management bind array "['${SMTP_LISTENER_MANAGEMENT_BIND}']"
+            toml_block add server.listener.dynamic management bind array "${SMTP_LISTENER_MANAGEMENT_BIND}"
             toml_block add server.listener.dynamic management protocol quotes "${SMTP_LISTENER_MANAGEMENT_PROTOCOL,,}"
 
             toml_block add management directory quotes "${SMTP_MANAGEMENT_DIRECTORY}"
@@ -863,15 +838,15 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(echo -e ${block_server_listener_smtp})
+$(toml_block show "${block_server_listener_smtp}")
 
-$(echo -e ${block_server_listener_submission})
+$(toml_block show "${block_server_listener_submission}")
 
-$(echo -e ${block_server_listener_submissions})
+$(toml_block show "${block_server_listener_submissions}")
 
-$(echo -e ${block_server_listener_management})
+$(toml_block show "${block_server_listener_management}")
 
-$(echo -e ${block_managemnet})
+$(toml_block show "${block_managemnet}")
 
 #[server.listener."smtp"]
 #bind = ["[::]:25"]
@@ -930,13 +905,13 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(echo -e ${block_data_milter_rspamd})
+$(toml_block show "${block_data_milter_rspamd}")
 
-$(echo -e ${block_data_milter_rspamd_timeout})
+$(toml_block show "${block_data_milter_rspamd_timeout}")
 
-$(echo -e ${block_data_milter_rspamd_options})
+$(toml_block show "${block_data_milter_rspamd_options}")
 
-$(echo -e ${block_data_pipe_spam_assassin})
+$(toml_block show "${block_data_pipe_spam_assassin}")
 
 #[session.data.milter."rspamd"]
 #enable = [ { if = "listener", eq = "smtp", then = true },
@@ -993,14 +968,14 @@ EOF
             toml_block add queue.outbound.limits mx "${SMTP_QUEUE_OUTBOUND_LIMITS_MX}"
             toml_block add queue.outbound.limits multihomed "${SMTP_QUEUE_OUTBOUND_LIMITS_MULTIHOMED}"
 
-            toml_block add queue.outbound.timeouts quotes connect "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_CONNECT}"
-            toml_block add queue.outbound.timeouts quotes greeting "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_GREETING}"
-            toml_block add queue.outbound.timeouts quotes tls "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_TLS}"
-            toml_block add queue.outbound.timeouts quotes ehlo "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_EHLO}"
-            toml_block add queue.outbound.timeouts quotes mail-from "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_MAIL_FROM}"
-            toml_block add queue.outbound.timeouts quotes rcpt-to "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_RCPT_TO}"
-            toml_block add queue.outbound.timeouts quotes data "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_DATA}"
-            toml_block add queue.outbound.timeouts quotes mta-sts "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_MTA_STS}"
+            toml_block add queue.outbound.timeouts connect quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_CONNECT}"
+            toml_block add queue.outbound.timeouts greeting quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_GREETING}"
+            toml_block add queue.outbound.timeouts tls quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_TLS}"
+            toml_block add queue.outbound.timeouts ehlo quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_EHLO}"
+            toml_block add queue.outbound.timeouts mail-from quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_MAIL_FROM}"
+            toml_block add queue.outbound.timeouts rcpt-to quotes"${SMTP_QUEUE_OUTBOUND_TIMEOUTS_RCPT_TO}"
+            toml_block add queue.outbound.timeouts data quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_DATA}"
+            toml_block add queue.outbound.timeouts mta-sts quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_MTA_STS}"
 
             ## TODO DOUBLE BRACKETS
             toml_block add queue.quota match "${SMTP_QUEUE_QUOTA_MATCH}"
@@ -1018,25 +993,25 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(echo -e ${block_queue})
+$(toml_block show "${block_queue}")
 
-$(echo -e ${block_queue_schedule})
+$(toml_block show "${block_queue_schedule}")
 
-$(echo -e ${block_queue_outbound})
+$(toml_block show "${block_queue_outbound}")
 
-$(echo -e ${block_queue_outbound_tls})
+$(toml_block show "${block_queue_outbound_tls}")
 
-$(echo -e ${block_queue_outbound_source_ip})
+$(toml_block show "${block_queue_outbound_source_ip}")
 
-$(echo -e ${block_queue_outbound_limits})
+$(toml_block show "${block_queue_outbound_limits}")
 
-$(echo -e ${block_queue_outbound_timeouts})
-
-### TODO Double Brackets
-$(echo -e ${block_queue_quota})
+$(toml_block show "${block_queue_outbound_timeouts}")
 
 ### TODO Double Brackets
-$(echo -e ${block_queue_throttle})
+$(toml_block show "${block_queue_quota}")
+
+### TODO Double Brackets
+$(toml_block show "${block_queue_throttle}")
 
 
 #[queue]
@@ -1117,11 +1092,11 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(echo -e ${block_remote_local})
+$(toml_block show "${block_remote_local}")
 
-$(echo -e ${block_remote_local_tls})
+$(toml_block show "${block_remote_local_tls}")
 
-$(echo -e ${block_remote_local_auth})
+$(toml_block show "${block_remote_local_auth}")
 
 ##address = "127.0.0.1"
 ##port = 11200
@@ -1256,11 +1231,11 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
 
             toml_block add resolver type quotes "${SMTP_RESOLVER_TYPE}"
-            toml_block add resolver preserve-intermediates ${SMTP_RESOLVER_PRESERVE_INTERMEDIATES}
+            toml_block add resolver preserve-intermediates ${SMTP_RESOLVER_PRESERVE_INTERMEDIATES,,}
             toml_block add resolver concurrency ${SMTP_RESOLVER_CONCURRENCY}
             toml_block add resolver timeout quotes "${SMTP_RESOLVER_TIMEOUT}"
             toml_block add resolver attempts ${SMTP_RESOLVER_ATTEMPTS}
-            toml_block add resolver try-tcp-on-error ${SMTP_RESOLVER_TRY_TCP_ON_ERROR}
+            toml_block add resolver try-tcp-on-error ${SMTP_RESOLVER_TRY_TCP_ON_ERROR,,}
             ## Todo Public Suffix is bad and needs to support multiple values / array
             toml_block add resolver public-suffix array "${SMTP_RESOLVER_PUBLIC_SUFFIX}"
 
@@ -1292,27 +1267,25 @@ EOF
         config_file="session.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            cat <<EOF > "${config_dir}"/"${config_file}"
-
             toml_block add session timeout quotes "${SMTP_SESSION_TIMEOUT}"
             toml_block add session transfer-limit "${SMTP_SESSION_TRANSFER_LIMIT}"
             toml_block add session duration quotes "${SMTP_SESSION_DURATION}"
 
-            toml_block add session.connect script quotes "${SMTP_SESSION_CONNECT_SCRIPT}"
+            toml_block add session.connect script quotes "${SMTP_SESSION_CONNECT_SCRIPT}" ## BLANK
 
-            toml_block add session.ehlo require "${SMTP_SESSION_EHLO_REQUIRE}"
+            toml_block add session.ehlo require "${SMTP_SESSION_EHLO_REQUIRE,,}"
             toml_block add session.ehlo reject-non-fqdn array "${SMTP_SESION_EHLO_REJECT_NON_FQDN}"
-            toml_block add session.ehlo script quotes "${SMTP_SESSION_EHLO_SCRIPT}"
+            toml_block add session.ehlo script quotes "${SMTP_SESSION_EHLO_SCRIPT}" ## BLANK
 
-            toml_block add session.extensions pipelining ${SMTP_SESSION_EXTENSIONS_PIPELINING}
-            toml_block add session.extensions chunking ${SMTP_SESSION_EXTENSIONS_CHUNKING}
-            toml_block add session.extensions requiretls ${SMTP_SESSION_EXTENSIONS_REQUIRETLS}
+            toml_block add session.extensions pipelining ${SMTP_SESSION_EXTENSIONS_PIPELINING,,}
+            toml_block add session.extensions chunking ${SMTP_SESSION_EXTENSIONS_CHUNKING,,}
+            toml_block add session.extensions requiretls ${SMTP_SESSION_EXTENSIONS_REQUIRETLS,,}
             toml_block add session.extensions nosoliciting quotes "${SMTP_SESSION_EXTENSIONS_NO_SOLICITING}"
-            toml_block add session.extensions dsn array "${SMTP_SESSION_EXTENSTIONS_DSN}"
-            toml_block add session.extensions expn array "${SMTP_SESSION_EXTENSTIONS_EXPN}"
-            toml_block add session.extensions vrfy array "${SMTP_SESSION_EXTENSTIONS_VRFY}"
-            toml_block add session.extensions future-release array "${SMTP_SESSION_EXTENSTIONS_FUTURE_RELEASE}"
-            toml_block add session.extensions delivery-by array "${SMTP_SESSION_EXTENSTIONS_DELIVER_BY}"
+            toml_block add session.extensions dsn array "${SMTP_SESSION_EXTENSTIONS_DSN}" ## BLANK
+            toml_block add session.extensions expn array "${SMTP_SESSION_EXTENSTIONS_EXPN}" ## BLANK
+            toml_block add session.extensions vrfy array "${SMTP_SESSION_EXTENSTIONS_VRFY}" ## BLANK - Are we allowed to stay blank
+            toml_block add session.extensions future-release array "${SMTP_SESSION_EXTENSTIONS_FUTURE_RELEASE}" ## BLANK
+            toml_block add session.extensions delivery-by array "${SMTP_SESSION_EXTENSTIONS_DELIVER_BY}" ## BLANK
             toml_block add session.extensions mt-priority array "${SMTP_SESSION_EXTENSIONS_MT_PRIORITY}"
 
             toml_block add session.auth mechanisms array "${SMTP_SESSION_AUTH_MECHANISMS}"
@@ -1323,25 +1296,25 @@ EOF
             toml_block add session.auth.errors total ${SMTP_SESSSION_AUTH_ERRORS_TOTAL}
             toml_block add session.auth.errors wait quotes "${SMTP_SESSION_AUTH_ERRORS_WAIT}"
 
-            toml_block add session.mail script quotes "${SMTP_SESSION_MAIL_SCRIPT}"
-            toml_block add session.mail rewrite "${SMTP_SESSION_MAIL_REWRITE}"
+            toml_block add session.mail script quotes "${SMTP_SESSION_MAIL_SCRIPT}" ## BLANK
+            toml_block add session.mail rewrite "${SMTP_SESSION_MAIL_REWRITE}" ## BLANK
 
-            toml_block add session.rcpt script quotes "${SMTP_SESSION_RCPT_SCRIPT}"
-            toml_block add session.rcpt relay array "${SMTP_SESSION_RCPT_RELAY}"
-            toml_block add session.rcpt rewrite "${SMTP_SESSION_RCPT_REWRITE}"
-            toml_block add session.rcpt max-recipients ${SMTP_SESSION_RCPT_MAX_RECIPIENTS}
-            toml_block add session.rcpt directory quotes "${SMTP_SESSION_DIRECTORY}"
+            toml_block add session.rcpt script quotes "${SMTP_SESSION_RCPT_SCRIPT}"  ## BLANK
+            toml_block add session.rcpt relay array "${SMTP_SESSION_RCPT_RELAY}"  ## BLANK
+            toml_block add session.rcpt rewrite "${SMTP_SESSION_RCPT_REWRITE}"  ## BLANK
+            toml_block add session.rcpt max-recipients ${SMTP_SESSION_RCPT_MAX_RECIPIENTS}  ## BLANK
+            toml_block add session.rcpt directory quotes "${SMTP_SESSION_DIRECTORY}"  ## BLANK
 
-            toml_block add session.rcpt.errors total ${SMTP_SESSION_RCPT_ERRORS_TOTAL}
-            toml_block add session.rcpt.errors wait quotes "${SMTP_SESSION_RCPT_ERRORS_WAIT}"
+            toml_block add session.rcpt.errors total ${SMTP_SESSION_RCPT_ERRORS_TOTAL} ## BLANK
+            toml_block add session.rcpt.errors wait quotes "${SMTP_SESSION_RCPT_ERRORS_WAIT}" ##BLANK
 
             ## TODO Look these over these 1 look off.
-            toml_block add session.data quotes "${SMTP_SESSION_DATA_}"
+            toml_block add session.data quotes "${SMTP_SESSION_DATA_}" ## Problem
 
             ## TODO Look these over these 3 look off.
-            toml_block add session.data.limits messages ${SMTP_SESSION_DATA_LIMITS_MESSAGES}
-            toml_block add session.data.limits size ${SMTP_SESSION_DATA_LIMITS_SIZE}
-            toml_block add session.data.limits received-headers ${SMTP_SESSION_DATA_LIMITS_RECEIVED_HEADERS}
+            toml_block add session.data.limits messages ${SMTP_SESSION_DATA_LIMITS_MESSAGES} ## BLANK
+            toml_block add session.data.limits size ${SMTP_SESSION_DATA_LIMITS_SIZE} ## BLANK
+            toml_block add session.data.limits received-headers ${SMTP_SESSION_DATA_LIMITS_RECEIVED_HEADERS} ##BLANK
 
             ## TODO Need to support multiple blocks with same name
             #toml_block add session.throttle quotes "${SMTP_SESSION_THROTTLE_}"
@@ -1352,7 +1325,7 @@ EOF
             #toml_block add session.throttle quotes "${SMTP_SESSION_THROTTLE_}"
 
 
-
+            cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
 # SMTP configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
@@ -1362,29 +1335,29 @@ EOF
 # SMTP inbound session configuration
 #############################################
 
-$(echo -e ${block_session})
+$(toml_block show "${block_session}")
 
-$(echo -e ${block_session_connect})
+$(toml_block show "${block_session_connect}")
 
-$(echo -e ${block_session_ehlo})
+$(toml_block show "${block_session_ehlo}")
 
-$(echo -e ${block_session_extensions})
+$(toml_block show "${block_session_extensions}")
 
-$(echo -e ${block_session_auth})
+$(toml_block show "${block_session_auth}")
 
-$(echo -e ${block_session_errors})
+$(toml_block show "${block_session_errors}")
 
-$(echo -e ${block_session_mail})
+$(toml_block show "${block_session_mail}")
 
-$(echo -e ${block_session_rcpt})
+$(toml_block show "${block_session_rcpt}")
 
-$(echo -e ${block_session_rcpt_errors})
+$(toml_block show "${block_session_rcpt_errors}")
 
-$(echo -e ${block_session_data})
+$(toml_block show "${block_session_data}")
 
-$(echo -e ${block_session_data_limits})
+$(toml_block show "${block_session_data_limits}")
 
-$(echo -e ${block_session_data_add_headers})
+$(toml_block show "${block_session_data_add_headers}")
 
 ## TODO Support multiple blocks
 [[session.throttle]]
@@ -1419,7 +1392,7 @@ EOF
             toml_block add signature.dynamic rsa third-party-algo quotes "${SMTP_SIGNATURE_RSA_THIRD_PARTY_ALGO}"
             toml_block add signature.dynamic rsa auid quotes "${SMTP_SIGNATURE_RSA_AUID}"
             toml_block add signature.dynamic rsa set-body-length "${SMTP_SIGNATURE_RSA_SET_BODY_LENGTH}"
-            toml_block add signature.dynamic rsa report "${SMTP_SIGNATURE_RSA_REPORT}"
+            toml_block add signature.dynamic rsa report "${SMTP_SIGNATURE_RSA_REPORT,,}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -1427,7 +1400,7 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(echo -e ${block_signature_rsa})
+$(toml_block show "${block_signature_rsa}")
 
 #[signature."rsa"]
 ##public-key = "file://%{BASE_PATH}%/etc/dkim/%{DEFAULT_DOMAIN}%.cert"
@@ -1582,6 +1555,18 @@ EOF
             :
         fi
     }
+
+    if var_true ${SMTP_ENABLE_AUTH} ; then smtp_configure_auth; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_DKIM} ; then smtp_configure_dkim; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_LISTENER} ; then smtp_configure_listener; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_MILTER} ; then smtp_configure_milter; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_QUEUE} ; then smtp_configure_queue; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_REMOTE} ; then smtp_configure_remote; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_REPORT} ; then smtp_configure_report; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_RESOLVER} ; then smtp_configure_resolver; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_SESSION} ; then smtp_configure_session; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_SIGNATURE} ; then smtp_configure_signature; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_SPAMFILTER} ; then smtp_configure_spamfilter; fi ## Define what this is for
 }
 
 dkim() {
@@ -1603,12 +1588,12 @@ dkim() {
 
             case "${_dkim_type,,}" in
                 ed25519 )
-                    openssl genpkey -algorithm ed25519 -out "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key
-                    openssl pkey -in "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key -pubout -outform der | tail -c +13 | openssl base64 -A > "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert
+                    sudo -u "${SERVER_USER}" openssl genpkey -algorithm ed25519 -out "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key
+                    sudo -u "${SERVER_USER}" openssl pkey -in "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key -pubout -outform der | tail -c +13 | openssl base64 -A > "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert
                 ;;
                 rsa )
-                    openssl genrsa -out "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key ${_dkim_key_size}
-                    openssl rsa -in "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key -pubout -outform der | openssl base64 -A > "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert
+                    sudo -u "${SERVER_USER}" openssl genrsa -out "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key ${_dkim_key_size}
+                    sudo -u "${SERVER_USER}" openssl rsa -in "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key -pubout -outform der | openssl base64 -A > "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert
                 ;;
             esac
 
@@ -1708,7 +1693,7 @@ toml_block() {
     ## toml_block add blockname.dynamic.foobar10.dynamic2 test1 test2 blockkey10 blockvalue10
     ## echo "${block_blockname_test1_foobar10_test2}"
     ##  cat <<EOF > /tmp/foo.txt
-    #$(echo -e ${block_blockname})
+    #$(toml_block show "${block_blockname}")
     #EOF
     ##
     ## Any periods or hyphens auto converted to underscore
@@ -1762,11 +1747,19 @@ toml_block() {
                     array | brackets)
                         block_value_blanket_pre="["
                         block_value_blanket_post="]"
+                        shift 3
+                        block_value=$@
                     ;;
                     blank )
                         block_value_blanket_pre=\"
                         block_value_blanket_post=\"
                         block_value=
+                    ;;
+                    doublearray | doublebrackets)
+                        block_value_blanket_pre="[["
+                        block_value_blanket_post="]]"
+                        shift 3
+                        block_value=$@
                     ;;
                     doublequote | double | quotes )
                         block_value_blanket_pre=\"
@@ -1791,12 +1784,14 @@ toml_block() {
                         block_value=$@
                     ;;
                 esac
-                #set -x
+
                 if ! [ -v block_$block_name_sanitized ]; then
                     block_data="[$(echo $block_name)]\n"
                 fi
-                set +x
-                block_data+="$(echo -e "${block_key} = ${block_value_blanket_pre}${block_value}${block_value_blanket_post}\n")"
+
+                if [ -n "${block_value}" ]; then
+                    block_data+="$(echo -e "${block_key} = ${block_value_blanket_pre}${block_value}${block_value_blanket_post}\n")"
+                fi
                 unset block_value_blanket_pre
                 unset block_value_blanket_post
 
@@ -1806,8 +1801,12 @@ toml_block() {
 
             fi
             export block_$block_name_sanitized+="$block_data\n"
+
             #block_contents=block_$block_name_sanitized
             #echo ${!block_contents}
+        ;;
+        show )
+            echo -e "${2}" | sed '/^[[:space:]]*$/d'
         ;;
     esac
 }
