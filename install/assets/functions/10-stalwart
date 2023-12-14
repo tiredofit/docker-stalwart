@@ -119,9 +119,9 @@ EOF
             fi
 
             if var_true "${TLS_CREATE_CA}" ; then
-                if [ ! -f "${1%%.*}".cert ] ; then
+                if [ ! -f "${1%%.*}".crt ] ; then
                     print_debug "[certificates | create_certificate] Signing Certificate: ${1}"
-                    silent eval "${ssl_exec} ca -batch -config $(dirname "${TLS_CA_CERT_FILE}")/${CA_NAME}.conf -notext -in ${1%%.*}.csr -out ${1%%.*}.crt"
+                    silent eval "${ssl_exec} ca -batch -config $(dirname "${TLS_CA_CERT_FILE}")/${TLS_CA_NAME}.conf -notext -in ${1%%.*}.csr -out ${1%%.*}.crt"
                     rm -rf "$(tail -n 1 "$(dirname "${TLS_CA_CERT_FILE}")"/certindex | awk '{print $3}').pem"
                     rm -rf "${1%%.*}".csr
                 fi
@@ -1427,128 +1427,219 @@ EOF
         config_file="spamfilter.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+
+            toml_block add directory.dynamic spamdb type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_TYPE}"
+            toml_block add directory.dynamic spamdb address quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_ADDRESS}"
+
+            toml_block add directory.dynamic.pool spamdb max-connections "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_POOL_MAX_CONNECTIONS}"
+            toml_block add directory.dynamic.pool spamdb min-connections "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_POOL_MIN_CONNECTIONS}"
+            toml_block add directory.dynamic.pool spamdb idle-timeout quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_POOL_IDLE_TIMEOUT}"
+
+            toml_block add directory.dynamic.lookup spamdb token-insert quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_TOKEN_INSERT}"
+            toml_block add directory.dynamic.lookup spamdb token-lookup quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_TOKEN_LOOKUP}"
+            toml_block add directory.dynamic.lookup spamdb id-insert quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_ID_INSERT}"
+            toml_block add directory.dynamic.lookup spamdb id-lookup quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_ID_LOOKUP}"
+            toml_block add directory.dynamic.lookup spamdb reputation-insert quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_REPUTATION_INSERT}"
+            toml_block add directory.dynamic.lookup spamdb reputation-lookup quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_REPUTATION_LOOKUP}"
+
+            toml_block add directory.dynamic.schedule spamdb query array "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_SCHEDULE_QUERY}"
+            toml_block add directory.dynamic.schedule spamdb frequency quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_SCHEDULE_FREQUENCY}"
+
+            toml_block add directory.dynamic spam type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_TYPE}"
+
+            toml_block add directory.dynamic.lookup.dynamic2 spam free-domains type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_TYPE}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam free-domains comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_COMMENT}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam free-domains values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_VALUES}"
+
+            toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEDOMAINS_TYPE}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEDOMAINS_COMMENT}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPPSABLEDOMAINS_VALUES}"
+
+            toml_block add directory.dynamic.lookup.dynamic2 spam redirectors type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_TYPE}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam redirectors comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_COMMENT}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam redirectors values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_VALUES}"
+
+            toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_TYPE}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_COMMENT}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_VALUES}"
+
+            toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_TYPE}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_COMMENT}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_VALUES}"
+
+            toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_TYPE}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_COMMENT}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_VALUES}"
+
+            toml_block add directory.dynamic.lookup.dynamic2 spam mime-types type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_TYPE}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam mime-types comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_COMMENT}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam mime-types values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_VALUES}" # TODO Parse an array properly
+
+            toml_block add directory.dynamic.lookup.dynamic2 spam trap-address type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_TYPE}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam trap-address comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_COMMENT}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam trap-address values quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_VALUES}" ## TODO Turn into Array
+
+            toml_block add directory.dynamic.lookup.dynamic2 spam scores type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_TYPE}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam scores values quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_VALUES}"
+
+            toml_block add sieve.trusted.scripts spam-filter array "${SIEVE_TRUSTED_SCRIPTS_SPAMFILTER}"
+            toml_block add sieve.trusted.scripts track-repllies array "${SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES}"
+            toml_block add sieve.trusted.scripts greylist array "${SIEVE_TRUSTED_SCRIPTS_GREYLIST}"
+
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
 # SMTP configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-#############################################
-# SMTP Spam & Phishing filter configuration
-#############################################
+$(toml_block show "${block_directory_spamdb}")
 
-[directory."spamdb"]
-type = "sql"
-address = "sqlite://%{BASE_PATH}%/data/spamfilter.sqlite3?mode=rwc"
+$(toml_block show "${block_directory_spamdb_pool}")
 
-[directory."spamdb".pool]
-max-connections = 10
-min-connections = 0
-idle-timeout = "5m"
+$(toml_block show "${block_directory_spamdb_lookup}")
 
-[directory."spamdb".lookup]
-token-insert = "INSERT INTO bayes_tokens (h1, h2, ws, wh) VALUES (?, ?, ?, ?)
-                ON CONFLICT(h1, h2)
-                DO UPDATE SET ws = ws + excluded.ws, wh = wh + excluded.wh"
-token-lookup = "SELECT ws, wh FROM bayes_tokens WHERE h1 = ? AND h2 = ?"
-id-insert = "INSERT INTO seen_ids (id, ttl) VALUES (?, datetime('now', ? || ' seconds'))"
-id-lookup = "SELECT 1 FROM seen_ids WHERE id = ? AND ttl > CURRENT_TIMESTAMP"
-reputation-insert = "INSERT INTO reputation (token, score, count, ttl) VALUES (?, ?, 1, datetime('now', '30 days'))
-                     ON CONFLICT(token)
-                     DO UPDATE SET score = (count + 1) * (excluded.score + 0.98 * score) / (0.98 * count + 1), count = count + 1, ttl = excluded.ttl"
-reputation-lookup = "SELECT score, count FROM reputation WHERE token = ?"
+$(toml_block show "${block_directory_spamdb_schedule}")
 
-[directory."spamdb".schedule]
-query = ["DELETE FROM seen_ids WHERE ttl < CURRENT_TIMESTAMP",
-         "DELETE FROM reputation WHERE ttl < CURRENT_TIMESTAMP"]
-frequency = "0 3 *"
+$(toml_block show "${block_directory_spam_lookup_free_domains}")
 
-[directory."spam"]
-type = "memory"
+$(toml_block show "${block_directory_spam_lookup_disposable_domains}")
 
-[directory."spam".lookup."free-domains"]
-type = "glob"
-comment = '#'
-values = ["https://get.stalw.art/resources/config/spamfilter/maps/domains_free.list",
-          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/domains_free.list"]
+$(toml_block show "${block_directory_spam_lookup_redirectors}")
 
-[directory."spam".lookup."disposable-domains"]
-type = "glob"
-comment = '#'
-values = ["https://get.stalw.art/resources/config/spamfilter/maps/domains_disposable.list",
-          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/domains_disposable.list"]
+$(toml_block show "${block_directory_spam_lookup_domains_allow}")
 
-[directory."spam".lookup."redirectors"]
-type = "glob"
-comment = '#'
-values = ["https://get.stalw.art/resources/config/spamfilter/maps/url_redirectors.list",
-          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/url_redirectors.list"]
+$(toml_block show "${block_directory_spam_lookup_dmarc_allow}")
 
-[directory."spam".lookup."domains-allow"]
-type = "glob"
-comment = '#'
-values = ["https://get.stalw.art/resources/config/spamfilter/maps/allow_domains.list",
-          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/allow_domains.list"]
+$(toml_block show "${block_directory_spam_lookup_spf_dkim_allow}")
 
-[directory."spam".lookup."dmarc-allow"]
-type = "glob"
-comment = '#'
-values = ["https://get.stalw.art/resources/config/spamfilter/maps/allow_dmarc.list",
-          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/allow_dmarc.list"]
+$(toml_block show "${block_directory_spam_lookup_mime_types}")
 
-[directory."spam".lookup."spf-dkim-allow"]
-type = "glob"
-comment = '#'
-values = ["https://get.stalw.art/resources/config/spamfilter/maps/allow_spf_dkim.list",
-          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/allow_spf_dkim.list"]
+$(toml_block show "${block_directory_spam_lookup_trap_address}")
 
-[directory."spam".lookup."mime-types"]
-type = "map"
-comment = '#'
-values = ["https://get.stalw.art/resources/config/spamfilter/maps/mime_types.map",
-          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/mime_types.map"]
+$(toml_block show "${block_directory_spam_lookup_scores}")
 
-[directory."spam".lookup."trap-address"]
-type = "glob"
-comment = '#'
-values = "file://%{BASE_PATH}%/etc/spamfilter/maps/spam_trap.list"
+$(toml_block show "${block_sieve_trusted_scripts_spam_filter}")
 
-[directory."spam".lookup."scores"]
-type = "map"
-values = "file://%{BASE_PATH}%/etc/spamfilter/maps/scores.map"
+$(toml_block show "${block_sieve_trusted_scripts_track_replies}")
 
-[sieve.trusted.scripts]
-spam-filter = ["file://%{BASE_PATH}%/etc/spamfilter/scripts/config.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/prelude.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/from.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/recipient.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/subject.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/replyto.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/date.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/messageid.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/received.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/headers.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/bounce.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/html.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/mime.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/dmarc.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/ip.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/helo.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/replies_in.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/spamtrap.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/bayes_classify.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/url.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/rbl.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/pyzor.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/composites.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/scores.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/reputation.sieve",
-               "file://%{BASE_PATH}%/etc/spamfilter/scripts/epilogue.sieve"]
+$(toml_block show "${block_sieve_trusted_scripts_greylist}")
 
-track-replies = ["file://%{BASE_PATH}%/etc/spamfilter/scripts/config.sieve",
-                 "file://%{BASE_PATH}%/etc/spamfilter/scripts/replies_out.sieve"]
-
-greylist = "file://%{BASE_PATH}%/etc/spamfilter/scripts/greylist.sieve"
+##############################################
+## SMTP Spam & Phishing filter configuration
+##############################################
+#
+#[directory."spamdb"]
+#type = "sql"
+#address = "sqlite://%{BASE_PATH}%/data/spamfilter.sqlite3?mode=rwc"
+#
+#[directory."spamdb".pool]
+#max-connections = 10
+#min-connections = 0
+#idle-timeout = "5m"
+#
+#[directory."spamdb".lookup]
+#token-insert = "INSERT INTO bayes_tokens (h1, h2, ws, wh) VALUES (?, ?, ?, ?)
+#                ON CONFLICT(h1, h2)
+#                DO UPDATE SET ws = ws + excluded.ws, wh = wh + excluded.wh"
+#token-lookup = "SELECT ws, wh FROM bayes_tokens WHERE h1 = ? AND h2 = ?"
+#id-insert = "INSERT INTO seen_ids (id, ttl) VALUES (?, datetime('now', ? || ' seconds'))"
+#id-lookup = "SELECT 1 FROM seen_ids WHERE id = ? AND ttl > CURRENT_TIMESTAMP"
+#reputation-insert = "INSERT INTO reputation (token, score, count, ttl) VALUES (?, ?, 1, datetime('now', '30 days'))
+#                     ON CONFLICT(token)
+#                     DO UPDATE SET score = (count + 1) * (excluded.score + 0.98 * score) / (0.98 * count + 1), count = count + 1, ttl = excluded.ttl"
+#reputation-lookup = "SELECT score, count FROM reputation WHERE token = ?"
+#
+#[directory."spamdb".schedule]
+#query = ["DELETE FROM seen_ids WHERE ttl < CURRENT_TIMESTAMP",
+#         "DELETE FROM reputation WHERE ttl < CURRENT_TIMESTAMP"]
+#frequency = "0 3 *"
+#
+#[directory."spam"]
+#type = "memory"
+#
+#[directory."spam".lookup."free-domains"]
+#type = "glob"
+#comment = '#'
+#values = ["https://get.stalw.art/resources/config/spamfilter/maps/domains_free.list",
+#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/domains_free.list"]
+#
+#[directory."spam".lookup."disposable-domains"]
+#type = "glob"
+#comment = '#'
+#values = ["https://get.stalw.art/resources/config/spamfilter/maps/domains_disposable.list",
+#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/domains_disposable.list"]
+#
+#[directory."spam".lookup."redirectors"]
+#type = "glob"
+#comment = '#'
+#values = ["https://get.stalw.art/resources/config/spamfilter/maps/url_redirectors.list",
+#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/url_redirectors.list"]
+#
+#[directory."spam".lookup."domains-allow"]
+#type = "glob"
+#comment = '#'
+#values = ["https://get.stalw.art/resources/config/spamfilter/maps/allow_domains.list",
+#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/allow_domains.list"]
+#
+#[directory."spam".lookup."dmarc-allow"]
+#type = "glob"
+#comment = '#'
+#values = ["https://get.stalw.art/resources/config/spamfilter/maps/allow_dmarc.list",
+#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/allow_dmarc.list"]
+#
+#[directory."spam".lookup."spf-dkim-allow"]
+#type = "glob"
+#comment = '#'
+#values = ["https://get.stalw.art/resources/config/spamfilter/maps/allow_spf_dkim.list",
+#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/allow_spf_dkim.list"]
+#
+#[directory."spam".lookup."mime-types"]
+#type = "map"
+#comment = '#'
+#values = ["https://get.stalw.art/resources/config/spamfilter/maps/mime_types.map",
+#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/mime_types.map"]
+#
+#[directory."spam".lookup."trap-address"]
+#type = "glob"
+#comment = '#'
+#values = "file://%{BASE_PATH}%/etc/spamfilter/maps/spam_trap.list"
+#
+#[directory."spam".lookup."scores"]
+#type = "map"
+#values = "file://%{BASE_PATH}%/etc/spamfilter/maps/scores.map"
+#
+#[sieve.trusted.scripts]
+#spam-filter = ["file://%{BASE_PATH}%/etc/spamfilter/scripts/config.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/prelude.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/from.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/recipient.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/subject.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/replyto.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/date.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/messageid.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/received.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/headers.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/bounce.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/html.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/mime.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/dmarc.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/ip.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/helo.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/replies_in.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/spamtrap.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/bayes_classify.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/url.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/rbl.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/pyzor.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/composites.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/scores.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/reputation.sieve",
+#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/epilogue.sieve"]
+#
+#track-replies = ["file://%{BASE_PATH}%/etc/spamfilter/scripts/config.sieve",
+#                 "file://%{BASE_PATH}%/etc/spamfilter/scripts/replies_out.sieve"]
+#
+#greylist = "file://%{BASE_PATH}%/etc/spamfilter/scripts/greylist.sieve"
 
 EOF
         else
