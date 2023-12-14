@@ -103,7 +103,7 @@ EOF
                 if [ ! -f "${1%%.*}".key ] ; then
                     print_debug "[certificates | create_certificate] Creating Certificate: ${1}"
                     silent eval "${ssl_exec} req \
-                            -newkey rsa:2048 -keyout ${1%%.*}.key \
+                          -newkey rsa:2048 -keyout ${1%%.*}.key \
                           -nodes -out ${1%%.*}.csr \
                           -subj \"${TLS_CERT_SUBJECT}\""
                 fi
@@ -411,6 +411,9 @@ EOF
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             certificates "${TLS_DEFAULT_CERT_FILE}"
+            chown "${SERVER_USER}":"${SERVER_GROUP}" "${TLS_DEFAULT_CERT_FILE}"
+            chown "${SERVER_USER}":"${SERVER_GROUP}" "${TLS_DEFAULT_KEY_FILE}"  ## TODO - Refactor function
+
 
             ## Todo need variables
             toml_block add server.tls enable "${TLS_ENABLE,,}"
