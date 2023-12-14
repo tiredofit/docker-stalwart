@@ -1310,16 +1310,16 @@ EOF
             toml_block add session.auth mechanisms array "${SMTP_SESSION_AUTH_MECHANISMS}"
             toml_block add session.auth directory array "${SMTP_SESSION_AUTH_DIRECTORY}"
             toml_block add session.auth require array "${SMTP_SESSION_AUTH_REQUIRE}"
-            toml_block add session.auth allow-plain-text ${SMTP_SESSION_AUTH_ALLOW_PLAIN_TEXT,,}
+            toml_block add session.auth allow-plain-text "${SMTP_SESSION_AUTH_ALLOW_PLAIN_TEXT,,}"
 
-            toml_block add session.auth.errors total ${SMTP_SESSSION_AUTH_ERRORS_TOTAL}
+            toml_block add session.auth.errors total "${SMTP_SESSION_AUTH_ERRORS_TOTAL}"
             toml_block add session.auth.errors wait quotes "${SMTP_SESSION_AUTH_ERRORS_WAIT}"
 
             toml_block add session.mail script quotes "${SMTP_SESSION_MAIL_SCRIPT}"
             toml_block add session.mail rewrite "${SMTP_SESSION_MAIL_REWRITE}"
 
             toml_block add session.rcpt script quotes "${SMTP_SESSION_RCPT_SCRIPT}"
-            toml_block add session.rcpt relay array "${SMTP_SESSSION_RCPT_RELAY}"  ## BLANK
+            toml_block add session.rcpt relay array "${SMTP_SESSION_RCPT_RELAY}"  ## BLANK
             toml_block add session.rcpt rewrite "${SMTP_SESSION_RCPT_REWRITE}"
             toml_block add session.rcpt max-recipients "${SMTP_SESSION_RCPT_MAX_RECIPIENTS}"  ## BLANK
             toml_block add session.rcpt directory quotes "${SMTP_SESSION_RCPT_DIRECTORY}"  ## BLANK
@@ -1328,7 +1328,7 @@ EOF
             toml_block add session.rcpt.errors wait quotes "${SMTP_SESSION_RCPT_ERRORS_WAIT}" ##BLANK
 
             ## TODO Look these over these 1 look off.
-            toml_block add session.data quotes "${SMTP_SESSION_DATA_SCRIPT}" ## Check To see if populated
+            toml_block add session.data script array "${SMTP_SESSION_DATA_SCRIPT}" ## Check To see if populated
 
             ## TODO Look these over these 3 look off.
             toml_block add session.data.limits messages ${SMTP_SESSION_DATA_LIMITS_MESSAGES} ## BLANK
