@@ -485,6 +485,7 @@ configure_directory() {
     local config_file
 
     config_dir="${CONFIG_PATH}/directory"
+    sudo -u "${SERVER_USER}" mkdir -p "${config_dir}"
 
     directory_configure_imap() {
         ## TODO - Future version
@@ -493,7 +494,6 @@ configure_directory() {
         else
             :
         fi
-:
     }
 
     directory_configure_ldap() {
@@ -602,6 +602,7 @@ configure_imap() {
     local config_file
 
     config_dir="${CONFIG_PATH}/imap"
+    sudo -u "${SERVER_USER}" mkdir -p "${config_dir}"
 
     imap_configure_listener() {
         ## TODO - Future version
@@ -627,6 +628,7 @@ configure_jmap() {
     local config_file
 
     config_dir="${CONFIG_PATH}/jmap"
+    sudo -u "${SERVER_USER}" mkdir -p "${config_dir}"
 
     jmap_configure_auth() {
         ## TODO - Future version
@@ -1288,21 +1290,21 @@ EOF
             toml_block add session transfer-limit "${SMTP_SESSION_TRANSFER_LIMIT}"
             toml_block add session duration quotes "${SMTP_SESSION_DURATION}"
 
-            toml_block add session.connect script quotes "${SMTP_SESSION_CONNECT_SCRIPT}" ## BLANK
+            toml_block add session.connect script quotes "${SMTP_SESSION_CONNECT_SCRIPT}"
 
             toml_block add session.ehlo require "${SMTP_SESSION_EHLO_REQUIRE,,}"
             toml_block add session.ehlo reject-non-fqdn array "${SMTP_SESSION_EHLO_REJECT_NON_FQDN}"
-            toml_block add session.ehlo script quotes "${SMTP_SESSION_EHLO_SCRIPT}" ## BLANK
+            toml_block add session.ehlo script quotes "${SMTP_SESSION_EHLO_SCRIPT}"
 
             toml_block add session.extensions pipelining "${SMTP_SESSION_EXTENSIONS_PIPELINING,,}"
             toml_block add session.extensions chunking "${SMTP_SESSION_EXTENSIONS_CHUNKING,,}"
             toml_block add session.extensions requiretls "${SMTP_SESSION_EXTENSIONS_REQUIRETLS,,}"
             toml_block add session.extensions nosoliciting quotes "${SMTP_SESSION_EXTENSIONS_NO_SOLICITING}"
-            toml_block add session.extensions dsn array "${SMTP_SESSION_EXTENSIONS_DSN}" ## BLANK
-            toml_block add session.extensions expn array "${SMTP_SESSION_EXTENSIONS_EXPN}" ## BLANK
+            toml_block add session.extensions dsn array "${SMTP_SESSION_EXTENSIONS_DSN}"
+            toml_block add session.extensions expn array "${SMTP_SESSION_EXTENSIONS_EXPN}"
             toml_block add session.extensions vrfy array "${SMTP_SESSION_EXTENSIONS_VRFY}" ## BLANK - Are we allowed to stay blank
-            toml_block add session.extensions future-release array "${SMTP_SESSION_EXTENSIONS_FUTURE_RELEASE}" ## BLANK
-            toml_block add session.extensions delivery-by array "${SMTP_SESSION_EXTENSIONS_DELIVER_BY}" ## BLANK
+            toml_block add session.extensions future-release array "${SMTP_SESSION_EXTENSIONS_FUTURE_RELEASE}"
+            toml_block add session.extensions delivery-by array "${SMTP_SESSION_EXTENSIONS_DELIVER_BY}"
             toml_block add session.extensions mt-priority array "${SMTP_SESSION_EXTENSIONS_MT_PRIORITY}"
 
             toml_block add session.auth mechanisms array "${SMTP_SESSION_AUTH_MECHANISMS}"
@@ -1313,20 +1315,20 @@ EOF
             toml_block add session.auth.errors total ${SMTP_SESSSION_AUTH_ERRORS_TOTAL}
             toml_block add session.auth.errors wait quotes "${SMTP_SESSION_AUTH_ERRORS_WAIT}"
 
-            toml_block add session.mail script quotes "${SMTP_SESSION_MAIL_SCRIPT}" ## BLANK
-            toml_block add session.mail rewrite "${SMTP_SESSION_MAIL_REWRITE}" ## BLANK
+            toml_block add session.mail script quotes "${SMTP_SESSION_MAIL_SCRIPT}"
+            toml_block add session.mail rewrite "${SMTP_SESSION_MAIL_REWRITE}"
 
-            toml_block add session.rcpt script quotes "${SMTP_SESSION_RCPT_SCRIPT}"  ## BLANK
+            toml_block add session.rcpt script quotes "${SMTP_SESSION_RCPT_SCRIPT}"
             toml_block add session.rcpt relay array "${SMTP_SESSSION_RCPT_RELAY}"  ## BLANK
-            toml_block add session.rcpt rewrite "${SMTP_SESSION_RCPT_REWRITE}"  ## BLANK
-            toml_block add session.rcpt max-recipients ${SMTP_SESSION_RCPT_MAX_RECIPIENTS}  ## BLANK
-            toml_block add session.rcpt directory quotes "${SMTP_SESSION_DIRECTORY}"  ## BLANK
+            toml_block add session.rcpt rewrite "${SMTP_SESSION_RCPT_REWRITE}"
+            toml_block add session.rcpt max-recipients "${SMTP_SESSION_RCPT_MAX_RECIPIENTS}"  ## BLANK
+            toml_block add session.rcpt directory quotes "${SMTP_SESSION_RCPT_DIRECTORY}"  ## BLANK
 
-            toml_block add session.rcpt.errors total ${SMTP_SESSION_RCPT_ERRORS_TOTAL} ## BLANK
+            toml_block add session.rcpt.errors total "${SMTP_SESSION_RCPT_ERRORS_TOTAL}" ## BLANK
             toml_block add session.rcpt.errors wait quotes "${SMTP_SESSION_RCPT_ERRORS_WAIT}" ##BLANK
 
             ## TODO Look these over these 1 look off.
-            toml_block add session.data quotes "${SMTP_SESSION_DATA_}" ## Problem
+            toml_block add session.data quotes "${SMTP_SESSION_DATA_SCRIPT}" ## Check To see if populated
 
             ## TODO Look these over these 3 look off.
             toml_block add session.data.limits messages ${SMTP_SESSION_DATA_LIMITS_MESSAGES} ## BLANK
