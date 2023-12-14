@@ -820,10 +820,10 @@ EOF
 
             toml_block add server.listener.dynamic submission bind array "${SMTP_LISTENER_SUBMISSION_BIND}"
             toml_block add server.listener.dynamic submission greeting quotes "${SMTP_LISTENER_SUBMISSION_GREETING}"
-            toml_block add server.listener.dynamic submission quotes protocol "${SMTP_LISTENER_SUBMISSION_PROTOCOL}"
+            toml_block add server.listener.dynamic submission protocol quotes "${SMTP_LISTENER_SUBMISSION_PROTOCOL}"
 
             toml_block add server.listener.dynamic submissions bind array "${SMTP_LISTENER_SUBMISSIONS_BIND}"
-            toml_block add server.listener.dynamic submissions greeing quotes "${SMTP_LISTENER_SUBMISSIONS_GREETING}"
+            toml_block add server.listener.dynamic submissions greeting quotes "${SMTP_LISTENER_SUBMISSIONS_GREETING}"
             toml_block add server.listener.dynamic submissions protocol quotes "${SMTP_LISTENER_SUBMISSIONS_PROTOCOL,,}"
             toml_block add server.listener.dynamic submissions tls.implicit "${SMTP_LISTENER_SUBMISSIONS_TLS_IMPLICIT,,}"
 
