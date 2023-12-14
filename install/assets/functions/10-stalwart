@@ -412,7 +412,7 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             certificates "${TLS_DEFAULT_CERT_FILE}"
             chown "${SERVER_USER}":"${SERVER_GROUP}" "${TLS_DEFAULT_CERT_FILE}"
-            chown "${SERVER_USER}":"${SERVER_GROUP}" "${TLS_DEFAULT_KEY_FILE}"  ## TODO - Refactor function
+            #chown "${SERVER_USER}":"${SERVER_GROUP}" "${TLS_DEFAULT_KEY_FILE}"  ## TODO - Refactor function
 
 
             ## Todo need variables
@@ -1291,18 +1291,18 @@ EOF
             toml_block add session.connect script quotes "${SMTP_SESSION_CONNECT_SCRIPT}" ## BLANK
 
             toml_block add session.ehlo require "${SMTP_SESSION_EHLO_REQUIRE,,}"
-            toml_block add session.ehlo reject-non-fqdn array "${SMTP_SESION_EHLO_REJECT_NON_FQDN}"
+            toml_block add session.ehlo reject-non-fqdn array "${SMTP_SESSION_EHLO_REJECT_NON_FQDN}"
             toml_block add session.ehlo script quotes "${SMTP_SESSION_EHLO_SCRIPT}" ## BLANK
 
-            toml_block add session.extensions pipelining ${SMTP_SESSION_EXTENSIONS_PIPELINING,,}
-            toml_block add session.extensions chunking ${SMTP_SESSION_EXTENSIONS_CHUNKING,,}
-            toml_block add session.extensions requiretls ${SMTP_SESSION_EXTENSIONS_REQUIRETLS,,}
+            toml_block add session.extensions pipelining "${SMTP_SESSION_EXTENSIONS_PIPELINING,,}"
+            toml_block add session.extensions chunking "${SMTP_SESSION_EXTENSIONS_CHUNKING,,}"
+            toml_block add session.extensions requiretls "${SMTP_SESSION_EXTENSIONS_REQUIRETLS,,}"
             toml_block add session.extensions nosoliciting quotes "${SMTP_SESSION_EXTENSIONS_NO_SOLICITING}"
-            toml_block add session.extensions dsn array "${SMTP_SESSION_EXTENSTIONS_DSN}" ## BLANK
-            toml_block add session.extensions expn array "${SMTP_SESSION_EXTENSTIONS_EXPN}" ## BLANK
-            toml_block add session.extensions vrfy array "${SMTP_SESSION_EXTENSTIONS_VRFY}" ## BLANK - Are we allowed to stay blank
-            toml_block add session.extensions future-release array "${SMTP_SESSION_EXTENSTIONS_FUTURE_RELEASE}" ## BLANK
-            toml_block add session.extensions delivery-by array "${SMTP_SESSION_EXTENSTIONS_DELIVER_BY}" ## BLANK
+            toml_block add session.extensions dsn array "${SMTP_SESSION_EXTENSIONS_DSN}" ## BLANK
+            toml_block add session.extensions expn array "${SMTP_SESSION_EXTENSIONS_EXPN}" ## BLANK
+            toml_block add session.extensions vrfy array "${SMTP_SESSION_EXTENSIONS_VRFY}" ## BLANK - Are we allowed to stay blank
+            toml_block add session.extensions future-release array "${SMTP_SESSION_EXTENSIONS_FUTURE_RELEASE}" ## BLANK
+            toml_block add session.extensions delivery-by array "${SMTP_SESSION_EXTENSIONS_DELIVER_BY}" ## BLANK
             toml_block add session.extensions mt-priority array "${SMTP_SESSION_EXTENSIONS_MT_PRIORITY}"
 
             toml_block add session.auth mechanisms array "${SMTP_SESSION_AUTH_MECHANISMS}"
@@ -1317,7 +1317,7 @@ EOF
             toml_block add session.mail rewrite "${SMTP_SESSION_MAIL_REWRITE}" ## BLANK
 
             toml_block add session.rcpt script quotes "${SMTP_SESSION_RCPT_SCRIPT}"  ## BLANK
-            toml_block add session.rcpt relay array "${SMTP_SESSION_RCPT_RELAY}"  ## BLANK
+            toml_block add session.rcpt relay array "${SMTP_SESSSION_RCPT_RELAY}"  ## BLANK
             toml_block add session.rcpt rewrite "${SMTP_SESSION_RCPT_REWRITE}"  ## BLANK
             toml_block add session.rcpt max-recipients ${SMTP_SESSION_RCPT_MAX_RECIPIENTS}  ## BLANK
             toml_block add session.rcpt directory quotes "${SMTP_SESSION_DIRECTORY}"  ## BLANK
@@ -1362,7 +1362,7 @@ $(toml_block show "${block_session_extensions}")
 
 $(toml_block show "${block_session_auth}")
 
-$(toml_block show "${block_session_errors}")
+$(toml_block show "${block_session_auth_errors}")
 
 $(toml_block show "${block_session_mail}")
 
@@ -1397,10 +1397,14 @@ EOF
         config_file="signature.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            toml_block add signature.dynamic rsa public-key quotes "${SMTP_SIGNATURE_RSA_PUBLIC_KEY}"
-            toml_block add signature.dynamic rsa private-key quotes "${SMTP_SIGNATURE_RSA_PRIVATE_KEY}"
-            toml_block add signature.dynamic rsa domain quotes "${SMTP_SIGNATURE_RSA_DOMAIN}"
-            toml_block add signature.dynamic rsa selector quotes "${SMTP_SIGNATURE_RSA_SELECTOR}"
+            set -x
+            dkim create_default
+            set +x
+
+            toml_block add signature.dynamic rsa public-key quotes "${SMTP_SIGNATURE_RSA_PUBLIC_KEY:-${DEFAULT_DKIM_CERT_FILE}}"
+            toml_block add signature.dynamic rsa private-key quotes "${SMTP_SIGNATURE_RSA_PRIVATE_KEY:-${DEFAULT_DKIM_KEY_FILE}}"
+            toml_block add signature.dynamic rsa domain quotes "${SMTP_SIGNATURE_RSA_DOMAIN:-${DEFAULT_DOMAIN}}"
+            toml_block add signature.dynamic rsa selector quotes "${SMTP_SIGNATURE_RSA_SELECTOR:-${DEFAULT_DKIM_SELECTOR}}"
             toml_block add signature.dynamic rsa headers array "${SMTP_SIGNATURE_RSA_HEADERS}"
             toml_block add signature.dynamic rsa algorithm quotes "${SMTP_SIGNATURE_RSA_ALGORITHM}"
             toml_block add signature.dynamic rsa canonicalization quotes "${SMTP_SIGNATURE_RSA_CANONICALIZATION}"
@@ -1408,8 +1412,9 @@ EOF
             toml_block add signature.dynamic rsa third-party quotes "${THIRD_PARTY}"
             toml_block add signature.dynamic rsa third-party-algo quotes "${SMTP_SIGNATURE_RSA_THIRD_PARTY_ALGO}"
             toml_block add signature.dynamic rsa auid quotes "${SMTP_SIGNATURE_RSA_AUID}"
-            toml_block add signature.dynamic rsa set-body-length "${SMTP_SIGNATURE_RSA_SET_BODY_LENGTH}"
+            toml_block add signature.dynamic rsa set-body-length "${SMTP_SIGNATURE_RSA_SET_BODY_LENGTH,,}"
             toml_block add signature.dynamic rsa report "${SMTP_SIGNATURE_RSA_REPORT,,}"
+
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -1516,6 +1521,8 @@ $(toml_block show "${block_directory_spamdb_pool}")
 $(toml_block show "${block_directory_spamdb_lookup}")
 
 $(toml_block show "${block_directory_spamdb_schedule}")
+
+$(toml_block show "${block_directory_spam}")
 
 $(toml_block show "${block_directory_spam_lookup_free_domains}")
 
@@ -1679,6 +1686,9 @@ EOF
 
 dkim() {
     case "${1,,}" in
+        "create_default" )
+            dkim generate "${DEFAULT_DKIM_SELECTOR}" "${DEFAULT_DOMAIN}" "${DEFAULT_DKIM_TYPE}" "${DEFAULT_DKIM_RSA_KEY_SIZE}"
+        ;;
         "generate" )
             ## Usage generate <selector> <domainname> <type> <rsa_keysize>
             if [ -z "${4}" ] ; then return 3; fi
@@ -1687,8 +1697,8 @@ dkim() {
 
             local _dkim_selector=${2}
             local _dkim_domain=${3}
-            local _dkim_type=${4:-"${DKIM_TYPE}"}
-            local _dkim_key_size=${5:-"${DKIM_RSA_KEY_SIZE}"}
+            local _dkim_type=${4:-"${DEFAULT_DKIM_TYPE}"}
+            local _dkim_key_size=${5:-"${DEFAULT_DKIM_RSA_KEY_SIZE}"}
 
             if [ -f "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key ] || [ -f "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert ] || [ -f "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".readme ] ; then
                 return 99
@@ -1717,6 +1727,16 @@ ${_dkim_domain/./_}. IN TXT "v=spf1 a:${SERVER_NAME}.${_dkim_domain/./_} mx -all
 ${SERVER_NAME}.${_dkim_domain/./_}. IN TXT "v=spf1 a -all ra=postmaster"
 _dmarc.${_dkim_domain/./_}. IN TXT "v=DMARC1; p=none; rua=mailto:postmaster@${_dkim_domain/./_}; ruf=mailto:postmaster@${_dkim_domain/./_}"
 EOF
+        ;;
+        parse_environment )
+            dkim_domains=$(set -o posix ; set | printenv | sort | grep -c "^DKIM.*_DOMAIN=")
+            for (( dkim_pair = 01; dkim_pair <= dkim_domains; dkim_pair++ )); do
+                dkim_domain=DKIM${dkim_pair}_DOMAIN
+                dkim_selector=DKIM${dkim_pair}_SELECTOR
+                dkim_type=DKIM${dkim_pair}_TYPE
+                dkim_keysize=DKIM${dkim_pair}_KEY_SIZE
+                dkim generate "${!dkim_selector}" "${!dkim_domain}" "${!dkim_type}" ${!dkim_keysize}
+            done
         ;;
     esac
 }

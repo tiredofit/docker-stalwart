@@ -7,6 +7,7 @@ PROCESS_NAME="stalwart"
 bootstrap_filesystem
 setup_container_mode
 configure_common
+configure_directory
 if var_true "${ENABLE_SMTP}" ; then configure_smtp; fi
 configure_server
 

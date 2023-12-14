@@ -48,7 +48,7 @@ SMTP_SESSION_TRANSFER_LIMIT=${SMTP_SESSION_TRANSFER_LIMIT:-"2621440000"}
 SMTP_SESSION_DURATION=${SMTP_SESSION_DURATION:-"10m"}
 
 SMTP_SESSION_EHLO_REQUIRE=${SMTP_SESSION_EHLO_REQUIRE:-"TRUE"}
-SMTP_SESSION_EHLO_REJECT_NON_FQDN=${SMTP_SESSION_EHLO_REJECT_NON_FQDN:-'{ if = "listener", eq = "smtp", then = true} { else = false }'}
+SMTP_SESSION_EHLO_REJECT_NON_FQDN=${SMTP_SESSION_EHLO_REJECT_NON_FQDN:-'{ if = "listener", eq = "smtp", then = true}, { else = false }'}
 
 SMTP_SESSION_EXTENSIONS_PIPELINING=${SMTP_SESSION_EXTENSIONS_PIPELINING:-"TRUE"}
 SMTP_SESSION_EXTENSIONS_CHUNKING=${SMTP_SESSION_EXTENSIONS_CHUNKING:-"TRUE"}
@@ -82,28 +82,28 @@ SMTP_REMOTE_LOCAL_TLS_ALLOW_INVALID_CERTS=${SMTP_REMOTE_LOCAL_TLS_ALLOW_INVALID_
 SMTP_REMOTE_LOCAL_AUTH_USERNAME=${SMTP_REMOTE_LOCAL_AUTH_USERNAME=""}
 SMTP_REMOTE_LOCAL_AUTH_SECRET=${SMTP_REMOTE_LOCAL_AUTH_SECRET=""}
 
-SMTP_SESSSION_RCPT_SCRIPT=${SMTP_SESSION_RCPT_SCRIPT:-""}
-SMTP_SESSSION_RCPT_RELAY=${SMTP_SESSION_RCPT_RELAY:-'{ if = "authenticated-as", ne = "", then = true }, { else = false }'}
-SMTP_SESSSION_RCPT_REWRITE=${SMTP_SESSION_RCPT_REWRITE:-""}
-SMTP_SESSSION_RCPT_MAX_RECIPIENTS=${SMTP_SESSION_RCPT_MAX_RECIPIENTS:-"25"}
-SMTP_SESSSION_RCPT_DIRECTORY=${SMTP_SESSION_RCPT_DIRECTORY:-"default"}
+SMTP_SESSION_RCPT_SCRIPT=${SMTP_SESSION_RCPT_SCRIPT:-""}
+SMTP_SESSION_RCPT_RELAY=${SMTP_SESSION_RCPT_RELAY:-'{ if = "authenticated-as", ne = "", then = true }, { else = false }'}
+SMTP_SESSION_RCPT_REWRITE=${SMTP_SESSION_RCPT_REWRITE:-""}
+SMTP_SESSION_RCPT_MAX_RECIPIENTS=${SMTP_SESSION_RCPT_MAX_RECIPIENTS:-"25"}
+SMTP_SESSION_RCPT_DIRECTORY=${SMTP_SESSION_RCPT_DIRECTORY:-"default"}
 
-SMTP_SESSSION_RCPT_ERRORS_TOTAL=${SMTP_SESSION_RCPT_ERRORS_TOTAL:-"5"}
-SMTP_SESSSION_RCPT_ERRORS_WAIT=${SMTP_SESSION_RCPT_ERRORS_WAIT:-"5s"}
+SMTP_SESSION_RCPT_ERRORS_TOTAL=${SMTP_SESSION_RCPT_ERRORS_TOTAL:-"5"}
+SMTP_SESSION_RCPT_ERRORS_WAIT=${SMTP_SESSION_RCPT_ERRORS_WAIT:-"5s"}
 
-SMTP_SESSSION_DATA_SCRIPT=${SMTP_SESSION_DATA_SCRIPT:-'{ if = "authenticated-as", eq = "", then = "spam-filter"}, { else = "track-replies" }'}
+SMTP_SESSION_DATA_SCRIPT=${SMTP_SESSION_DATA_SCRIPT:-'{ if = "authenticated-as", eq = "", then = "spam-filter"}, { else = "track-replies" }'}
 
-SMTP_SESSSION_DATA_LIMITS_MESSAGES=${SMTP_SESSION_DATA_LIMITS_MESSAGES:-"10"}
-SMTP_SESSSION_DATA_LIMITS_SIZE=${SMTP_SESSION_DATA_LIMITS_SIZE:-"104857600"}
-SMTP_SESSSION_DATA_LIMITS_RECEIVED_HEADERS=${SMTP_SESSION_DATA_LIMITS_RECEIVED_HEADERS:-"50"}
+SMTP_SESSION_DATA_LIMITS_MESSAGES=${SMTP_SESSION_DATA_LIMITS_MESSAGES:-"10"}
+SMTP_SESSION_DATA_LIMITS_SIZE=${SMTP_SESSION_DATA_LIMITS_SIZE:-"104857600"}
+SMTP_SESSION_DATA_LIMITS_RECEIVED_HEADERS=${SMTP_SESSION_DATA_LIMITS_RECEIVED_HEADERS:-"50"}
 
-SMTP_SESSSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
-SMTP_SESSSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
-SMTP_SESSSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
-SMTP_SESSSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
-SMTP_SESSSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
-SMTP_SESSSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
-SMTP_SESSSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
+SMTP_SESSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
+SMTP_SESSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
+SMTP_SESSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
+SMTP_SESSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
+SMTP_SESSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
+SMTP_SESSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
+SMTP_SESSION_THROTTLE_=${SMTP_SESSION_THROTTLE_:-""} ## TODO Need to support multiple blocks
 
 SMTP_RESOLVER_TYPE=${SMTP_RESOLVER_TYPE:-"system"}
 SMTP_RESOLVER_PRESERVE_INTERMEDIATES=${SMTP_RESOLVER_PRESERVE_INTERMEDIATES:-"FALSE"}
@@ -396,3 +396,11 @@ SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_VALUES=${SMTP_SPAMFILTER_DIRECTORY_
 SIEVE_TRUSTED_SCRIPTS_SPAMFILTER=${SIEVE_TRUSTED_SCRIPTS_SPAMFILTER:-'"file://%{BASE_PATH}%/etc/spamfilter/scripts/config.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/prelude.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/from.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/recipient.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/subject.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/replyto.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/date.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/messageid.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/received.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/headers.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/bounce.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/html.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/mime.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/dmarc.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/ip.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/helo.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/replies_in.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/spamtrap.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/bayes_classify.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/url.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/rbl.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/pyzor.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/composites.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/scores.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/reputation.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/epilogue.sieve"'}
 SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES=${SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES:-'"file://%{BASE_PATH}%/etc/spamfilter/scripts/config.sieve","file://%{BASE_PATH}%/etc/spamfilter/scripts/replies_out.sieve"'}
 SIEVE_TRUSTED_SCRIPTS_GREYLIST=${SIEVE_TRUSTED_SCRIPTS_GREYLIST:-'"file://%{BASE_PATH}%/etc/spamfilter/scripts/greylist.sieve"'} ## TODO these should be functions
+
+DKIM_PATH=${DKIM_PATH:-"${DATA_PATH}/dkim/"}
+DEFAULT_DOMAIN=${DEFAULT_DOMAIN:-"example.com"}
+DEFAULT_DKIM_SELECTOR=${DEFAULT_DKIM_SELECTOR:-"tiredofit"}
+DEFAULT_DKIM_RSA_KEY_SIZE=${DEFAULT_DKIM_RSA_KEY_SIZE:-2048}
+DEFAULT_DKIM_TYPE=${DEFAULT_DKIM_TYPE:-"rsa"}
+DEFAULT_DKIM_CERT_FILE=${DEFAULT_DKIM_CERT_FILE:-"file://${DKIM_PATH}/${DEFAULT_DKIM_SELECTOR}_${DEFAULT_DOMAIN/./_}.cert"}
+DEFAULT_DKIM_KEY_FILE=${DEFAULT_DKIM_KEY_FILE:-"file://${DKIM_PATH}/${DEFAULT_DKIM_SELECTOR}_${DEFAULT_DOMAIN/./_}.key"}

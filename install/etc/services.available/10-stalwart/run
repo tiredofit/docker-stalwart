@@ -10,6 +10,5 @@ check_service_initialized init
 liftoff
 
 print_start "Starting Stalwart ${STALWART_VERSION}"
-silent exec s6-setuidgid stalwart \
-                                stalwart-mail \
-                                                --config "${CONFIG_PATH}"/"${CONFIG_FILE}"
+silent exec stalwart-mail \
+                            --config "${CONFIG_PATH}"/"${CONFIG_FILE}"
