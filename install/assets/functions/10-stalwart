@@ -3,13 +3,13 @@
 bootstrap_filesystem() {
 
     if [ ! -d "${CONFIG_PATH}" ]; then mkdir -p "${CONFIG_PATH}"; fi
-    if [ "$(stat -c %U "${CONFIG_PATH}")" != "stalwart" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${CONFIG_PATH}" ; fi
+    if [ "$(stat -c %U "${CONFIG_PATH}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${CONFIG_PATH}" ; fi
 
     if [ ! -d "${DATA_PATH}" ]; then mkdir -p "${DATA_PATH}"; fi
-    if [ "$(stat -c %U "${DATA_PATH}")" != "stalwart" ] ; then chown ${SERVER_USER}:${SERVER_GROUP} "${DATA_PATH}" ; fi
+    if [ "$(stat -c %U "${DATA_PATH}")" != "${SERVER_USER}" ] ; then chown ${SERVER_USER}:${SERVER_GROUP} "${DATA_PATH}" ; fi
 
     if [ ! -d "${LOG_PATH}" ]; then mkdir -p "${LOG_PATH}" ; fi
-    if [ "$(stat -c %U "${LOG_PATH}")" != "stalwart" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${LOG_PATH}" ; fi
+    if [ "$(stat -c %U "${LOG_PATH}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${LOG_PATH}" ; fi
 
     case "${LOG_TYPE,,}" in
         file )
@@ -887,6 +887,7 @@ EOF
         if [ "$(stat -c %U "${SMTP_QUEUE_PATH}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${SMTP_QUEUE_PATH}" ; fi
 
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             toml_block add queue path quotes "${SMTP_QUEUE_PATH}"
             toml_block add queue hash ${SMTP_QUEUE_HASH}
