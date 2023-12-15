@@ -700,7 +700,7 @@ configure_smtp() {
             toml_block add auth.spf.ehlo array "${SMTP_AUTH_SPF_VERIFY_EHLO}"
             toml_block add auth.spf.mail-from array "${SMTP_AUTH_SPF_VERIFY_MAIL_FROM}"
 
-            toml_block add auth.arc verify quotes "${SMTP_AUTH_ARC_SEAL}"
+            toml_block add auth.arc verify quotes "${SMTP_AUTH_ARC_VERIFY}"
             toml_block add auth.arc seal array "${SMTP_AUTH_ARC_SEAL}"
 
             toml_block add auth.dmarc verify array "${SMTP_AUTH_DMARC_VERIFY}"
@@ -929,7 +929,7 @@ EOF
             toml_block add queue.outbound.timeouts tls quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_TLS}"
             toml_block add queue.outbound.timeouts ehlo quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_EHLO}"
             toml_block add queue.outbound.timeouts mail-from quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_MAIL_FROM}"
-            toml_block add queue.outbound.timeouts rcpt-to quotes"${SMTP_QUEUE_OUTBOUND_TIMEOUTS_RCPT_TO}"
+            toml_block add queue.outbound.timeouts rcpt-to quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_RCPT_TO}"
             toml_block add queue.outbound.timeouts data quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_DATA}"
             toml_block add queue.outbound.timeouts mta-sts quotes "${SMTP_QUEUE_OUTBOUND_TIMEOUTS_MTA_STS}"
 
@@ -964,51 +964,11 @@ $(toml_block show "${block_queue_outbound_limits}")
 $(toml_block show "${block_queue_outbound_timeouts}")
 
 ### TODO Double Brackets
-$(toml_block show "${block_queue_quota}")
+#\$(toml_block show "#\${block_queue_quota}")
 
 ### TODO Double Brackets
-$(toml_block show "${block_queue_throttle}")
+#\$(toml_block show "#\${block_queue_throttle}")
 
-
-#[queue]
-#path = "%{BASE_PATH}%/queue"
-#hash = 64
-#
-#[queue.schedule]
-#retry = ["2m", "5m", "10m", "15m", "30m", "1h", "2h"]
-#notify = ["1d", "3d"]
-#expire = "5d"
-#
-#[queue.outbound]
-##hostname = "%{HOST}%"
-#next-hop = [ { if = "rcpt-domain", in-list = "default/domains", then = "local" },
-#             { else = false } ]
-#ip-strategy = "ipv4-then-ipv6"
-#
-#[queue.outbound.tls]
-#dane = "optional"
-#mta-sts = "optional"
-#starttls = "require"
-#allow-invalid-certs = false
-#
-##[queue.outbound.source-ip]
-##v4 = ["10.0.0.10", "10.0.0.11"]
-##v6 = ["a::b", "a::c"]
-#
-#[queue.outbound.limits]
-#mx = 7
-#multihomed = 2
-#
-#[queue.outbound.timeouts]
-#connect = "3m"
-#greeting = "3m"
-#tls = "2m"
-#ehlo = "3m"
-#mail-from = "3m"
-#rcpt-to = "3m"
-#data = "10m"
-#mta-sts = "2m"
-#
 [[queue.quota]]
 ##match = {if = "sender-domain", eq = "foobar.org"}
 ##key = ["rcpt"]
@@ -1046,7 +1006,7 @@ EOF
             toml_block add remote.dynamic.auth local secret quotes "${SMTP_REMOTE_LOCAL_AUTH_SECRET}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
-##########################################################
+#########################################################
 # SMTP remote servers configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
@@ -1078,57 +1038,69 @@ EOF
 
     smtp_configure_report() {
         config_file="report.toml"
+
+set -x
+        if [ ! -d "${REPORTS_PATH}" ]; then mkdir -p "${REPORTS_PATH}" ; fi
+        if [ "$(stat -c %U "${REPORTS_PATH}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${REPORTS_PATH}" ; fi
+set +x
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             toml_block add report path quotes "${REPORTS_PATH}"
             toml_block add report hash ${REPORTS_HASH}
+            toml_block add report submitter "${REPORTS_SUBMITTER}"
 
             toml_block add report.analysis addresses array "${SMTP_REPORT_ANALYSIS_ADDRESSES}"
-            toml_block add report.analysis forward "${SMTP_REPORT_ANALYSIS_FORWARD}"
+            toml_block add report.analysis forward "${SMTP_REPORT_ANALYSIS_FORWARD,,}"
+            if [ ! -d "${SMTP_REPORT_ANALYSIS_STORE}" ]; then mkdir -p "${SMTP_REPORT_ANALYSIS_STORE}" ; fi
+            if [ "$(stat -c %U "${SMTP_REPORT_ANALYSIS_STORE}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${SMTP_REPORT_ANALYSIS_STORE}" ; fi
             toml_block add report.analysis store quotes "${SMTP_REPORT_ANALYSIS_STORE}"
 
-            toml_block add report "${SMTP_REPORT_DSN_}"
-            toml_block add report "${SMTP_REPORT_DSN_}"
-            toml_block add report "${SMTP_REPORT_DSN_}"
+            toml_block add report.dsn from-name quotes "${SMTP_REPORT_DSN_FROM_NAME}"
+            toml_block add report.dsn from-address quotes "${SMTP_REPORT_DSN_FROM_ADDRESS}"
+            toml_block add report.dsn sign array "${SMTP_REPORT_DSN_SIGN}"
 
-            toml_block add report "${SMTP_REPORT_DKIM_}"
-            toml_block add report "${SMTP_REPORT_DKIM_}"
-            toml_block add report "${SMTP_REPORT_DKIM_}"
-            toml_block add report "${SMTP_REPORT_DKIM_}"
-            toml_block add report "${SMTP_REPORT_DKIM_}"
+            toml_block add report.dkim from-name quotes "${SMTP_REPORT_DKIM_FROM_NAME}"
+            toml_block add report.dkim from-address quotes "${SMTP_REPORT_DKIM_FROM_ADDRESS}"
+            toml_block add report.dkim subject quotes "${SMTP_REPORT_DKIM_SUBJECT}"
+            toml_block add report.dkim send quotes "${SMTP_REPORT_DKIM_SEND}"
+            toml_block add report.dkim sign array "${SMTP_REPORT_DKIM_SIGN}"
 
-            toml_block add report "${SMTP_REPORT_SPF_}"
-            toml_block add report "${SMTP_REPORT_SPF_}"
-            toml_block add report "${SMTP_REPORT_SPF_}"
-            toml_block add report "${SMTP_REPORT_SPF_}"
-            toml_block add report "${SMTP_REPORT_SPF_}"
+            toml_block add report.spf from-name quotes "${SMTP_REPORT_SPF_FROM_NAME}"
+            toml_block add report.spf from-address quotes "${SMTP_REPORT_SPF_FROM_ADDRESS}"
+            toml_block add report.spf subject quotes "${SMTP_REPORT_SPF_SUBJECT}"
+            toml_block add report.spf send quotes "${SMTP_REPORT_SPF_SEND}"
+            toml_block add report.spf sign array "${SMTP_REPORT_SPF_SIGN}"
 
-            toml_block add report "${SMTP_REPORT_DMARC_}"
-            toml_block add report "${SMTP_REPORT_DMARC_}"
-            toml_block add report "${SMTP_REPORT_DMARC_}"
-            toml_block add report "${SMTP_REPORT_DMARC_}"
-            toml_block add report "${SMTP_REPORT_DMARC_}"
+            toml_block add report.dmarc from-name quotes "${SMTP_REPORT_DMARC_FROM_NAME}"
+            toml_block add report.dmarc from-address quotes "${SMTP_REPORT_DMARC_FROM_ADDRESS}"
+            toml_block add report.dmarc subject quotes "${SMTP_REPORT_DMARC_SUBJECT}"
+            toml_block add report.dmarc send quotes "${SMTP_REPORT_DMARC_SEND}"
+            toml_block add report.dmarc sign array "${SMTP_REPORT_DMARC_SIGN}"
 
-            toml_block add report "${SMTP_REPORT_DMARC_AGGREGATE}"
-            toml_block add report "${SMTP_REPORT_DMARC_AGGREGATE}"
-            toml_block add report "${SMTP_REPORT_DMARC_AGGREGATE}"
-            toml_block add report "${SMTP_REPORT_DMARC_AGGREGATE}"
-            toml_block add report "${SMTP_REPORT_DMARC_AGGREGATE}"
-            toml_block add report "${SMTP_REPORT_DMARC_AGGREGATE}"
+            toml_block add report.dmarc.aggregate from-name quotes "${SMTP_REPORT_DMARC_AGGREGATE_FROM_NAME}"
+            toml_block add report.dmarc.aggregate from-address quotes "${SMTP_REPORT_DMARC_AGGREGATE_FROM_ADDRESS}"
+            toml_block add report.dmarc.aggregate subject quotes "${SMTP_REPORT_DMARC_AGGREGATE}"
+            toml_block add report.dmarc.aggregate contact-info quotes "${SMTP_REPORT_DMARC_AGGREGATE_CONTACT_INFO}"
+            toml_block add report.dmarc.aggregate send quotes "${SMTP_REPORT_DMARC_AGGREGATE_SEND}"
+            toml_block add report.dmarc.aggregate max-size "${SMTP_REPORT_DMARC_AGGREGATE_MAX_SIZE}"
+            toml_block add report.dmarc.aggregate sign array "${SMTP_REPORT_DMARC_AGGREGATE_SIGN}"
 
-            toml_block add report "${SMTP_REPORT_TLS_AGGREGATE}"
-            toml_block add report "${SMTP_REPORT_TLS_AGGREGATE}"
-            toml_block add report "${SMTP_REPORT_TLS_AGGREGATE}"
-            toml_block add report "${SMTP_REPORT_TLS_AGGREGATE}"
-            toml_block add report "${SMTP_REPORT_TLS_AGGREGATE}"
-
+            toml_block add report.tls.aggregate from-name quotes "${SMTP_REPORT_TLS_AGGREGATE_FROM_NAME}"
+            toml_block add report.tls.aggregate from-address quotes "${SMTP_REPORT_TLS_AGGREGATE_FROM_ADDRESS}"
+            toml_block add report.tls.aggregate org-name quotes "${SMTP_REPORT_TLS_AGGREGATE}"
+            toml_block add report.tls.aggregate contact-info quotes "${SMTP_REPORT_TLS_AGGREGATE_CONTACT_INFO}"
+            toml_block add report.tls.aggregate send quotes "${SMTP_REPORT_TLS_AGGREGATE_SEND}"
+            toml_block add report.tls.aggregate max-size "${SMTP_REPORT_TLS_AGGREGATE_MAX_SIZE}"
+            toml_block add report.tls.aggregate sign array "${SMTP_REPORT_TLS_AGGREGATE_SIGN}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
 # SMTP Reporting configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
+
+$(toml_block show "${block_report}")
 
 $(toml_block show "${block_report_analysis}")
 
