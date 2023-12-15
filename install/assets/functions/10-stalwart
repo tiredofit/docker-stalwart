@@ -517,8 +517,8 @@ configure_directory() {
             toml_block add directory.default.filter expand quotes "${DIRECTORY_DEFAULT_LDAP_FILTER_NAME}"
             toml_block add directory.default.filter domains quotes "${DIRECTORY_DEFAULT_LDAP_FILTER_DOMAINS}"
 
-            toml_block add directory.default.options catch-all "${DIRECTORY_DEFAULT_LDAP_OPTIONS_CATCH_ALL}"
-            toml_block add directory.default.options subaddressing "${DIRECTORY_DEFAULT_LDAP_OPTIONS_SUBADDRESSING}"
+            toml_block add directory.default.options catch-all "${DIRECTORY_DEFAULT_LDAP_OPTIONS_CATCH_ALL,,}"
+            toml_block add directory.default.options subaddressing "${DIRECTORY_DEFAULT_LDAP_OPTIONS_SUBADDRESSING,,}"
             toml_block add directory.default.options superuser-group quotes "${DIRECTORY_DEFAULT_LDAP_OPTIONS_SUPERUSER_GROUP}"
 
             toml_block add directory.default.pool max-connections ${DIRECTORY_DEFAULT_LDAP_POOL_MAX_CONNECTIONS}
@@ -1451,6 +1451,10 @@ EOF
         config_file="spamfilter.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            mkdir -p "${DATA_PATH}"/spamfilter
+            if [ ! -d "${DATA_PATH}"/spamfilter/maps ]; then rsync -aXx /assets/stalwart/spamfilter/maps "${DATA_PATH}"/spamfilter/ ; fi
+            if [ ! -d "${DATA_PATH}"/spamfilter/scripts ]; then rsync -aXx /assets/stalwart/spamfilter/scripts "${DATA_PATH}"/spamfilter/ ; fi
+            chown "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/spamfilter
 
             toml_block add directory.dynamic spamdb type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_TYPE}"
             toml_block add directory.dynamic spamdb address quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_ADDRESS}"
@@ -1544,11 +1548,8 @@ $(toml_block show "${block_directory_spam_lookup_trap_address}")
 
 $(toml_block show "${block_directory_spam_lookup_scores}")
 
-$(toml_block show "${block_sieve_trusted_scripts_spam_filter}")
-
-$(toml_block show "${block_sieve_trusted_scripts_track_replies}")
-
-$(toml_block show "${block_sieve_trusted_scripts_greylist}")
+$(toml_block show "${block_sieve_trusted_scripts}")
+## TODO TRUSTED SCRIPTS MIGHT BE CARRYING FORWARD FROM ANOTHER FUNCTION!
 
 ##############################################
 ## SMTP Spam & Phishing filter configuration
