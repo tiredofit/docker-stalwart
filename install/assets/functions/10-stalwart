@@ -214,6 +214,8 @@ configure_common() {
 
     config_dir="${CONFIG_PATH}/common"
 
+    if [ "${SETUP_TYPE,,}" = "auto" ]; then sudo -u "${SERVER_USER}" mkdir -p "${config_dir}" ; fi
+
     common_configure_server() {
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
@@ -256,28 +258,28 @@ EOF
 
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-            toml_block add sieve.untrusted array disable-capabilities "${SIEVE_UNTRUSTED_DISABLE_CAPABILITIES}"
-            toml_block add sieve.untrusted array notification-uris "${SIEVE_UNTRUSTED_NOTIFICATION_URIS}"
-            toml_block add sieve.untrusted array protected-headers "${SIEVE_UNTRUSTED_PROTECTED_HEADERS}"
+            toml_block add sieve.untrusted disable-capabilities array "${SIEVE_UNTRUSTED_DISABLE_CAPABILITIES}"
+            toml_block add sieve.untrusted notification-uris array "${SIEVE_UNTRUSTED_NOTIFICATION_URIS}"
+            toml_block add sieve.untrusted protected-headers array "${SIEVE_UNTRUSTED_PROTECTED_HEADERS}"
 
-            toml_block add sieve.untrusted.limits name-length ${SIEVE_UNTRUSTED_LIMITS_NAME_LENGTH}
-            toml_block add sieve.untrusted.limits max-scripts ${SIEVE_UNTRUSTED_LIMITS_MAX_SCRIPTS}
-            toml_block add sieve.untrusted.limits script-size ${SIEVE_UNTRUSTED_LIMITS_SCRIPT_SIZE}
-            toml_block add sieve.untrusted.limits string-length ${SIEVE_UNTRUSTED_LIMITS_STRING_LENGTH}
-            toml_block add sieve.untrusted.limits variable-name-length ${SIEVE_UNTRUSTED_LIMITS_VARIABLE_NAME_LENGTH}
-            toml_block add sieve.untrusted.limits variable-size ${SIEVE_UNTRUSTED_LIMITS_VARIABLE_SIZE}
-            toml_block add sieve.untrusted.limits nested-blocks ${SIEVE_UNTRUSTED_LIMITS_NESTED_BLOCKS}
-            toml_block add sieve.untrusted.limits nested-tests ${SIEVE_UNTRUSTED_LIMITS_NESTED_TESTS}
-            toml_block add sieve.untrusted.limits nested-foreverypart ${SIEVE_UNTRUSTED_LIMITS_NESTED_FOREVERYPART}
-            toml_block add sieve.untrusted.limits match-variables ${SIEVE_UNTRUSTED_LIMITS_MATCH_VARIABLES}
-            toml_block add sieve.untrusted.limits local-variables ${SIEVE_UNTRUSTED_LIMITS_LOCAL_VARIABLES}
-            toml_block add sieve.untrusted.limits header-size ${SIEVE_UNTRUSTED_LIMITS_HEADER_SIZE}
-            toml_block add sieve.untrusted.limits includes ${SIEVE_UNTRUSTED_LIMITS_INCLUDES}
-            toml_block add sieve.untrusted.limits nested-includes ${SIEVE_UNTRUSTED_LIMITS_NESTED_INCLUDES}
-            toml_block add sieve.untrusted.limits cpu ${SIEVE_UNTRUSTED_LIMITS_CPU}
-            toml_block add sieve.untrusted.limits redirects ${SIEVE_UNTRUSTED_LIMITS_REDIRECTS}
-            toml_block add sieve.untrusted.limits received-headers ${SIEVE_UNTRUSTED_LIMITS_RECEIVED_HEADERS}
-            toml_block add sieve.untrusted.limits outgoing-messages ${SIEVE_UNTRUSTED_LIMITS_OUTGOING_MESSAGES}
+            toml_block add sieve.untrusted.limits name-length "${SIEVE_UNTRUSTED_LIMITS_NAME_LENGTH}"
+            toml_block add sieve.untrusted.limits max-scripts "${SIEVE_UNTRUSTED_LIMITS_MAX_SCRIPTS}"
+            toml_block add sieve.untrusted.limits script-size "${SIEVE_UNTRUSTED_LIMITS_SCRIPT_SIZE}"
+            toml_block add sieve.untrusted.limits string-length "${SIEVE_UNTRUSTED_LIMITS_STRING_LENGTH}"
+            toml_block add sieve.untrusted.limits variable-name-length "${SIEVE_UNTRUSTED_LIMITS_VARIABLE_NAME_LENGTH}"
+            toml_block add sieve.untrusted.limits variable-size "${SIEVE_UNTRUSTED_LIMITS_VARIABLE_SIZE}"
+            toml_block add sieve.untrusted.limits nested-blocks "${SIEVE_UNTRUSTED_LIMITS_NESTED_BLOCKS}"
+            toml_block add sieve.untrusted.limits nested-tests "${SIEVE_UNTRUSTED_LIMITS_NESTED_TESTS}"
+            toml_block add sieve.untrusted.limits nested-foreverypart "${SIEVE_UNTRUSTED_LIMITS_NESTED_FOREVERYPART}"
+            toml_block add sieve.untrusted.limits match-variables "${SIEVE_UNTRUSTED_LIMITS_MATCH_VARIABLES}"
+            toml_block add sieve.untrusted.limits local-variables "${SIEVE_UNTRUSTED_LIMITS_LOCAL_VARIABLES}"
+            toml_block add sieve.untrusted.limits header-size "${SIEVE_UNTRUSTED_LIMITS_HEADER_SIZE}"
+            toml_block add sieve.untrusted.limits includes "${SIEVE_UNTRUSTED_LIMITS_INCLUDES}"
+            toml_block add sieve.untrusted.limits nested-includes "${SIEVE_UNTRUSTED_LIMITS_NESTED_INCLUDES}"
+            toml_block add sieve.untrusted.limits cpu "${SIEVE_UNTRUSTED_LIMITS_CPU}"
+            toml_block add sieve.untrusted.limits redirects "${SIEVE_UNTRUSTED_LIMITS_REDIRECTS}"
+            toml_block add sieve.untrusted.limits received-headers "${SIEVE_UNTRUSTED_LIMITS_RECEIVED_HEADERS}"
+            toml_block add sieve.untrusted.limits outgoing-messages "${SIEVE_UNTRUSTED_LIMITS_OUTGOING_MESSAGES}"
 
             toml_block add sieve.untrusted.vacation default-subject quotes "${SIEVE_UNTRUSTED_VACATION_DEFAULT_SUBJECT}"
             toml_block add sieve.untrusted.vacation subject-prefix quotes "${SIEVE_UNTRUSTED_VACATION_SUBJECT_PREFIX}"
@@ -330,75 +332,6 @@ $(toml_block show "${block_sieve_trusted}")
 $(toml_block show "${block_sieve_trusted_limits}")
 
 $(toml_block show "${block_sieve_trusted_scripts}")
-
-#[sieve.untrusted]
-#disable-capabilities = []
-#notification-uris = ["mailto"]
-#protected-headers = ["Original-Subject", "Original-From", "Received", "Auto-Submitted"]
-#
-#[sieve.untrusted.limits]
-#name-length = 512
-#max-scripts = 256
-#script-size = 102400
-#string-length = 4096
-#variable-name-length = 32
-#variable-size = 4096
-#nested-blocks = 15
-#nested-tests = 15
-#nested-foreverypart = 3
-#match-variables = 30
-#local-variables = 128
-#header-size = 1024
-#includes = 3
-#nested-includes = 3
-#cpu = 5000
-#redirects = 1
-#received-headers = 10
-#outgoing-messages = 3
-#
-#[sieve.untrusted.vacation]
-#default-subject = "Automated reply"
-#subject-prefix = "Auto: "
-#
-#[sieve.untrusted.default-expiry]
-#vacation = "30d"
-#duplicate = "7d"
-
-# #############################################
-# # Sieve trusted runtime configuration
-# #############################################
-#
-# [sieve.trusted]
-# from-name = "Automated Message"
-# from-addr = "no-reply@%{DEFAULT_DOMAIN}%"
-# return-path = ""
-# #hostname = "%{HOST}%"
-# no-capability-check = true
-# sign = ["rsa"]
-#
-# [sieve.trusted.limits]
-# redirects = 3
-# out-messages = 5
-# received-headers = 50
-# cpu = 1048576
-# nested-includes = 5
-# duplicate-expiry = "7d"
-#
-# [sieve.trusted.scripts]
-#connect = '''require ["variables", "extlists", "reject"];
-#    if string :list "${env.remote_ip}" "default/blocked-ips" {
-#        reject "Your IP '${env.remote_ip}' is not welcomed here.";
-#    }'''
-
-#ehlo = '''require ["variables", "extlists", "reject"];
-#    if string :list "${env.helo_domain}" "default/blocked-domains" {
-#        reject "551 5.1.1 Your domain '${env.helo_domain}' has been blacklisted.";
-#    }'''
-
-#mail = '''require ["variables", "envelope", "reject"];
-#    if envelope :localpart :is "from" "known_spammer" {
-#        reject "We do not accept SPAM.";
-#    }'''
 
 EOF
         else
@@ -1397,11 +1330,10 @@ EOF
 
     smtp_configure_signature() {
         config_file="signature.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            set -x
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
             dkim create_default
-            set +x
 
             toml_block add signature.dynamic rsa public-key quotes "${SMTP_SIGNATURE_RSA_PUBLIC_KEY:-${DEFAULT_DKIM_CERT_FILE}}"
             toml_block add signature.dynamic rsa private-key quotes "${SMTP_SIGNATURE_RSA_PRIVATE_KEY:-${DEFAULT_DKIM_KEY_FILE}}"
@@ -1416,7 +1348,6 @@ EOF
             toml_block add signature.dynamic rsa auid quotes "${SMTP_SIGNATURE_RSA_AUID}"
             toml_block add signature.dynamic rsa set-body-length "${SMTP_SIGNATURE_RSA_SET_BODY_LENGTH,,}"
             toml_block add signature.dynamic rsa report "${SMTP_SIGNATURE_RSA_REPORT,,}"
-
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -1452,8 +1383,8 @@ EOF
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             mkdir -p "${DATA_PATH}"/spamfilter
-            if [ ! -d "${DATA_PATH}"/spamfilter/maps ]; then rsync -aXx /assets/stalwart/spamfilter/maps "${DATA_PATH}"/spamfilter/ ; fi
-            if [ ! -d "${DATA_PATH}"/spamfilter/scripts ]; then rsync -aXx /assets/stalwart/spamfilter/scripts "${DATA_PATH}"/spamfilter/ ; fi
+            if [ ! -d "${DATA_PATH}"/spamfilter/maps ]; then cp -aR /assets/stalwart/config/spamfilter/maps "${DATA_PATH}"/spamfilter/ ; fi
+            if [ ! -d "${DATA_PATH}"/spamfilter/scripts ]; then cp -aR /assets/stalwart/config/spamfilter/scripts "${DATA_PATH}"/spamfilter/ ; fi
             chown "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/spamfilter
 
             toml_block add directory.dynamic spamdb type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_TYPE}"
@@ -1511,7 +1442,7 @@ EOF
             toml_block add directory.dynamic.lookup.dynamic2 spam scores values quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_VALUES}"
 
             toml_block add sieve.trusted.scripts spam-filter array "${SIEVE_TRUSTED_SCRIPTS_SPAMFILTER}"
-            toml_block add sieve.trusted.scripts track-repllies array "${SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES}"
+            toml_block add sieve.trusted.scripts track-replies array "${SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES}"
             toml_block add sieve.trusted.scripts greylist array "${SIEVE_TRUSTED_SCRIPTS_GREYLIST}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
