@@ -1441,9 +1441,11 @@ EOF
             toml_block add directory.dynamic.lookup.dynamic2 spam scores type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam scores values quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_VALUES}"
 
-            toml_block add sieve.trusted.scripts spam-filter array "${SIEVE_TRUSTED_SCRIPTS_SPAMFILTER}"
-            toml_block add sieve.trusted.scripts track-replies array "${SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES}"
-            toml_block add sieve.trusted.scripts greylist array "${SIEVE_TRUSTED_SCRIPTS_GREYLIST}"
+            if var_true "${ENABLE_SIEVE}" ; then
+                toml_block add sieve.trusted.scripts spam-filter array "${SIEVE_TRUSTED_SCRIPTS_SPAMFILTER}"
+                toml_block add sieve.trusted.scripts track-replies array "${SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES}"
+                toml_block add sieve.trusted.scripts greylist array "${SIEVE_TRUSTED_SCRIPTS_GREYLIST}"
+            fi
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
