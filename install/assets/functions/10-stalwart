@@ -640,6 +640,15 @@ configure_jmap() {
             :
         fi
     }
+
+    if var_true "${JMAP_ENABLE_AUTH}" ; then jmap_configure_auth ; fi
+    if var_true "${JMAP_ENABLE_LISTENER}" ; then jmap_configure_listener ; fi
+    if var_true "${JMAP_ENABLE_OAUTH}" ; then jmap_configure_oauth ; fi
+    if var_true "${JMAP_ENABLE_PROTOCOL}" ; then jmap_configure_protocol ; fi
+    if var_true "${JMAP_ENABLE_PUSH}" ; then jmap_configure_push ; fi
+    if var_true "${JMAP_ENABLE_RATELIMIT}" ; then jmap_configure_ratelimit ; fi
+    if var_true "${JMAP_ENABLE_STORE}" ; then jmap_configure_store ; fi
+    if var_true "${JMAP_ENABLE_WEBSOCKETS}" ; then jmap_configure_websockets ; fi
 }
 
 configure_server() {
@@ -1039,10 +1048,9 @@ EOF
     smtp_configure_report() {
         config_file="report.toml"
 
-set -x
         if [ ! -d "${REPORTS_PATH}" ]; then mkdir -p "${REPORTS_PATH}" ; fi
         if [ "$(stat -c %U "${REPORTS_PATH}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${REPORTS_PATH}" ; fi
-set +x
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
@@ -1199,9 +1207,9 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-${block_resolver}
+$(toml_block show "${block_resolver}")
 
-${block_resolver_cache}
+$(toml_block show "${block_resolver_cache}")
 
 EOF
         else
@@ -1708,6 +1716,7 @@ setup_container_mode() {
                     "smtp" )
                         print_debug "[setup_container_mode] Enabling Container Mode for: SMTP"
                         echo "ENABLE_SMTP=TRUE" >> /tmp/.container/stalwart/.mode-env
+                        echo "ENABLE_JMAP=TRUE" >> /tmp/.container/stalwart/.mode-env
                         if [[ "$(grep -cq 'create_log_stalwart=TRUE' /tmp/.container/stalwart/.mode-env)" -eq 0 ]] ; then
                             echo "create_log_stalwart=TRUE" >> /tmp/.container/stalwart/.mode-env
                         fi
