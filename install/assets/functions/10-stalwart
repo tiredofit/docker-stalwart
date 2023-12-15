@@ -217,9 +217,11 @@ configure_common() {
     if [ "${SETUP_TYPE,,}" = "auto" ]; then sudo -u "${SERVER_USER}" mkdir -p "${config_dir}" ; fi
 
     common_configure_server() {
+        config_file="server.toml"
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
-            config_file="server.toml"
+
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             toml_block add server hostname quotes "${SERVER_NAME}"
@@ -341,8 +343,10 @@ EOF
 
     common_configure_tls() {
         config_file="tls.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
             certificates "${TLS_DEFAULT_CERT_FILE}"
             chown "${SERVER_USER}":"${SERVER_GROUP}" "${TLS_DEFAULT_CERT_FILE}"
             #chown "${SERVER_USER}":"${SERVER_GROUP}" "${TLS_DEFAULT_KEY_FILE}"  ## TODO - Refactor function
@@ -374,8 +378,8 @@ EOF
 
     common_configure_tracing() {
         config_file="tracing.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             case "${LOG_TYPE,,}" in
                 ## TODO Allow for comma seperated and allow for multiple blocks with same name
@@ -431,8 +435,10 @@ configure_directory() {
 
     directory_configure_ldap() {
         config_file="ldap.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
             ## TODO Be able to handle multiple directories
             toml_block add directory.default type quotes "${DIRECTORY_DEFAULT_LDAP_TYPE}"
             toml_block add directory.default address quotes "${DIRECTORY_DEFAULT_LDAP_ADDRESS}"
@@ -681,8 +687,10 @@ configure_smtp() {
 
     smtp_configure_auth() {
         config_file="auth.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
             ## TODO Add ENABLE switches
             toml_block add auth.iprev verify array "${SMTP_AUTH_IPREV_VERIFY}"
 
@@ -722,8 +730,10 @@ EOF
 
     smtp_configure_dkim() {
         config_file="dkim.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
             print_debug "Configuring DKIM"
 
             dkim_domains=$(set -o posix ; set | printenv | sort | grep -c "^DKIM.*_DOMAIN=")
@@ -749,8 +759,9 @@ EOF
 
     smtp_configure_listener() {
         config_file="listener.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             toml_block add server.listener.dynamic smtp bind array "${SMTP_LISTENER_SMTP_BIND}"
             toml_block add server.listener.dynamic smtp greeting quotes "${SMTP_LISTENER_SMTP_GREETING}"
@@ -815,8 +826,9 @@ EOF
 
     smtp_configure_milter() {
         config_file="milter.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             ## TODO Create ENABLE Blocks
             toml_block add session.data.milter.dynamic rspamd enable array "${SMTP_SESSION_DATA_MILTER_RSPAMD_ENABLE}"
@@ -886,9 +898,10 @@ EOF
         if [ ! -d "${SMTP_QUEUE_PATH}" ]; then mkdir -p "${SMTP_QUEUE_PATH}" ; fi
         if [ "$(stat -c %U "${SMTP_QUEUE_PATH}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${SMTP_QUEUE_PATH}" ; fi
 
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+         if [ "${SETUP_TYPE,,}" = "auto" ]; then
 
-        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
             toml_block add queue path quotes "${SMTP_QUEUE_PATH}"
             toml_block add queue hash ${SMTP_QUEUE_HASH}
 
@@ -1015,8 +1028,11 @@ EOF
 
     smtp_configure_remote() {
         config_file="remote.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
             toml_block add remote.dynamic local address quotes "${SMTP_REMOTE_LOCAL_ADDRESS}"
             toml_block add remote.dynamic local port "${SMTP_REMOTE_LOCAL_PORT}"
             toml_block add remote.dynamic local protocol quotes "${SMTP_REMOTE_LOCAL_PROTOCOL}"
@@ -1062,8 +1078,9 @@ EOF
 
     smtp_configure_report() {
         config_file="report.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
             toml_block add report path quotes "${REPORTS_PATH}"
             toml_block add report hash ${REPORTS_HASH}
 
@@ -1184,8 +1201,8 @@ EOF
 
     smtp_configure_resolver() {
         config_file="resolver.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             toml_block add resolver type quotes "${SMTP_RESOLVER_TYPE}"
             toml_block add resolver preserve-intermediates ${SMTP_RESOLVER_PRESERVE_INTERMEDIATES,,}
@@ -1222,8 +1239,9 @@ EOF
 
     smtp_configure_session() {
         config_file="session.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
             toml_block add session timeout quotes "${SMTP_SESSION_TIMEOUT}"
             toml_block add session transfer-limit "${SMTP_SESSION_TRANSFER_LIMIT}"
             toml_block add session duration quotes "${SMTP_SESSION_DURATION}"
