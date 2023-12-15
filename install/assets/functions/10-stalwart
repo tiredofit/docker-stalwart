@@ -882,6 +882,10 @@ EOF
 
     smtp_configure_queue() {
         config_file="queue.toml"
+
+        if [ ! -d "${SMTP_QUEUE_PATH}" ]; then mkdir -p "${SMTP_QUEUE_PATH}" ; fi
+        if [ "$(stat -c %U "${SMTP_QUEUE_PATH}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${SMTP_QUEUE_PATH}" ; fi
+
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             toml_block add queue path quotes "${SMTP_QUEUE_PATH}"
