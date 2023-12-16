@@ -8,6 +8,8 @@ bootstrap_filesystem
 setup_container_mode
 configure_common
 configure_directory
+if var_true "${ENABLE_IMAP}" ; then configure_imap; fi
+if var_true "${ENABLE_JMAP}" ; then configure_jmap; fi
 if var_true "${ENABLE_SMTP}" ; then configure_smtp; fi
 configure_server
 

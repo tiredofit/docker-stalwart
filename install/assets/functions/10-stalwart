@@ -213,6 +213,8 @@ configure_common() {
     local config_file
 
     config_dir="${CONFIG_PATH}/common"
+    if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
 
     if [ "${SETUP_TYPE,,}" = "auto" ]; then sudo -u "${SERVER_USER}" mkdir -p "${config_dir}" ; fi
 
@@ -422,7 +424,8 @@ configure_directory() {
     local config_file
 
     config_dir="${CONFIG_PATH}/directory"
-    sudo -u "${SERVER_USER}" mkdir -p "${config_dir}"
+    if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
 
     directory_configure_imap() {
         ## TODO - Future version
@@ -541,25 +544,113 @@ configure_imap() {
     local config_file
 
     config_dir="${CONFIG_PATH}/imap"
-    sudo -u "${SERVER_USER}" mkdir -p "${config_dir}"
+    if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
 
     imap_configure_listener() {
-        ## TODO - Future version
+        config_file="listener.toml"
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add server.listener.dynamic imap bind array "${IMAP_LISTENER_IMAP_BIND}"
+            toml_block add server.listener.dynamic imap protocol quotes "imap"
+
+            toml_block add server.listener.dynamic imaptls bind array "${IMAP_LISTENER_IMAPTLS_BIND}"
+            toml_block add server.listener.dynamic imaptls tls.implicit "${IMAP_LISTENER_IMAPTLS_TLS_IMPLICIT}"
+            toml_block add server.listener.dynamic imaptls protocol quotes "imap"
+
+            toml_block add server.listener.dynamic sieve bind array "${IMAP_LISTENER_SIEVE_BIND}"
+            toml_block add server.listener.dynamic sieve tls.implicit "${IMAP_LISTENER_SIEVE_TLS_IMPLICIT}"
+            toml_block add server.listener.dynamic sieve protocol quotes "managesieve"
+
+            ## TODO Make these toggleable
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# IMAP listener configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_server_listener_imap}")
+
+$(toml_block show "${block_server_listener_imaptls}")
+
+$(toml_block show "${block_server_listener_sieve}")
+
+EOF
+
         else
             :
         fi
     }
 
     imap_configure_settings() {
-        ## TODO - Future version
+        config_file="settings.toml"
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add imap.request max-size "${IMAP_REQUEST_MAX_SIZE}"
+
+            toml_block add imap.auth max-failures "${IMAP_AUTH_MAX_FAILURES}"
+            toml_block add imap.auth allow-plain-text "${IMAP_AUTH_ALLOW_PLAIN_TEXT,,}"
+
+            toml_block add imap.folders.name shared "${IMAP_FOLDERSNAME_SHARED}"
+            toml_block add imap.folders.name all "${IMAP_FOLDERSNAME_ALL}"
+
+            toml_block add imap.timeout authenticated "${IMAP_TIMEOUT_AUTHENTICATED}"
+            toml_block add imap.timeout anonymous "${IMAP_TIMEOUT_ANONYMOUS}"
+            toml_block add imap.timeout idle "${IMAP_TIMEOUT_IDLE}"
+
+            toml_block add imap.rate-limit requests "${IMAP_RATELIMIT_REQUESTS}"
+            toml_block add imap.rate-limit concurrent "${IMAP_RATELIMIT_CONCURRENT}"
+
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# IMAP settingsconfiguration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_imap_request}")
+
+$(toml_block show "${block_imap_auth}")
+
+$(toml_block show "${block_imap_folders_name}")
+
+$(toml_block show "${block_imap_timeout}")
+
+$(toml_block show "${block_imap_rate_limit}")
+
+[imap.request]
+max-size = 52428800
+
+[imap.auth]
+max-failures = 3
+allow-plain-text = false
+
+[imap.folders.name]
+shared = "Shared Folders"
+all = "All Mail"
+
+[imap.timeout]
+authenticated = "30m"
+anonymous = "1m"
+idle = "30m"
+
+[imap.rate-limit]
+requests = "2000/1m"
+concurrent = 4
+
+EOF
+
         else
             :
         fi
     }
+
+    if var_true "${IMAP_ENABLE_LISTENER}" ; then imap_configure_listener ; fi
+    if var_true "${IMAP_ENABLE_SETTINGS}" ; then imap_configure_settings; fi
 }
 
 configure_jmap() {
@@ -567,7 +658,8 @@ configure_jmap() {
     local config_file
 
     config_dir="${CONFIG_PATH}/jmap"
-    sudo -u "${SERVER_USER}" mkdir -p "${config_dir}"
+    if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
 
     jmap_configure_auth() {
         config_file="auth.toml"
@@ -604,7 +696,7 @@ EOF
 
             toml_block add server.listener.dynamic jmap bind array "${JMAP_LISTENER_JMAP_BIND}"
             toml_block add server.listener.dynamic jmap url quotes "${JMAP_LISTENER_JMAP_URL}"
-            toml_block add server.listener.dynamic jmap protocol "jmap"
+            toml_block add server.listener.dynamic jmap protocol quotes "jmap"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -914,6 +1006,10 @@ configure_server() {
    local config_dir
    local config_file
    config_dir="${CONFIG_PATH}"
+
+    if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
+
    config_file="${CONFIG_FILE}"
 
     if [ "${SETUP_TYPE,,}" = "auto" ]; then
@@ -942,6 +1038,9 @@ configure_spamfilter() {
 
     config_dir="${CONFIG_PATH}/spamfilter"
 
+    if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
+
     ## TODO - Future version
     :
 }
@@ -951,7 +1050,8 @@ configure_smtp() {
     local config_file
 
     config_dir="${CONFIG_PATH}/smtp"
-    sudo -u "${SERVER_USER}" mkdir -p "${config_dir}"
+    if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
 
     smtp_configure_auth() {
         config_file="auth.toml"
