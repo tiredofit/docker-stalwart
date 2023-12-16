@@ -622,26 +622,6 @@ $(toml_block show "${block_imap_timeout}")
 
 $(toml_block show "${block_imap_rate_limit}")
 
-[imap.request]
-max-size = 52428800
-
-[imap.auth]
-max-failures = 3
-allow-plain-text = false
-
-[imap.folders.name]
-shared = "Shared Folders"
-all = "All Mail"
-
-[imap.timeout]
-authenticated = "30m"
-anonymous = "1m"
-idle = "30m"
-
-[imap.rate-limit]
-requests = "2000/1m"
-concurrent = 4
-
 EOF
 
         else
