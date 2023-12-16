@@ -1152,27 +1152,6 @@ $(toml_block show "${block_server_listener_management}")
 
 $(toml_block show "${block_managemnet}")
 
-#[server.listener."smtp"]
-#bind = ["[::]:25"]
-##greeting = "Stalwart SMTP at your service"
-#protocol = "smtp"
-#
-#[server.listener."submission"]
-#bind = ["[::]:587"]
-#protocol = "smtp"
-#
-#[server.listener."submissions"]
-#bind = ["[::]:465"]
-#protocol = "smtp"
-#tls.implicit = true
-#
-#[server.listener."management"]
-#bind = ["127.0.0.1:8080"]
-#protocol = "http"
-#
-#[management]
-#directory = "default"
-
 EOF
         else
             :
@@ -1218,28 +1197,6 @@ $(toml_block show "${block_data_milter_rspamd_options}")
 
 $(toml_block show "${block_data_pipe_spam_assassin}")
 
-#[session.data.milter."rspamd"]
-#enable = [ { if = "listener", eq = "smtp", then = true },
-#           { else = false } ]
-#hostname = "127.0.0.1"
-#port = 11332
-#tls = false
-#allow-invalid-certs = false
-
-#[session.data.milter."rspamd".timeout]
-#connect = "30s"
-#command = "30s"
-#data = "60s"
-
-#[session.data.milter."rspamd".options]
-#tempfail-on-error = true
-#max-response-size = 52428800 # 50mb
-#version = 6
-
-#[session.data.pipe."spam-assassin"]
-#command = "spamc"
-#arguments = []
-#timeout = "10s"
 
 EOF
         else
@@ -1258,7 +1215,7 @@ EOF
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             toml_block add queue path quotes "${SMTP_QUEUE_PATH}"
-            toml_block add queue hash ${SMTP_QUEUE_HASH}
+            toml_block add queue hash "${SMTP_QUEUE_HASH}"
 
             toml_block add queue.schedule retry array "${SMTP_QUEUE_SCHEDULE_RETRY}"
             toml_block add queue.schedule notify array "${SMTP_QUEUE_SCHEDULE_NOTIFY}"
@@ -1372,19 +1329,6 @@ $(toml_block show "${block_remote_local_tls}")
 
 $(toml_block show "${block_remote_local_auth}")
 
-##address = "127.0.0.1"
-##port = 11200
-##protocol = "lmtp"
-##concurrency = 10
-##timeout = "1m"
-##
-##[remote."local".tls]
-##implicit = false
-##allow-invalid-certs = true
-##
-###[remote."local".auth]
-###username = ""
-###secret = ""
 EOF
         else
             :
@@ -1469,55 +1413,6 @@ $(toml_block show "${block_report_dmarc}")
 $(toml_block show "${block_report_dmarc_aggregate}")
 
 $(toml_block show "${block_report_tls_aggregate}")
-
-##[report.analysis]
-##addresses = ["dmarc@*", "abuse@*", "postmaster@*"]
-##forward = true
-###store = "%{BASE_PATH}%/incoming"
-#
-#[report.dsn]
-#from-name = "Mail Delivery Subsystem"
-#from-address = "MAILER-DAEMON@%{DEFAULT_DOMAIN}%"
-#sign = ["rsa"]
-#
-#[report.dkim]
-#from-name = "Report Subsystem"
-#from-address = "noreply-dkim@%{DEFAULT_DOMAIN}%"
-#subject = "DKIM Authentication Failure Report"
-#sign = ["rsa"]
-#send = "1/1d"
-#
-#[report.spf]
-#from-name = "Report Subsystem"
-#from-address = "noreply-spf@%{DEFAULT_DOMAIN}%"
-#subject = "SPF Authentication Failure Report"
-#send = "1/1d"
-#sign = ["rsa"]
-#
-#[report.dmarc]
-#from-name = "Report Subsystem"
-#from-address = "noreply-dmarc@%{DEFAULT_DOMAIN}%"
-#subject = "DMARC Authentication Failure Report"
-#send = "1/1d"
-#sign = ["rsa"]
-#
-#[report.dmarc.aggregate]
-#from-name = "DMARC Report"
-#from-address = "noreply-dmarc@%{DEFAULT_DOMAIN}%"
-#org-name = "%{DEFAULT_DOMAIN}%"
-##contact-info = ""
-#send = "daily"
-#max-size = 26214400 # 25mb
-#sign = ["rsa"]
-#
-#[report.tls.aggregate]
-#from-name = "TLS Report"
-#from-address = "noreply-tls@%{DEFAULT_DOMAIN}%"
-#org-name = "%{DEFAULT_DOMAIN}%"
-##contact-info = ""
-#send = "daily"
-#max-size = 26214400 # 25 mb
-#sign = ["rsa"]
 
 EOF
         else
@@ -1706,21 +1601,6 @@ EOF
 
 $(toml_block show "${block_signature_rsa}")
 
-#[signature."rsa"]
-##public-key = "file://%{BASE_PATH}%/etc/dkim/%{DEFAULT_DOMAIN}%.cert"
-#private-key = "file://%{BASE_PATH}%/etc/dkim/%{DEFAULT_DOMAIN}%.key"
-#domain = "%{DEFAULT_DOMAIN}%"
-#selector = "stalwart"
-#headers = ["From", "To", "Date", "Subject", "Message-ID"]
-#algorithm = "rsa-sha256"
-#canonicalization = "relaxed/relaxed"
-##expire = "10d"
-##third-party = ""
-##third-party-algo = ""
-##auid = ""
-#set-body-length = false
-#report = true
-
 EOF
         else
             :
@@ -1832,123 +1712,6 @@ $(toml_block show "${block_directory_spam_lookup_scores}")
 
 $(toml_block show "${block_sieve_trusted_scripts}")
 ## TODO TRUSTED SCRIPTS MIGHT BE CARRYING FORWARD FROM ANOTHER FUNCTION!
-
-##############################################
-## SMTP Spam & Phishing filter configuration
-##############################################
-#
-#[directory."spamdb"]
-#type = "sql"
-#address = "sqlite://%{BASE_PATH}%/data/spamfilter.sqlite3?mode=rwc"
-#
-#[directory."spamdb".pool]
-#max-connections = 10
-#min-connections = 0
-#idle-timeout = "5m"
-#
-#[directory."spamdb".lookup]
-#token-insert = "INSERT INTO bayes_tokens (h1, h2, ws, wh) VALUES (?, ?, ?, ?)
-#                ON CONFLICT(h1, h2)
-#                DO UPDATE SET ws = ws + excluded.ws, wh = wh + excluded.wh"
-#token-lookup = "SELECT ws, wh FROM bayes_tokens WHERE h1 = ? AND h2 = ?"
-#id-insert = "INSERT INTO seen_ids (id, ttl) VALUES (?, datetime('now', ? || ' seconds'))"
-#id-lookup = "SELECT 1 FROM seen_ids WHERE id = ? AND ttl > CURRENT_TIMESTAMP"
-#reputation-insert = "INSERT INTO reputation (token, score, count, ttl) VALUES (?, ?, 1, datetime('now', '30 days'))
-#                     ON CONFLICT(token)
-#                     DO UPDATE SET score = (count + 1) * (excluded.score + 0.98 * score) / (0.98 * count + 1), count = count + 1, ttl = excluded.ttl"
-#reputation-lookup = "SELECT score, count FROM reputation WHERE token = ?"
-#
-#[directory."spamdb".schedule]
-#query = ["DELETE FROM seen_ids WHERE ttl < CURRENT_TIMESTAMP",
-#         "DELETE FROM reputation WHERE ttl < CURRENT_TIMESTAMP"]
-#frequency = "0 3 *"
-#
-#[directory."spam"]
-#type = "memory"
-#
-#[directory."spam".lookup."free-domains"]
-#type = "glob"
-#comment = '#'
-#values = ["https://get.stalw.art/resources/config/spamfilter/maps/domains_free.list",
-#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/domains_free.list"]
-#
-#[directory."spam".lookup."disposable-domains"]
-#type = "glob"
-#comment = '#'
-#values = ["https://get.stalw.art/resources/config/spamfilter/maps/domains_disposable.list",
-#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/domains_disposable.list"]
-#
-#[directory."spam".lookup."redirectors"]
-#type = "glob"
-#comment = '#'
-#values = ["https://get.stalw.art/resources/config/spamfilter/maps/url_redirectors.list",
-#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/url_redirectors.list"]
-#
-#[directory."spam".lookup."domains-allow"]
-#type = "glob"
-#comment = '#'
-#values = ["https://get.stalw.art/resources/config/spamfilter/maps/allow_domains.list",
-#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/allow_domains.list"]
-#
-#[directory."spam".lookup."dmarc-allow"]
-#type = "glob"
-#comment = '#'
-#values = ["https://get.stalw.art/resources/config/spamfilter/maps/allow_dmarc.list",
-#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/allow_dmarc.list"]
-#
-#[directory."spam".lookup."spf-dkim-allow"]
-#type = "glob"
-#comment = '#'
-#values = ["https://get.stalw.art/resources/config/spamfilter/maps/allow_spf_dkim.list",
-#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/allow_spf_dkim.list"]
-#
-#[directory."spam".lookup."mime-types"]
-#type = "map"
-#comment = '#'
-#values = ["https://get.stalw.art/resources/config/spamfilter/maps/mime_types.map",
-#          "file+fallback://%{BASE_PATH}%/etc/spamfilter/maps/mime_types.map"]
-#
-#[directory."spam".lookup."trap-address"]
-#type = "glob"
-#comment = '#'
-#values = "file://%{BASE_PATH}%/etc/spamfilter/maps/spam_trap.list"
-#
-#[directory."spam".lookup."scores"]
-#type = "map"
-#values = "file://%{BASE_PATH}%/etc/spamfilter/maps/scores.map"
-#
-#[sieve.trusted.scripts]
-#spam-filter = ["file://%{BASE_PATH}%/etc/spamfilter/scripts/config.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/prelude.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/from.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/recipient.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/subject.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/replyto.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/date.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/messageid.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/received.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/headers.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/bounce.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/html.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/mime.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/dmarc.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/ip.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/helo.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/replies_in.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/spamtrap.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/bayes_classify.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/url.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/rbl.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/pyzor.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/composites.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/scores.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/reputation.sieve",
-#               "file://%{BASE_PATH}%/etc/spamfilter/scripts/epilogue.sieve"]
-#
-#track-replies = ["file://%{BASE_PATH}%/etc/spamfilter/scripts/config.sieve",
-#                 "file://%{BASE_PATH}%/etc/spamfilter/scripts/replies_out.sieve"]
-#
-#greylist = "file://%{BASE_PATH}%/etc/spamfilter/scripts/greylist.sieve"
 
 EOF
         else
