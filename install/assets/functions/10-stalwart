@@ -570,72 +570,331 @@ configure_jmap() {
     sudo -u "${SERVER_USER}" mkdir -p "${config_dir}"
 
     jmap_configure_auth() {
-        ## TODO - Future version
+        config_file="auth.toml"
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add jmap directory quotes "${JMAP_DIRECTORY}"
+            toml_block add jmap.session.cache ttl quotes "${JMAP_SESSION_CACHE_TTL}"
+            toml_block add jmap.session.cache.size "${JMAP_SESSION_CACHE_SIZE}"
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# JMAP authentication & session configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_jmap_directory}")
+
+$(toml_block show "${block_jmap_session_cache}")
+
+EOF
+
         else
             :
         fi
     }
 
     jmap_configure_listener() {
-        ## TODO - Future version
+        config_file="listener.toml"
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add server.listener.dynamic jmap bind array "${JMAP_LISTENER_JMAP_BIND}"
+            toml_block add server.listener.dynamic jmap url quotes "${JMAP_LISTENER_JMAP_URL}"
+            toml_block add server.listener.dynamic jmap protocol "jmap"
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# JMAP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_server_listener_jmap}")
+
+EOF
+
         else
             :
         fi
     }
 
     jmap_configure_oauth() {
-        ## TODO - Future version
+        config_file="oauth.toml"
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add oauth key quotes "${JMAP_OAUTH_KEY}"
+            toml_block add oauth.auth max-attempts "${JMAP_OAUTH_AUTH_MAX_ATTEMPTS}"
+
+            toml_block add oauth.expiry user-code quotes "${JMAP_OAUTH_EXPIRY_USER_CODE}"
+            toml_block add oauth.expiry auth-code quotes "${JMAP_OAUTH_EXPIRY_AUTH_CODE}"
+            toml_block add oauth.expiry token quotes "${JMAP_OAUTH_EXPIEY_TOKEN}"
+            toml_block add oauth.expiry refresh-token quotes "${JMAP_OAUTH_EXPIRY_REFRESH_TOKEN}"
+            toml_block add oauth.expiry refresh-token-renew quotes "${JMAP_OAUTH_EXPIRY_REFRESH_TOKEN_RENEW}"
+
+            toml_block add oauth.cache size "${JMAP_OAUTH_CACHE_SIZE}"
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# JMAP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_oauth}")
+
+$(toml_block show "${block_oauth_auth}")
+
+$(toml_block show "${block_oauth_expiry}")
+
+$(toml_block show "${block_oauth_cache}")
+
+EOF
+
         else
             :
         fi
     }
 
     jmap_configure_protocol() {
-        ## TODO - Future version
+        config_file="protocol.toml"
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add jmap.protocol.get max-objects "${JMAP_PROTOCOL_GET_MAX_OBJECTS}"
+
+            toml_block add jmap.protocol.set max-objects "${JMAP_PROTOCOL_MAX_OBJECTS}"
+
+            toml_block add jmap.protocol.request max-concurrent "${JMAP_PROTOCOL_REQUEST_MAX_CONRUEENT_}"
+            toml_block add jmap.protocol.request max-size "${JMAP_PROTOCOL_REQUEST_MAX_SIZE}"
+            toml_block add jmap.protocol.request max-calls "${JMAP_PROTOCOL_REQUEST_MAX_CALLS}"
+
+            toml_block add jmap.protocol.query max-results "${JMAP_PROTOCOL_QUERY_MAX_RESULTS}"
+
+            toml_block add jmap.protocol.upload max-size "${JMAP_PROTOCOL_UPLOAD_MAX_SIZE}"
+            toml_block add jmap.protocol.upload max-concurrent "${JMAP_PROTOCOL_UPLOAD_MAX_CONCURRENT}"
+            toml_block add jmap.protocol.upload ttl "${JMAP_PROTOCOL_UPLOAD_TTL}"
+
+            toml_block add jmap.protocol.upload.quota files "${JMAP_PROTOCOL_UPLOAD_QUOTA_FILES}"
+            toml_block add jmap.protocol.upload.quota size "${JMAP_PROTOCOL_UPLOAD_QUOTA_SIZE}"
+
+            toml_block add jmap.protocol.changes "${JMAP_PROTOCOL_CHANGES_MAX_RESULTS}"
+
+            toml_block add jmap.mailbox max-depth "${JMAP_MAILBOX_MAX_DEPTH}"
+            toml_block add jmap.mailbox max-name-length "${JMAP_PROTOCOL_MAX_NAME_LENGTH}"
+
+            toml_block add jmap.email "${JMAP_EMAIL_MAX_ATTACHMENT_SIZE}"
+            toml_block add jmap.email "${JMAP_EMAIL_MAX_SIZE}"
+
+            toml_block add jmap.email.parse max-items "${JMAP_PROTOCOL_EMAIL_PARSE_MAX_ITEMS}"
+
+            toml_block add jmap.principal allow-lookups "${JMAP_PRINCIPAL_ALLOW_LOOKUPS}"
+
+            toml_block add jmap.http headers array "${JMAP_HTTP_HEADERS}"
+
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# JMAP protocol configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_jmap_protocol_get}")
+
+$(toml_block show "${block_jmap_protocol_set}")
+
+$(toml_block show "${block_jmap_protocol_request}")
+
+$(toml_block show "${block_jmap_protocol_query}")
+
+$(toml_block show "${block_jmap_protocol_upload}")
+
+$(toml_block show "${block_jmap_protocol_upload_quota}")
+
+$(toml_block show "${block_jmap_protocol_changes}")
+
+$(toml_block show "${block_jmap_mailbox}")
+
+$(toml_block show "${block_jmap_email}")
+
+$(toml_block show "${block_jmap_email_parse}")
+
+$(toml_block show "${block_jmap_principal}")
+
+$(toml_block show "${block_jmap_http}")
+
+EOF
+
         else
             :
         fi
     }
 
     jmap_configure_push() {
-        ## TODO - Future version
+        config_file="push.toml"
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add jmap.push.max-total quotes "${JMAP_PUSH_MAX_TOTAL}"
+            toml_block add jmap.push.throttle quotes "${JMAP_PUSH_THROTTLE}"
+
+            toml_block add jmap.push.attempts interval quotes "${JMAP_PUSH_ATTEMPTS_INTERVAL}"
+            toml_block add jmap.push.attempts max "${JMAP_PUSH_ATTEMPTS_MAX}"
+
+            toml_block add jmap.push.retry interval quotes "${JMAP_PUSH_RETRY_INTERVAL}"
+
+            toml_block add jmap.push.timeout request quotes "${JMAP_PUSH_TIMEOUT_REQUEST}"
+            toml_block add jmap.push.timeout verify quotes "${JMAP_PUSH_TIMEOUT_VERIFY}"
+
+            toml_block add jmap.event-source throttle quotes "${JMAP_EVENT_SOURCE_THROTTLE}"
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# JMAP push and event source configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_jmap_push}")
+
+$(toml_block show "${block_jmap_push_attempts}")
+
+$(toml_block show "${block_jmap_push_retry}")
+
+$(toml_block show "${block_jmap_push_timeout}")
+
+$(toml_block show "${block_jmap_event_source}")
+
+EOF
+
         else
             :
         fi
     }
 
     jmap_configure_ratelimit() {
-        ## TODO - Future version
+        config_file="ratelimit.toml"
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add jmap.rate-limit account quotes "${JMAP_RATELIMIT_}"
+            toml_block add jmap.rate-limit authentication quotes "${JMAP_RATELIMIT_}"
+            toml_block add jmap.rate-limit anonymous quotes "${JMAP_RATELIMIT_}"
+            toml_block add jmap.rate-limit use-forwarded "${JMAP_RATELIMIT_}"
+
+            toml_block add jmap.rate-limit.cache "${JMAP_RATELIMIT_}"
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# JMAP server rate limiter configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_jmap_rate_limit}")
+
+$(toml_block show "${block_jmap_rate_limit_cache}")
+
+EOF
+
         else
             :
         fi
     }
 
     jmap_configure_store() {
-        ## TODO - Future version
+        config_file="store.toml"
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add store.db path quotes "${JMAP_STORE_DB_}"
+
+            toml_block add store.db.pool max-connections "${JMAP_STORE_DB_}"
+            toml_block add store.db.pool workers "${JMAP_STORE_DB_}"
+
+            toml_block add store.db.cache "${JMAP_STORE_DB_}"
+
+            toml_block add store.blob type quotes "${JMAP_STORE_BLOB_TYPE}"
+
+            toml_block add store.blob.local path quotes "${JMAP_STORE_BLOB_LOCAL_PATH}"
+
+            toml_block add store.blob.s3 bucket quotes "${JMAP_STORE_BLOB_S3_BUCKET}"
+            toml_block add store.blob.s3 region quotes "${JMAP_STORE_BLOB_S3_REGION}"
+            toml_block add store.blob.s3 access-key quotes "${JMAP_STORE_BLOB_S3_ACCESS_KEY}"
+            toml_block add store.blob.s3 secret-key quotes "${JMAP_STORE_BLOB_S3_SECRET_KEY}"
+            toml_block add store.blob.s3 endpoint quotes "${JMAP_STORE_BLOB_S3_ENDPOINT}"
+            toml_block add store.blob.s3 security-token quotes "${JMAP_STORE_BLOB_S3_SECURITY_TOKEN}"
+            toml_block add store.blob.s3 profile quotes "${JMAP_STORE_BLOB_S3_PROFILE}"
+            toml_block add store.blob.s3 timeout quotes "${JMAP_STORE_BLOB_S3_TIMEOUT}"
+
+            toml_block add jmap.encryption enable "${JMAP_ENCRYPTION_ENABLE}"
+            toml_block add jmap.encryption append"${JMAP_ENCRYPTION_APPEND}"
+
+            toml_block add jmap.fts default-language quotes "${JMAP_FTS_DEFAULT_LANGUAGE}"
+
+            toml_block add jmap.purge.schedule db quotes "${JMAP_PURGE_SCHEDULE_DB}"
+            toml_block add jmap.purge.schedule blobs quotes "${JMAP_PURGE_SCHEDULE_BLOBS}"
+            toml_block add jmap.purge.schedule sessions quotes "${JMAP_PURGE_SCHEDULE_SESSIONS}"
+
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# JMAP server store configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_store_db}")
+
+$(toml_block show "${block_store_db_pool}")
+
+$(toml_block show "${block_store_db_cache}")
+
+$(toml_block show "${block_store_blob}")
+
+$(toml_block show "${block_store_blob_local}")
+
+$(toml_block show "${block_store_blob_s3}")
+
+$(toml_block show "${block_store_blob}")
+
+$(toml_block show "${block_jmap_encryption}")
+
+$(toml_block show "${block_jmap_fts}")
+
+$(toml_block show "${block_jmap_purge_schedule}")
+
+EOF
+
         else
             :
         fi
     }
 
     jmap_configure_websockets() {
-        ## TODO - Future version
+        config_file="websockets.toml"
+
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add jmap.web-sockets throttle quotes "${JMAP_WEBSOCKETS_THROTTLE}"
+            toml_block add jmap.web-sockets timeout quotes "${JMAP_WEBSOCKETS_TIMEOUT}"
+            toml_block add jmap.web-sockets heartbeat quotes "${JMAP_WEBSOCKETS_HEARTBEAT}"
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# JMAP websockets configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_jmap_web_sockets}")
+
+EOF
+
         else
             :
         fi
