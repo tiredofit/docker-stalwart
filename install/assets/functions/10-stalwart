@@ -428,9 +428,45 @@ configure_directory() {
     if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${config_dir}" ; fi
 
     directory_configure_imap() {
-        ## TODO - Future version
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add directory.dynamic imap type quotes "${DIRECTORY_DEFAULT_IMAP_TYPE}"
+            toml_block add directory.dynamic imap address quotes "${DIRECTORY_DEFAULT_IMAP_ADDRESS}"
+            toml_block add directory.dynamic imap port "${DIRECTORY_DEFAULT_IMAP_PORT}"
+
+            toml_block add directory.dynamic.pool imap max-connections "${DIRECTORY_DEFAULT_IMAP_POOL_MAX_CONNECTIONS}"
+            toml_block add directory.dynamic.pool imap min-connections "${DIRECTORY_DEFAULT_IMAP_POOL_MIN_CONNECTIONS}"
+            toml_block add directory.dynamic.pool imap max-lifetime quotes "${DIRECTORY_DEFAULT_IMAP_POOL_MAX_LIFETIME}"
+            toml_block add directory.dynamic.pool imap idle-timeout quotes "${DIRECTORY_DEFAULT_IMAP_POOL_IDLE_TIMEOUT}"
+            toml_block add directory.dynamic.pool imap connect-timeout quotes "${DIRECTORY_DEFAULT_IMAP_POOL_CONNECT_TIMEOUT}"
+
+            toml_block add directory.dynamic.tls imap implicit "${DIRECTORY_DEFAULT_IMAP_TLS_IMPLICIT,,}"
+            toml_block add directory.dynamic.tls imap allow-invalid-certs "${DIRECTORY_DEFAULT_IMAP_TLS_ALLOW_INVALID_CERTS,,}"
+
+            toml_block add directory.dynamic.cache imap entries "${DIRECTORY_DEFAULT_IMAP_CACHE_ENTRIES}"
+            toml_block add directory.dynamic.cache imap ttl "${DIRECTORY_DEFAULT_IMAP_CACHE_TTL}"
+
+            toml_block add directory.dynamic.lookup imap domains array "${DIRECTORY_DEFAULT_IMAP_LOOKUP_DOMAINS}"
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# Directory IMAP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_directory_imap}")
+
+$(toml_block show "${block_directory_imap_pool}")
+
+$(toml_block show "${block_directory_imap_tls}")
+
+$(toml_block show "${block_directory_imap_cache}")
+
+$(toml_block show "${block_directory_imap_lookup}")
+
+EOF
+
         else
             :
         fi
@@ -467,7 +503,7 @@ configure_directory() {
             toml_block add directory.default.pool min-connections ${DIRECTORY_DEFAULT_LDAP_POOL_MIN_CONNECTIONS}
             toml_block add directory.default.pool max-lifetime quotes "${DIRECTORY_DEFAULT_LDAP_POOL_MAX_LIFETIME}"
             toml_block add directory.default.pool idle-timeout quotes "${DIRECTORY_DEFAULT_LDAP_POOL_IDLE_TIMEOUT}"
-            toml_block add directory.default.pool conenct-timeout quotes "${DIRECTORY_DEFAULT_LDAP_POOL_CONNECT_TIMEOUT}"
+            toml_block add directory.default.pool connect-timeout quotes "${DIRECTORY_DEFAULT_LDAP_POOL_CONNECT_TIMEOUT}"
 
             toml_block add directory.default.object-classes user quotes "${DIRECTORY_DEFAULT_LDAP_OBJECT_CLASSES_USER}"
             toml_block add directory.default.object-classes group quotes "${DIRECTORY_DEFAULT_LDAP_OBJECT_CLASSES_GROUP}"
@@ -508,10 +544,63 @@ EOF
         fi
     }
 
+
+
+
+
+
+
     directory_configure_lmtp() {
-        ## TODO - Future version
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add directory.dynamic lmtp type quotes "${DIRECTORY_DEFAULT_LMTP_TYPE}"
+            toml_block add directory.dynamic lmtp address quotes "${DIRECTORY_DEFAULT_LMTP_ADDRESS}"
+            toml_block add directory.dynamic lmtp port "${DIRECTORY_DEFAULT_LMTP_PORT}"
+
+            toml_block add directory.dynamic.limits lmtp auth-errors "${DIRECTORY_DEFAULT_LMTP_LIMITS_AUTH_ERRORS}"
+            toml_block add directory.dynamic.limits lmtp rcpt "${DIRECTORY_DEFAULT_LMTP_LIMITS_RCPT}"
+
+            toml_block add directory.dynamic.pool lmtp max-connections "${DIRECTORY_DEFAULT_LMTP_POOL_MAX_CONNECTIONS}"
+            toml_block add directory.dynamic.pool lmtp min-connections "${DIRECTORY_DEFAULT_LMTP_POOL_MIN_CONNECTIONS}"
+            toml_block add directory.dynamic.pool lmtp max-lifetime quotes "${DIRECTORY_DEFAULT_LMTP_POOL_MAX_LIFETIME}"
+            toml_block add directory.dynamic.pool lmtp idle-timeout quotes "${DIRECTORY_DEFAULT_LMTP_POOL_IDLE_TIMEOUT}"
+            toml_block add directory.dynamic.pool lmtp connect-timeout quotes "${DIRECTORY_DEFAULT_LMTP_POOL_CONNECT_TIMEOUT}"
+
+            toml_block add directory.dynamic.tls lmtp implicit "${DIRECTORY_DEFAULT_LMTP_TLS_IMPLICIT,,}"
+            toml_block add directory.dynamic.tls lmtp allow-invalid-certs "${DIRECTORY_DEFAULT_LMTP_TLS_ALLOW_INVALID_CERTS,,}"
+
+            toml_block add directory.dynamic.cache lmtp entries "${DIRECTORY_DEFAULT_LMTP_CACHE_ENTRIES}"
+            toml_block add directory.dynamic.cache lmtp ttl "${DIRECTORY_DEFAULT_LMTP_CACHE_TTL}"
+
+            toml_block add directory.dynamic.options lmtp catch-all "${DIRECTORY_DEFAULT_LMTP_OPTIONS_CATCH_ALL,,}"
+            toml_block add directory.dynamic.options lmtp subaddressing "${DIRECTORY_DEFAULT_LMTP_OPTIONS_SUBADDRESSING,,}"
+            toml_block add directory.dynamic.options lmtp superuser-group quotes "${DIRECTORY_DEFAULT_LMTP_OPTIONS_SUPERUSER_GROUP}"
+
+            toml_block add directory.dynamic.lookup lmtp domains array "${DIRECTORY_DEFAULT_LMTP_LOOKUP_DOMAINS}"
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# Directory LMTP configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_directory_lmtp}")
+
+$(toml_block show "${block_directory_lmtp_limits}")
+
+$(toml_block show "${block_directory_lmtp_pool}")
+
+$(toml_block show "${block_directory_lmtp_tls}")
+
+$(toml_block show "${block_directory_lmtp_cache}")
+
+$(toml_block show "${block_directory_lmtp_options}")
+
+$(toml_block show "${block_directory_lmtp_lookup}")
+
+EOF
+
         else
             :
         fi
@@ -519,8 +608,64 @@ EOF
 
     directory_configure_memory() {
         ## TODO - Future version
-        if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+            DIRECTORY_DEFAULT_MEMORY_TYPE
+
+            toml_block add directory.dynamic memory type "${DIRECTORY_DEFAULT_MEMORY_TYPE}"
+
+            toml_block add directory.dynamic.options memory catch-all "${DIRECTORY_DEFAULT_MEMORY_OPTIONS_CATCH_ALL,,}"
+            toml_block add directory.dynamic.options memory subaddressing "${DIRECTORY_DEFAULT_MEMORY_OPTIONS_SUBADDRESSING,,}"
+            toml_block add directory.dynamic.options memory superuser-group quotes "${DIRECTORY_DEFAULT_MEMORY_OPTIONS_SUPERUSER_GROUP}"
+
+            ## TODO This needs to be dynamic to allow for multiple
+            toml_block add directory.dynamic.users memory name quotes "${DIRECTORY_DEFAULT_MEMORY_USER_NAME}"
+            toml_block add directory.dynamic.users memory description quotes "${DIRECTORY_DEFAULT_MEMORY_USER_DESCRIPTION}"
+            toml_block add directory.dynamic.users memory secret quotes "${DIRECTORY_DEFAULT_MEMORY_USER_SECRET}"
+            toml_block add directory.dynamic.users memory email quotes "${DIRECTORY_DEFAULT_MEMORY_USER_EMAIL}"
+            toml_block add directory.dynamic.users memory email-list quotes "${DIRECTORY_DEFAULT_MEMORY_USER_EMAIL_LIST}"
+            toml_block add directory.dynamic.users memory quota quotes "${DIRECTORY_DEFAULT_MEMORY_USER_QUOTA}"
+            toml_block add directory.dynamic.users memory member-of quotes "${DIRECTORY_DEFAULT_MEMORY_USER_MEMBEROF}"
+
+            ## TODO This needs to be dynamic to allow for multiple
+            toml_block add directory.dynamic.groups memory name quotes "${DIRECTORY_DEFAULT_MEMORY_GROUP_NAME}"
+            toml_block add directory.dynamic.groups memory description quotes "${DIRECTORY_DEFAULT_MEMORY_GROUP_DESCRIPTION}"
+
+            toml_block add directory.dynamic.lookup domains array "${DIRECTORY_DEFAULT_MEMORY_USERS_}"
+
+DIRECTORY_DEFAULT_MEMORY_OPTIONS_CATCH_ALL
+
+DIRECTORY_DEFAULT_MEMORY_OPTIONS_SUBADDRESSING
+DIRECTORY_DEFAULT_MEMORY_OPTIONS_SUPERUSER_GROUP
+DIRECTORY_DEFAULT_MEMORY_USERS_NAME
+DIRECTORY_DEFAULT_MEMORY_USERS_DESCRIPTION
+DIRECTORY_DEFAULT_MEMORY_USERS_SECRET
+DIRECTORY_DEFAULT_MEMORY_USERS_QUOTA
+DIRECTORY_DEFAULT_MEMORY_USERS_EMAIL
+DIRECTORY_DEFAULT_MEMORY_USERS_EMAIL_LIST
+DIRECTORY_DEFAULT_MEMORY_USERS_MEMBEROF
+
+DIRECTORY_DEFAULT_MEMORY_GROUPS_NAME
+DIRECTORY_DEFAULT_MEMORY_GROUPS_DESCRIPTION
+
+DIRECTORY_DEFAULT_MEMORY_LOOKUP_DOMAINS
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# Directory Memory configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_directory_memory}")
+
+$(toml_block show "${block_directory_memory_users}")
+
+$(toml_block show "${block_directory_memory_groups}")
+
+$(toml_block show "${block_directory_memory_lookup}")
+
+EOF
+
         else
             :
         fi
@@ -529,14 +674,68 @@ EOF
     directory_configure_sql() {
         ## TODO - Future version to support SQLite, MariaDB, and Postgres
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            :
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            toml_block add directory.dynamic sql type quotes "${DIRECTORY_DEFAULT_SQL_TYPE}"
+            toml_block add directory.dynamic sql address quotes "${DIRECTORY_DEFAULT_SQL_ADDRESS}"
+
+            toml_block add directory.dynamic.options sql catch-all "${DIRECTORY_DEFAULT_SQL_OPTIONS_CATCH_ALL,,}"
+            toml_block add directory.dynamic.options sql subaddressing "${DIRECTORY_DEFAULT_SQL_OPTIONS_SUBADDRESSING,,}"
+            toml_block add directory.dynamic.options sql superuser-group quotes "${DIRECTORY_DEFAULT_SQL_OPTIONS_SUPERUSER_GROUP}"
+
+            toml_block add directory.dynamic.pool sql max-connections "${DIRECTORY_DEFAULT_SQL_POOL_MAX_CONNECTIONS}"
+            toml_block add directory.dynamic.pool sql min-connections "${DIRECTORY_DEFAULT_SQL_POOL_MIN_CONNECTIONS}"
+            toml_block add directory.dynamic.pool sql idle-timeout quotes "${DIRECTORY_DEFAULT_SQL_IDLE_TIMEOUT}"
+
+            toml_block add directory.dynamic.cache sql entries "${DIRECTORY_DEFAULT_SQL_CACHE_ENTRIES}"
+            toml_block add directory.dynamic.cache sql ttl "${DIRECTORY_DEFAULT_SQL_CACHE_TTL}"
+
+            toml_block add directory.dynamic.query sql name "${DIRECTORY_DEFAULT_SQL_QUERY_NAME}"
+            toml_block add directory.dynamic.query sql members "${DIRECTORY_DEFAULT_SQL_QUERY_MEMBERS}"
+            toml_block add directory.dynamic.query sql recipients "${DIRECTORY_DEFAULT_SQL_QUERY_RECIPIENTS}"
+            toml_block add directory.dynamic.query sql emails "${DIRECTORY_DEFAULT_SQL_QUERY_EMAILS}"
+            toml_block add directory.dynamic.query sql verify "${DIRECTORY_DEFAULT_SQL_QUERY_VERIFY}"
+            toml_block add directory.dynamic.query sql expand "${DIRECTORY_DEFAULT_SQL_QUERY_EXPAND}"
+            toml_block add directory.dynamic.query sql domains "${DIRECTORY_DEFAULT_SQL_QUERY_DOMAINS}"
+
+            toml_block add directory.dynamic.columns sql name "${DIRECTORY_DEFAULT_SQL_COLUMNS_NAME}"
+            toml_block add directory.dynamic.columns sql description "${DIRECTORY_DEFAULT_SQL_COLUMNS_DESCRIPTION}"
+            toml_block add directory.dynamic.columns sql secret "${DIRECTORY_DEFAULT_SQL_COLUMNS_SECRET}"
+            toml_block add directory.dynamic.columns sql email "${DIRECTORY_DEFAULT_SQL_COLUMNS_EMAIL}"
+            toml_block add directory.dynamic.columns sql quota "${DIRECTORY_DEFAULT_SQL_COLUMNS_QUOTA}"
+            toml_block add directory.dynamic.columns sql type "${DIRECTORY_DEFAULT_SQL_COLUMNS_TYPE}"
+
+            cat <<EOF > "${config_dir}"/"${config_file}"
+##########################################################
+# Directory SQL configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${block_directory_sql}")
+
+$(toml_block show "${block_directory_sql_options}")
+
+$(toml_block show "${block_directory_sql_pool}")
+
+$(toml_block show "${block_directory_sql_cache}")
+
+$(toml_block show "${block_directory_sql_query}")
+
+$(toml_block show "${block_directory_sql_columns}")
+
+EOF
+
         else
             :
         fi
     }
 
+    if var_true "${DIRECTORY_ENABLE_IMAP}" ; then directory_configure_imap ; fi
+    if var_true "${DIRECTORY_ENABLE_JMAP}" ; then directory_configure_jmap ; fi
     if var_true "${DIRECTORY_ENABLE_LDAP}" ; then directory_configure_ldap ; fi
-    #if var_true "${DIRECTORY_ENABLE_MEMORY}" ; then directory_configure_memory ; fi
+    if var_true "${DIRECTORY_ENABLE_LMTP}" ; then directory_configure_lmtp ; fi
+    if var_true "${DIRECTORY_ENABLE_MEMORY}" ; then directory_configure_memory ; fi
+    if var_true "${DIRECTORY_ENABLE_SQL}" ; then directory_configure_sql ; fi
 }
 
 configure_imap() {

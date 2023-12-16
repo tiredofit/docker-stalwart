@@ -9,6 +9,8 @@ services:
       - TIMEZONE=America/Vancouver
       - CONTAINER_NAME=stalwart
 
+      - MODE=SMTP
+
     networks:
       - services
     restart: always
