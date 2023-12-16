@@ -3,13 +3,13 @@
 bootstrap_filesystem() {
 
     if [ ! -d "${CONFIG_PATH}" ]; then mkdir -p "${CONFIG_PATH}"; fi
-    if [ "$(stat -c %U "${CONFIG_PATH}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${CONFIG_PATH}" ; fi
+    if [ "$(stat -c %U "${CONFIG_PATH}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${CONFIG_PATH}" ; fi
 
     if [ ! -d "${DATA_PATH}" ]; then mkdir -p "${DATA_PATH}"; fi
     if [ "$(stat -c %U "${DATA_PATH}")" != "${SERVER_USER}" ] ; then chown ${SERVER_USER}:${SERVER_GROUP} "${DATA_PATH}" ; fi
 
     if [ ! -d "${LOG_PATH}" ]; then mkdir -p "${LOG_PATH}" ; fi
-    if [ "$(stat -c %U "${LOG_PATH}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${LOG_PATH}" ; fi
+    if [ "$(stat -c %U "${LOG_PATH}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${LOG_PATH}" ; fi
 
     case "${LOG_TYPE,,}" in
         file )
@@ -214,7 +214,7 @@ configure_common() {
 
     config_dir="${CONFIG_PATH}/common"
     if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
-    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${config_dir}" ; fi
 
     if [ "${SETUP_TYPE,,}" = "auto" ]; then sudo -u "${SERVER_USER}" mkdir -p "${config_dir}" ; fi
 
@@ -425,7 +425,7 @@ configure_directory() {
 
     config_dir="${CONFIG_PATH}/directory"
     if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
-    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${config_dir}" ; fi
 
     directory_configure_imap() {
         ## TODO - Future version
@@ -545,7 +545,7 @@ configure_imap() {
 
     config_dir="${CONFIG_PATH}/imap"
     if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
-    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${config_dir}" ; fi
 
     imap_configure_listener() {
         config_file="listener.toml"
@@ -639,7 +639,7 @@ configure_jmap() {
 
     config_dir="${CONFIG_PATH}/jmap"
     if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
-    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${config_dir}" ; fi
 
     jmap_configure_auth() {
         config_file="auth.toml"
@@ -649,7 +649,7 @@ configure_jmap() {
 
             toml_block add jmap directory quotes "${JMAP_DIRECTORY}"
             toml_block add jmap.session.cache ttl quotes "${JMAP_SESSION_CACHE_TTL}"
-            toml_block add jmap.session.cache.size "${JMAP_SESSION_CACHE_SIZE}"
+            toml_block add jmap.session.cache size "${JMAP_SESSION_CACHE_SIZE}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -657,7 +657,7 @@ configure_jmap() {
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(toml_block show "${block_jmap_directory}")
+$(toml_block show "${block_jmap}")
 
 $(toml_block show "${block_jmap_session_cache}")
 
@@ -764,7 +764,7 @@ EOF
 
             toml_block add jmap.email.parse max-items "${JMAP_PROTOCOL_EMAIL_PARSE_MAX_ITEMS}"
 
-            toml_block add jmap.principal allow-lookups "${JMAP_PRINCIPAL_ALLOW_LOOKUPS}"
+            toml_block add jmap.principal allow-lookups "${JMAP_PRINCIPAL_ALLOW_LOOKUPS,,}"
 
             toml_block add jmap.http headers array "${JMAP_HTTP_HEADERS}"
 
@@ -884,12 +884,21 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            toml_block add store.db path quotes "${JMAP_STORE_DB_}"
+            if [ ! -d "$(dirname "${JMAP_STORE_DB_PATH}")" ]; then mkdir -p "$(dirname "${JMAP_STORE_DB_PATH}")" ; fi
+            if [ "$(stat -c %U "$(dirname "${JMAP_STORE_DB_PATH}")")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "$(dirname "${JMAP_STORE_DB_PATH}")" ; fi
+            toml_block add store.db path quotes "${JMAP_STORE_DB_PATH}"
 
-            toml_block add store.db.pool max-connections "${JMAP_STORE_DB_}"
-            toml_block add store.db.pool workers "${JMAP_STORE_DB_}"
+            toml_block add store.db.pool max-connections "${JMAP_STORE_DB_POOL_MAX_CONNECTIONS}"
+            toml_block add store.db.pool workers "${JMAP_STORE_DB_POOL_WORKERS}"
 
-            toml_block add store.db.cache "${JMAP_STORE_DB_}"
+            toml_block add store.db.cache size "${JMAP_STORE_DB_CACHE_SIZE}"
+
+            case "${JMAP_STORE_BLOB_TYPE,,}" in
+                local )
+                    if [ ! -d "${JMAP_STORE_BLOB_LOCAL_PATH}" ]; then mkdir -p "${JMAP_STORE_BLOB_LOCAL_PATH}" ; fi
+                    if [ "$(stat -c %U "${JMAP_STORE_BLOB_LOCAL_PATH}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${JMAP_STORE_BLOB_LOCAL_PATH}" ; fi
+                ;;
+            esac
 
             toml_block add store.blob type quotes "${JMAP_STORE_BLOB_TYPE}"
 
@@ -904,8 +913,8 @@ EOF
             toml_block add store.blob.s3 profile quotes "${JMAP_STORE_BLOB_S3_PROFILE}"
             toml_block add store.blob.s3 timeout quotes "${JMAP_STORE_BLOB_S3_TIMEOUT}"
 
-            toml_block add jmap.encryption enable "${JMAP_ENCRYPTION_ENABLE}"
-            toml_block add jmap.encryption append"${JMAP_ENCRYPTION_APPEND}"
+            toml_block add jmap.encryption enable "${JMAP_ENCRYPTION_ENABLE,,}"
+            toml_block add jmap.encryption append"${JMAP_ENCRYPTION_APPEND,,}"
 
             toml_block add jmap.fts default-language quotes "${JMAP_FTS_DEFAULT_LANGUAGE}"
 
@@ -931,8 +940,6 @@ $(toml_block show "${block_store_blob}")
 $(toml_block show "${block_store_blob_local}")
 
 $(toml_block show "${block_store_blob_s3}")
-
-$(toml_block show "${block_store_blob}")
 
 $(toml_block show "${block_jmap_encryption}")
 
@@ -988,7 +995,7 @@ configure_server() {
    config_dir="${CONFIG_PATH}"
 
     if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
-    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${config_dir}" ; fi
 
    config_file="${CONFIG_FILE}"
 
@@ -1019,7 +1026,7 @@ configure_spamfilter() {
     config_dir="${CONFIG_PATH}/spamfilter"
 
     if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
-    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${config_dir}" ; fi
 
     ## TODO - Future version
     :
@@ -1031,7 +1038,7 @@ configure_smtp() {
 
     config_dir="${CONFIG_PATH}/smtp"
     if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
-    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${config_dir}" ; fi
+    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${config_dir}" ; fi
 
     smtp_configure_auth() {
         config_file="auth.toml"
@@ -1244,7 +1251,7 @@ EOF
         config_file="queue.toml"
 
         if [ ! -d "${SMTP_QUEUE_PATH}" ]; then mkdir -p "${SMTP_QUEUE_PATH}" ; fi
-        if [ "$(stat -c %U "${SMTP_QUEUE_PATH}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${SMTP_QUEUE_PATH}" ; fi
+        if [ "$(stat -c %U "${SMTP_QUEUE_PATH}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${SMTP_QUEUE_PATH}" ; fi
 
          if [ "${SETUP_TYPE,,}" = "auto" ]; then
 
@@ -1388,7 +1395,7 @@ EOF
         config_file="report.toml"
 
         if [ ! -d "${REPORTS_PATH}" ]; then mkdir -p "${REPORTS_PATH}" ; fi
-        if [ "$(stat -c %U "${REPORTS_PATH}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${REPORTS_PATH}" ; fi
+        if [ "$(stat -c %U "${REPORTS_PATH}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${REPORTS_PATH}" ; fi
 
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
@@ -1400,7 +1407,7 @@ EOF
             toml_block add report.analysis addresses array "${SMTP_REPORT_ANALYSIS_ADDRESSES}"
             toml_block add report.analysis forward "${SMTP_REPORT_ANALYSIS_FORWARD,,}"
             if [ ! -d "${SMTP_REPORT_ANALYSIS_STORE}" ]; then mkdir -p "${SMTP_REPORT_ANALYSIS_STORE}" ; fi
-            if [ "$(stat -c %U "${SMTP_REPORT_ANALYSIS_STORE}")" != "${SERVER_USER}" ] ; then chown -R ${SERVER_USER}:${SERVER_GROUP} "${SMTP_REPORT_ANALYSIS_STORE}" ; fi
+            if [ "$(stat -c %U "${SMTP_REPORT_ANALYSIS_STORE}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${SMTP_REPORT_ANALYSIS_STORE}" ; fi
             toml_block add report.analysis store quotes "${SMTP_REPORT_ANALYSIS_STORE}"
 
             toml_block add report.dsn from-name quotes "${SMTP_REPORT_DSN_FROM_NAME}"
