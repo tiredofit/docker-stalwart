@@ -629,23 +629,6 @@ EOF
 
             toml_block add directory.dynamic.lookup domains array "${DIRECTORY_DEFAULT_MEMORY_USERS_}"
 
-DIRECTORY_DEFAULT_MEMORY_OPTIONS_CATCH_ALL
-
-DIRECTORY_DEFAULT_MEMORY_OPTIONS_SUBADDRESSING
-DIRECTORY_DEFAULT_MEMORY_OPTIONS_SUPERUSER_GROUP
-DIRECTORY_DEFAULT_MEMORY_USERS_NAME
-DIRECTORY_DEFAULT_MEMORY_USERS_DESCRIPTION
-DIRECTORY_DEFAULT_MEMORY_USERS_SECRET
-DIRECTORY_DEFAULT_MEMORY_USERS_QUOTA
-DIRECTORY_DEFAULT_MEMORY_USERS_EMAIL
-DIRECTORY_DEFAULT_MEMORY_USERS_EMAIL_LIST
-DIRECTORY_DEFAULT_MEMORY_USERS_MEMBEROF
-
-DIRECTORY_DEFAULT_MEMORY_GROUPS_NAME
-DIRECTORY_DEFAULT_MEMORY_GROUPS_DESCRIPTION
-
-DIRECTORY_DEFAULT_MEMORY_LOOKUP_DOMAINS
-
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
 # Directory Memory configuration ${config_file}
@@ -748,18 +731,21 @@ configure_imap() {
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            toml_block add server.listener.dynamic imap bind array "${IMAP_LISTENER_IMAP_BIND}"
-            toml_block add server.listener.dynamic imap protocol quotes "imap"
+            if var_true "${IMAP_ENABLE_IMAP}"; then
+                toml_block add server.listener.dynamic imap bind array "${IMAP_LISTENER_IMAP_BIND}"
+                toml_block add server.listener.dynamic imap protocol quotes "imap"
 
-            toml_block add server.listener.dynamic imaptls bind array "${IMAP_LISTENER_IMAPTLS_BIND}"
-            toml_block add server.listener.dynamic imaptls tls.implicit "${IMAP_LISTENER_IMAPTLS_TLS_IMPLICIT}"
-            toml_block add server.listener.dynamic imaptls protocol quotes "imap"
+            if var_true "${IMAP_ENABLE_IMAPS}"; then
+                toml_block add server.listener.dynamic imaps bind array "${IMAP_LISTENER_IMAPS_BIND}"
+                toml_block add server.listener.dynamic imaps tls.implicit "${IMAP_LISTENER_IMAPS_TLS_IMPLICIT}"
+                toml_block add server.listener.dynamic imaps protocol quotes "imap"
 
-            toml_block add server.listener.dynamic sieve bind array "${IMAP_LISTENER_SIEVE_BIND}"
-            toml_block add server.listener.dynamic sieve tls.implicit "${IMAP_LISTENER_SIEVE_TLS_IMPLICIT}"
-            toml_block add server.listener.dynamic sieve protocol quotes "managesieve"
+            if var_true "${IMAP_ENABLE_SIEVE}"; then
+                toml_block add server.listener.dynamic sieve bind array "${IMAP_LISTENER_SIEVE_BIND}"
+                toml_block add server.listener.dynamic sieve tls.implicit "${IMAP_LISTENER_SIEVE_TLS_IMPLICIT}"
+                toml_block add server.listener.dynamic sieve protocol quotes "managesieve"
+            fi
 
-            ## TODO Make these toggleable
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
 # IMAP listener configuration ${config_file}
@@ -768,7 +754,7 @@ configure_imap() {
 
 $(toml_block show "${block_server_listener_imap}")
 
-$(toml_block show "${block_server_listener_imaptls}")
+$(toml_block show "${block_server_listener_imaps}")
 
 $(toml_block show "${block_server_listener_sieve}")
 
