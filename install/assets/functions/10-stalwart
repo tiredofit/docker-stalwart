@@ -1203,7 +1203,6 @@ configure_server() {
     config_file="${CONFIG_FILE}"
 
     if [ "${SETUP_TYPE,,}" = "auto" ]; then
-        ## TODO Add ability to take environment variable for custom additions
         ## TODO Check to see if newer files override older files configuration
         cat <<EOF > "${config_dir}"/"${config_file}"
 ##################################################
@@ -1368,24 +1367,27 @@ EOF
 
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            ## TODO Create ENABLE Blocks
-            toml_block add session.data.milter.dynamic rspamd enable array "${SMTP_SESSION_DATA_MILTER_RSPAMD_ENABLE}"
-            toml_block add session.data.milter.dynamic rspamd hostname quotes "${SMTP_SESSION_DATA_MILTER_RSPAMD_HOSTNAME}"
-            toml_block add session.data.milter.dynamic rspamd port "${SMTP_SESSION_DATA_MILTER_RSPAMD_PORT}"
-            toml_block add session.data.milter.dynamic rspamd tls "${SMTP_SESSION_DATA_MILTER_RSPAMD_TLS}"
-            toml_block add session.data.milter.dynamic rspamd allow-invalid-certs "${SMTP_SESSION_DATA_MILTER_RSPAMD_ALLOW_INVALID_CERTS}"
+            if var_true "${SMTP_MILTER_ENABLE_RSPAMD}"; then
+                toml_block add session.data.milter.dynamic rspamd enable array "${SMTP_SESSION_DATA_MILTER_RSPAMD_ENABLE}"
+                toml_block add session.data.milter.dynamic rspamd hostname quotes "${SMTP_SESSION_DATA_MILTER_RSPAMD_HOSTNAME}"
+                toml_block add session.data.milter.dynamic rspamd port "${SMTP_SESSION_DATA_MILTER_RSPAMD_PORT}"
+                toml_block add session.data.milter.dynamic rspamd tls "${SMTP_SESSION_DATA_MILTER_RSPAMD_TLS}"
+                toml_block add session.data.milter.dynamic rspamd allow-invalid-certs "${SMTP_SESSION_DATA_MILTER_RSPAMD_ALLOW_INVALID_CERTS}"
 
-            toml_block add session.data.milter.dynamic.timeout rspamd connect quotes "${SMTP_SESSION_DATA_MILTER_RSPAMD_TIMEOUT_CONNECT}"
-            toml_block add session.data.milter.dynamic.timeout rspamd command quotes"${SMTP_SESSION_DATA_MILTER_RSPAMD_TIMEOUT_COMMAND}"
-            toml_block add session.data.milter.dynamic.timeout rspamd data quotes "${SMTP_SESSION_DATA_MILTER_RSPAMD_TIMEOUT_DATA}"
+                toml_block add session.data.milter.dynamic.timeout rspamd connect quotes "${SMTP_SESSION_DATA_MILTER_RSPAMD_TIMEOUT_CONNECT}"
+                toml_block add session.data.milter.dynamic.timeout rspamd command quotes"${SMTP_SESSION_DATA_MILTER_RSPAMD_TIMEOUT_COMMAND}"
+                toml_block add session.data.milter.dynamic.timeout rspamd data quotes "${SMTP_SESSION_DATA_MILTER_RSPAMD_TIMEOUT_DATA}"
 
-            toml_block add session.data.milter.dynamic.options rspamd tempfail-on-error "${SMTP_SESSION_DATA_MILTER_RSPAMD_TEMPFAIL_ON_ERROR}"
-            toml_block add session.data.milter.dynamic.options rspamd max-response-size "${SMTP_SESSION_DATA_MILTER_RSPAMD_MAX_RESPONSE_SIZE}"
-            toml_block add session.data.milter.dynamic.options rspamd version "${SMTP_SESSION_DATA_MILTER_RSPAMD_VERSION}"
+                toml_block add session.data.milter.dynamic.options rspamd tempfail-on-error "${SMTP_SESSION_DATA_MILTER_RSPAMD_TEMPFAIL_ON_ERROR}"
+                toml_block add session.data.milter.dynamic.options rspamd max-response-size "${SMTP_SESSION_DATA_MILTER_RSPAMD_MAX_RESPONSE_SIZE}"
+                toml_block add session.data.milter.dynamic.options rspamd version "${SMTP_SESSION_DATA_MILTER_RSPAMD_VERSION}"
+            fi
 
-            toml_block add session.data.pipe.dynamic spam-assassin command quotes "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_COMMAND}"
-            toml_block add session.data.pipe.dynamic spam-assassin arguments array "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_ARGUMENTS}"
-            toml_block add session.data.pipe.dynamic spam-assassin timeout quotes "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_TIMEOUT}"
+            if var_true "${SMTP_MILTER_ENABLE_SPAMASSASSIN}" ; then
+                toml_block add session.data.pipe.dynamic spam-assassin command quotes "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_COMMAND}"
+                toml_block add session.data.pipe.dynamic spam-assassin arguments array "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_ARGUMENTS}"
+                toml_block add session.data.pipe.dynamic spam-assassin timeout quotes "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_TIMEOUT}"
+            FI
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -1683,7 +1685,7 @@ EOF
             toml_block add session.extensions nosoliciting quotes "${SMTP_SESSION_EXTENSIONS_NO_SOLICITING}"
             toml_block add session.extensions dsn array "${SMTP_SESSION_EXTENSIONS_DSN}"
             toml_block add session.extensions expn array "${SMTP_SESSION_EXTENSIONS_EXPN}"
-            toml_block add session.extensions vrfy array "${SMTP_SESSION_EXTENSIONS_VRFY}" ## BLANK - Are we allowed to stay blank
+            toml_block add session.extensions vrfy array "${SMTP_SESSION_EXTENSIONS_VRFY}"
             toml_block add session.extensions future-release array "${SMTP_SESSION_EXTENSIONS_FUTURE_RELEASE}"
             toml_block add session.extensions delivery-by array "${SMTP_SESSION_EXTENSIONS_DELIVER_BY}"
             toml_block add session.extensions mt-priority array "${SMTP_SESSION_EXTENSIONS_MT_PRIORITY}"
@@ -1700,21 +1702,19 @@ EOF
             toml_block add session.mail rewrite "${SMTP_SESSION_MAIL_REWRITE}"
 
             toml_block add session.rcpt script quotes "${SMTP_SESSION_RCPT_SCRIPT}"
-            toml_block add session.rcpt relay array "${SMTP_SESSION_RCPT_RELAY}"  ## BLANK
+            toml_block add session.rcpt relay array "${SMTP_SESSION_RCPT_RELAY}"
             toml_block add session.rcpt rewrite "${SMTP_SESSION_RCPT_REWRITE}"
-            toml_block add session.rcpt max-recipients "${SMTP_SESSION_RCPT_MAX_RECIPIENTS}"  ## BLANK
-            toml_block add session.rcpt directory quotes "${SMTP_SESSION_RCPT_DIRECTORY}"  ## BLANK
+            toml_block add session.rcpt max-recipients "${SMTP_SESSION_RCPT_MAX_RECIPIENTS}"
+            toml_block add session.rcpt directory quotes "${SMTP_SESSION_RCPT_DIRECTORY}"
 
-            toml_block add session.rcpt.errors total "${SMTP_SESSION_RCPT_ERRORS_TOTAL}" ## BLANK
-            toml_block add session.rcpt.errors wait quotes "${SMTP_SESSION_RCPT_ERRORS_WAIT}" ##BLANK
+            toml_block add session.rcpt.errors total "${SMTP_SESSION_RCPT_ERRORS_TOTAL}"
+            toml_block add session.rcpt.errors wait quotes "${SMTP_SESSION_RCPT_ERRORS_WAIT}"
 
-            ## TODO Look these over these 1 look off.
-            toml_block add session.data script array "${SMTP_SESSION_DATA_SCRIPT}" ## Check To see if populated
+            toml_block add session.data script array "${SMTP_SESSION_DATA_SCRIPT}"
 
-            ## TODO Look these over these 3 look off.
-            toml_block add session.data.limits messages ${SMTP_SESSION_DATA_LIMITS_MESSAGES} ## BLANK
-            toml_block add session.data.limits size ${SMTP_SESSION_DATA_LIMITS_SIZE} ## BLANK
-            toml_block add session.data.limits received-headers ${SMTP_SESSION_DATA_LIMITS_RECEIVED_HEADERS} ##BLANK
+            toml_block add session.data.limits messages ${SMTP_SESSION_DATA_LIMITS_MESSAGES}
+            toml_block add session.data.limits size ${SMTP_SESSION_DATA_LIMITS_SIZE}
+            toml_block add session.data.limits received-headers ${SMTP_SESSION_DATA_LIMITS_RECEIVED_HEADERS}
 
             ## TODO Need to support multiple blocks with same name
             #toml_block add session.throttle quotes "${SMTP_SESSION_THROTTLE_}"
