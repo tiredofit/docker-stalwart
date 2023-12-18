@@ -1,5 +1,18 @@
 #!/command/with-contenv bash
 
+array_tools() {
+    case "${1}" in
+        quotecomma)
+            if [ -v "${2}" ] ; then
+                variable=$(set -o posix ; set | grep ^$2 | cut -d = -f 2-)
+                for value in $(set -o posix ; set | grep ^$2 | cut -d = -f 2- | tr ',' '\n' | uniq ) ; do
+                    echo "'${value}'",
+                done
+            fi
+        ;;
+    esac
+}
+
 bootstrap_filesystem() {
 
     if [ ! -d "${CONFIG_PATH}" ]; then mkdir -p "${CONFIG_PATH}"; fi
@@ -262,9 +275,9 @@ EOF
 
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-            toml_block add sieve.untrusted disable-capabilities array "${SIEVE_UNTRUSTED_DISABLE_CAPABILITIES}"
-            toml_block add sieve.untrusted notification-uris array "${SIEVE_UNTRUSTED_NOTIFICATION_URIS}"
-            toml_block add sieve.untrusted protected-headers array "${SIEVE_UNTRUSTED_PROTECTED_HEADERS}"
+            toml_block add sieve.untrusted disable-capabilities array "$(array_tools quotecomma "${SIEVE_UNTRUSTED_DISABLE_CAPABILITIES}")"
+            toml_block add sieve.untrusted notification-uris array "$(array_tools quotecomma "${SIEVE_UNTRUSTED_NOTIFICATION_URIS}")"
+            toml_block add sieve.untrusted protected-headers array "$(array_tools quotecomma "${SIEVE_UNTRUSTED_PROTECTED_HEADERS}")"
 
             toml_block add sieve.untrusted.limits name-length "${SIEVE_UNTRUSTED_LIMITS_NAME_LENGTH}"
             toml_block add sieve.untrusted.limits max-scripts "${SIEVE_UNTRUSTED_LIMITS_MAX_SCRIPTS}"
@@ -296,7 +309,7 @@ EOF
             toml_block add sieve.trusted return-path quotes "${SIEVE_TRUSTED_RETURN_PATH}"
             toml_block add sieve.trusted hostname quotes "${SIEVE_TRUSTED_HOSTNAME}"
             toml_block add sieve.trusted no-capability-check "${SIEVE_TRUSTED_NO_CAPABILITY_CHECK}"
-            toml_block add sieve.trusted sign array "${SIEVE_TRUSTED_SIGN}"
+            toml_block add sieve.trusted sign array "$(array_tools quotecomma "${SIEVE_TRUSTED_SIGN}")"
 
             toml_block add sieve.trusted.limits redirects "${SIEVE_TRUSTED_LIMITS_REDIRECTS}"
             toml_block add sieve.trusted.limits out-messages "${SIEVE_TRUSTED_LIMITS_OUT_MESSAGES}"
@@ -445,7 +458,7 @@ configure_directory() {
             toml_block add directory.dynamic.cache imap entries "${DIRECTORY_DEFAULT_IMAP_CACHE_ENTRIES}"
             toml_block add directory.dynamic.cache imap ttl "${DIRECTORY_DEFAULT_IMAP_CACHE_TTL}"
 
-            toml_block add directory.dynamic.lookup imap domains array "${DIRECTORY_DEFAULT_IMAP_LOOKUP_DOMAINS}"
+            toml_block add directory.dynamic.lookup imap domains array "$(array_tools quotecomma "${DIRECTORY_DEFAULT_IMAP_LOOKUP_DOMAINS}")"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -507,9 +520,9 @@ EOF
             toml_block add directory.default.object-classes group quotes "${DIRECTORY_DEFAULT_LDAP_OBJECT_CLASSES_GROUP}"
 
             toml_block add directory.default.attributes uid quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_UID}"
-            toml_block add directory.default.attributes description array "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_DESCRIPTION}"
+            toml_block add directory.default.attributes description array "$(array_tools quotecomma "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_DESCRIPTION}")"
             toml_block add directory.default.attributes secret quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_SECRET}"
-            toml_block add directory.default.attributes groups array "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_GROUPS}"
+            toml_block add directory.default.attributes groups array "$(array_tools quotecomma "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_GROUPS}")"
             toml_block add directory.default.attributes email quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_EMAIL}"
             toml_block add directory.default.attributes email-alias quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_EMAIL_ALIAS}"
             toml_block add directory.default.attributes quota quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_QUOTA}"
@@ -575,7 +588,7 @@ EOF
             toml_block add directory.dynamic.options lmtp subaddressing "${DIRECTORY_DEFAULT_LMTP_OPTIONS_SUBADDRESSING,,}"
             toml_block add directory.dynamic.options lmtp superuser-group quotes "${DIRECTORY_DEFAULT_LMTP_OPTIONS_SUPERUSER_GROUP}"
 
-            toml_block add directory.dynamic.lookup lmtp domains array "${DIRECTORY_DEFAULT_LMTP_LOOKUP_DOMAINS}"
+            toml_block add directory.dynamic.lookup lmtp domains array "$(array_tools quotecomma "${DIRECTORY_DEFAULT_LMTP_LOOKUP_DOMAINS}")"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -627,7 +640,7 @@ EOF
             toml_block add directory.dynamic.groups memory name quotes "${DIRECTORY_DEFAULT_MEMORY_GROUP_NAME}"
             toml_block add directory.dynamic.groups memory description quotes "${DIRECTORY_DEFAULT_MEMORY_GROUP_DESCRIPTION}"
 
-            toml_block add directory.dynamic.lookup domains array "${DIRECTORY_DEFAULT_MEMORY_USERS_}"
+            toml_block add directory.dynamic.lookup domains array "$(array_tools quotecomma "${DIRECTORY_DEFAULT_MEMORY_USERS_}")"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -732,16 +745,18 @@ configure_imap() {
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             if var_true "${IMAP_ENABLE_IMAP}"; then
-                toml_block add server.listener.dynamic imap bind array "${IMAP_LISTENER_IMAP_BIND}"
+                toml_block add server.listener.dynamic imap bind array "$(array_tools quotecomma "${IMAP_LISTENER_IMAP_BIND}")"
                 toml_block add server.listener.dynamic imap protocol quotes "imap"
+            fi
 
             if var_true "${IMAP_ENABLE_IMAPS}"; then
-                toml_block add server.listener.dynamic imaps bind array "${IMAP_LISTENER_IMAPS_BIND}"
+                toml_block add server.listener.dynamic imaps bind array "$(array_tools quotecomma "${IMAP_LISTENER_IMAPS_BIND}")"
                 toml_block add server.listener.dynamic imaps tls.implicit "${IMAP_LISTENER_IMAPS_TLS_IMPLICIT}"
                 toml_block add server.listener.dynamic imaps protocol quotes "imap"
+            fi
 
             if var_true "${IMAP_ENABLE_SIEVE}"; then
-                toml_block add server.listener.dynamic sieve bind array "${IMAP_LISTENER_SIEVE_BIND}"
+                toml_block add server.listener.dynamic sieve bind array "$(array_tools quotecomma "${IMAP_LISTENER_SIEVE_BIND}")"
                 toml_block add server.listener.dynamic sieve tls.implicit "${IMAP_LISTENER_SIEVE_TLS_IMPLICIT}"
                 toml_block add server.listener.dynamic sieve protocol quotes "managesieve"
             fi
@@ -855,7 +870,7 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            toml_block add server.listener.dynamic jmap bind array "${JMAP_LISTENER_JMAP_BIND}"
+            toml_block add server.listener.dynamic jmap bind array "$(array_tools quotecomma "${JMAP_LISTENER_JMAP_BIND}")"
             toml_block add server.listener.dynamic jmap url quotes "${JMAP_LISTENER_JMAP_URL}"
             toml_block add server.listener.dynamic jmap protocol quotes "jmap"
 
@@ -947,7 +962,7 @@ EOF
 
             toml_block add jmap.principal allow-lookups "${JMAP_PRINCIPAL_ALLOW_LOOKUPS,,}"
 
-            toml_block add jmap.http headers array "${JMAP_HTTP_HEADERS}"
+            toml_block add jmap.http headers array "$(array_tools quotecomma "${JMAP_HTTP_HEADERS}")"
 
 
             cat <<EOF > "${config_dir}"/"${config_file}"
@@ -1204,19 +1219,6 @@ EOF
     fi
 }
 
-configure_spamfilter() {
-    local config_dir
-    local config_file
-
-    config_dir="${CONFIG_PATH}/spamfilter"
-
-    if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
-    if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${config_dir}" ; fi
-
-    ## TODO - Future version
-    :
-}
-
 configure_smtp() {
     local config_dir
     local config_file
@@ -1232,18 +1234,18 @@ configure_smtp() {
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             ## TODO Add ENABLE switches
-            toml_block add auth.iprev verify array "${SMTP_AUTH_IPREV_VERIFY}"
+            toml_block add auth.iprev verify array "$(array_tools quotecomma "${SMTP_AUTH_IPREV_VERIFY}")"
 
             toml_block add auth.dkim verify quotes "${SMTP_AUTH_DKIM_VERIFY}"
-            toml_block add auth.dkim sign array "${SMTP_AUTH_DKIM_SIGN}"
+            toml_block add auth.dkim sign array "$(array_tools quotecomma "${SMTP_AUTH_DKIM_SIGN}")"
 
-            toml_block add auth.spf.ehlo array "${SMTP_AUTH_SPF_VERIFY_EHLO}"
-            toml_block add auth.spf.mail-from array "${SMTP_AUTH_SPF_VERIFY_MAIL_FROM}"
+            toml_block add auth.spf.ehlo array "$(array_tools quotecomma "${SMTP_AUTH_SPF_VERIFY_EHLO}")"
+            toml_block add auth.spf.mail-from array "$(array_tools quotecomma "${SMTP_AUTH_SPF_VERIFY_MAIL_FROM}")"
 
             toml_block add auth.arc verify quotes "${SMTP_AUTH_ARC_VERIFY}"
-            toml_block add auth.arc seal array "${SMTP_AUTH_ARC_SEAL}"
+            toml_block add auth.arc seal array "$(array_tools quotecomma "${SMTP_AUTH_ARC_SEAL}")"
 
-            toml_block add auth.dmarc verify array "${SMTP_AUTH_DMARC_VERIFY}"
+            toml_block add auth.dmarc verify array "$(array_tools quotecomma "${SMTP_AUTH_DMARC_VERIFY}")"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -1303,20 +1305,20 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            toml_block add server.listener.dynamic smtp bind array "${SMTP_LISTENER_SMTP_BIND}"
+            toml_block add server.listener.dynamic smtp bind array "$(array_tools quotecomma "${SMTP_LISTENER_SMTP_BIND}")"
             toml_block add server.listener.dynamic smtp greeting quotes "${SMTP_LISTENER_SMTP_GREETING}"
             toml_block add server.listener.dynamic smtp protocol quotes "${SMTP_LISTENER_SMTP_PROTOCOL}"
 
-            toml_block add server.listener.dynamic submission bind array "${SMTP_LISTENER_SUBMISSION_BIND}"
+            toml_block add server.listener.dynamic submission bind array "$(array_tools quotecomma "${SMTP_LISTENER_SUBMISSION_BIND}")"
             toml_block add server.listener.dynamic submission greeting quotes "${SMTP_LISTENER_SUBMISSION_GREETING}"
             toml_block add server.listener.dynamic submission protocol quotes "${SMTP_LISTENER_SUBMISSION_PROTOCOL}"
 
-            toml_block add server.listener.dynamic submissions bind array "${SMTP_LISTENER_SUBMISSIONS_BIND}"
+            toml_block add server.listener.dynamic submissions bind array "$(array_tools quotecomma "${SMTP_LISTENER_SUBMISSIONS_BIND}")"
             toml_block add server.listener.dynamic submissions greeting quotes "${SMTP_LISTENER_SUBMISSIONS_GREETING}"
             toml_block add server.listener.dynamic submissions protocol quotes "${SMTP_LISTENER_SUBMISSIONS_PROTOCOL,,}"
             toml_block add server.listener.dynamic submissions tls.implicit "${SMTP_LISTENER_SUBMISSIONS_TLS_IMPLICIT,,}"
 
-            toml_block add server.listener.dynamic management bind array "${SMTP_LISTENER_MANAGEMENT_BIND}"
+            toml_block add server.listener.dynamic management bind array "$(array_tools quotecomma "${SMTP_LISTENER_MANAGEMENT_BIND}")"
             toml_block add server.listener.dynamic management protocol quotes "${SMTP_LISTENER_MANAGEMENT_PROTOCOL,,}"
 
             toml_block add management directory quotes "${SMTP_MANAGEMENT_DIRECTORY}"
@@ -1350,7 +1352,7 @@ EOF
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             if var_true "${SMTP_MILTER_ENABLE_RSPAMD}"; then
-                toml_block add session.data.milter.dynamic rspamd enable array "${SMTP_SESSION_DATA_MILTER_RSPAMD_ENABLE}"
+                toml_block add session.data.milter.dynamic rspamd enable array "$(array_tools quotecomma "${SMTP_SESSION_DATA_MILTER_RSPAMD_ENABLE}")"
                 toml_block add session.data.milter.dynamic rspamd hostname quotes "${SMTP_SESSION_DATA_MILTER_RSPAMD_HOSTNAME}"
                 toml_block add session.data.milter.dynamic rspamd port "${SMTP_SESSION_DATA_MILTER_RSPAMD_PORT}"
                 toml_block add session.data.milter.dynamic rspamd tls "${SMTP_SESSION_DATA_MILTER_RSPAMD_TLS}"
@@ -1367,9 +1369,9 @@ EOF
 
             if var_true "${SMTP_MILTER_ENABLE_SPAMASSASSIN}" ; then
                 toml_block add session.data.pipe.dynamic spam-assassin command quotes "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_COMMAND}"
-                toml_block add session.data.pipe.dynamic spam-assassin arguments array "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_ARGUMENTS}"
+                toml_block add session.data.pipe.dynamic spam-assassin arguments array "$(array_tools quotecomma "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_ARGUMENTS}")"
                 toml_block add session.data.pipe.dynamic spam-assassin timeout quotes "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_TIMEOUT}"
-            FI
+            fi
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -1405,12 +1407,12 @@ EOF
             toml_block add queue path quotes "${SMTP_QUEUE_PATH}"
             toml_block add queue hash "${SMTP_QUEUE_HASH}"
 
-            toml_block add queue.schedule retry array "${SMTP_QUEUE_SCHEDULE_RETRY}"
-            toml_block add queue.schedule notify array "${SMTP_QUEUE_SCHEDULE_NOTIFY}"
+            toml_block add queue.schedule retry array "$(array_tools quotecomma "${SMTP_QUEUE_SCHEDULE_RETRY}")"
+            toml_block add queue.schedule notify array "$(array_tools quotecomma "${SMTP_QUEUE_SCHEDULE_NOTIFY}")"
             toml_block add queue.schedule expire quotes "${SMTP_QUEUE_SCHEDULE_EXPIRE}"
 
             toml_block add queue.outbound hostname quotes "${SMTP_QUEUE_OUTBOUND_HOSTNAME}"
-            toml_block add queue.outbound next-hop array "${SMTP_QUEUE_OUTBOUND_NEXT_HOP}"
+            toml_block add queue.outbound next-hop array "$(array_tools quotecomma "${SMTP_QUEUE_OUTBOUND_NEXT_HOP}")"
             toml_block add queue.outbound ip-strategy "${SMTP_QUEUE_OUTBOUND_IP_STRATEGY}"
 
             toml_block add queue.outbound.tls dane quotes "${SMTP_QUEUE_OUTBOUND_TLS_DANE,,}"
@@ -1418,8 +1420,8 @@ EOF
             toml_block add queue.outbound.tls starttls quotes "${SMTP_QUEUE_OUTBOUND_TLS_STARTTLS,,}"
             toml_block add queue.outbound.tls allow-invalid-certs "${SMTP_QUEUE_OUTBOUND_TLS_ALLOW_INVALID_CERTS,,}"
 
-            toml_block add queue.outbound.source-ip v4 array "${SMTP_QUEUE_OUTBOUND_SOURCE_IP_V4}"
-            toml_block add queue.outbound.source-ip v6 array "${SMTP_QUEUE_OUTBOUND_SOURCE_IP_V6}"
+            toml_block add queue.outbound.source-ip v4 array "$(array_tools quotecomma "${SMTP_QUEUE_OUTBOUND_SOURCE_IP_V4}")"
+            toml_block add queue.outbound.source-ip v6 array "$(array_tools quotecomma "${SMTP_QUEUE_OUTBOUND_SOURCE_IP_V6}")"
 
             toml_block add queue.outbound.limits mx "${SMTP_QUEUE_OUTBOUND_LIMITS_MX}"
             toml_block add queue.outbound.limits multihomed "${SMTP_QUEUE_OUTBOUND_LIMITS_MULTIHOMED}"
@@ -1435,11 +1437,11 @@ EOF
 
             ## TODO DOUBLE BRACKETS
             toml_block add queue.quota match "${SMTP_QUEUE_QUOTA_MATCH}"
-            toml_block add queue.quota key array "${SMTP_QUEUE_QUOTA_KEY}"
+            toml_block add queue.quota key array "$(array_tools quotecomma "${SMTP_QUEUE_QUOTA_KEY}")"
             toml_block add queue.quota messages "${SMTP_QUEUE_QUOTA_MESSAGES}"
             toml_block add queue.quota size "${SMTP_QUEUE_QUOTA_SIZE}"
 
-            toml_block add queue.throttle key array "${SMTP_QUEUE_QUOTA_}"
+            toml_block add queue.throttle key array "$(array_tools quotecomma "${SMTP_QUEUE_QUOTA_}")"
             toml_block add queue.throttle rate quotes "${SMTP_QUEUE_QUOTA_RATE}"
             toml_block add queue.throttle concurrency "${SMTP_QUEUE_QUOTA_CONCURRENCY}"
 
@@ -1536,7 +1538,7 @@ EOF
             toml_block add report hash ${REPORTS_HASH}
             toml_block add report submitter "${REPORTS_SUBMITTER}"
 
-            toml_block add report.analysis addresses array "${SMTP_REPORT_ANALYSIS_ADDRESSES}"
+            toml_block add report.analysis addresses array "$(array_tools quotecomma "${SMTP_REPORT_ANALYSIS_ADDRESSES}")"
             toml_block add report.analysis forward "${SMTP_REPORT_ANALYSIS_FORWARD,,}"
             if [ ! -d "${SMTP_REPORT_ANALYSIS_STORE}" ]; then mkdir -p "${SMTP_REPORT_ANALYSIS_STORE}" ; fi
             if [ "$(stat -c %U "${SMTP_REPORT_ANALYSIS_STORE}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${SMTP_REPORT_ANALYSIS_STORE}" ; fi
@@ -1544,25 +1546,25 @@ EOF
 
             toml_block add report.dsn from-name quotes "${SMTP_REPORT_DSN_FROM_NAME}"
             toml_block add report.dsn from-address quotes "${SMTP_REPORT_DSN_FROM_ADDRESS}"
-            toml_block add report.dsn sign array "${SMTP_REPORT_DSN_SIGN}"
+            toml_block add report.dsn sign array "$(array_tools quotecomma "${SMTP_REPORT_DSN_SIGN}")"
 
             toml_block add report.dkim from-name quotes "${SMTP_REPORT_DKIM_FROM_NAME}"
             toml_block add report.dkim from-address quotes "${SMTP_REPORT_DKIM_FROM_ADDRESS}"
             toml_block add report.dkim subject quotes "${SMTP_REPORT_DKIM_SUBJECT}"
             toml_block add report.dkim send quotes "${SMTP_REPORT_DKIM_SEND}"
-            toml_block add report.dkim sign array "${SMTP_REPORT_DKIM_SIGN}"
+            toml_block add report.dkim sign array "$(array_tools quotecomma "${SMTP_REPORT_DKIM_SIGN}")"
 
             toml_block add report.spf from-name quotes "${SMTP_REPORT_SPF_FROM_NAME}"
             toml_block add report.spf from-address quotes "${SMTP_REPORT_SPF_FROM_ADDRESS}"
             toml_block add report.spf subject quotes "${SMTP_REPORT_SPF_SUBJECT}"
             toml_block add report.spf send quotes "${SMTP_REPORT_SPF_SEND}"
-            toml_block add report.spf sign array "${SMTP_REPORT_SPF_SIGN}"
+            toml_block add report.spf sign array "$(array_tools quotecomma "${SMTP_REPORT_SPF_SIGN}")"
 
             toml_block add report.dmarc from-name quotes "${SMTP_REPORT_DMARC_FROM_NAME}"
             toml_block add report.dmarc from-address quotes "${SMTP_REPORT_DMARC_FROM_ADDRESS}"
             toml_block add report.dmarc subject quotes "${SMTP_REPORT_DMARC_SUBJECT}"
             toml_block add report.dmarc send quotes "${SMTP_REPORT_DMARC_SEND}"
-            toml_block add report.dmarc sign array "${SMTP_REPORT_DMARC_SIGN}"
+            toml_block add report.dmarc sign array "$(array_tools quotecomma "${SMTP_REPORT_DMARC_SIGN}")"
 
             toml_block add report.dmarc.aggregate from-name quotes "${SMTP_REPORT_DMARC_AGGREGATE_FROM_NAME}"
             toml_block add report.dmarc.aggregate from-address quotes "${SMTP_REPORT_DMARC_AGGREGATE_FROM_ADDRESS}"
@@ -1570,7 +1572,7 @@ EOF
             toml_block add report.dmarc.aggregate contact-info quotes "${SMTP_REPORT_DMARC_AGGREGATE_CONTACT_INFO}"
             toml_block add report.dmarc.aggregate send quotes "${SMTP_REPORT_DMARC_AGGREGATE_SEND}"
             toml_block add report.dmarc.aggregate max-size "${SMTP_REPORT_DMARC_AGGREGATE_MAX_SIZE}"
-            toml_block add report.dmarc.aggregate sign array "${SMTP_REPORT_DMARC_AGGREGATE_SIGN}"
+            toml_block add report.dmarc.aggregate sign array "$(array_tools quotecomma "${SMTP_REPORT_DMARC_AGGREGATE_SIGN}")"
 
             toml_block add report.tls.aggregate from-name quotes "${SMTP_REPORT_TLS_AGGREGATE_FROM_NAME}"
             toml_block add report.tls.aggregate from-address quotes "${SMTP_REPORT_TLS_AGGREGATE_FROM_ADDRESS}"
@@ -1578,7 +1580,7 @@ EOF
             toml_block add report.tls.aggregate contact-info quotes "${SMTP_REPORT_TLS_AGGREGATE_CONTACT_INFO}"
             toml_block add report.tls.aggregate send quotes "${SMTP_REPORT_TLS_AGGREGATE_SEND}"
             toml_block add report.tls.aggregate max-size "${SMTP_REPORT_TLS_AGGREGATE_MAX_SIZE}"
-            toml_block add report.tls.aggregate sign array "${SMTP_REPORT_TLS_AGGREGATE_SIGN}"
+            toml_block add report.tls.aggregate sign array "$(array_tools quotecomma "${SMTP_REPORT_TLS_AGGREGATE_SIGN}")"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -1619,9 +1621,7 @@ EOF
             toml_block add resolver timeout quotes "${SMTP_RESOLVER_TIMEOUT}"
             toml_block add resolver attempts ${SMTP_RESOLVER_ATTEMPTS}
             toml_block add resolver try-tcp-on-error ${SMTP_RESOLVER_TRY_TCP_ON_ERROR,,}
-            ## Todo Public Suffix is bad and needs to support multiple values / array
-            toml_block add resolver public-suffix array "${SMTP_RESOLVER_PUBLIC_SUFFIX}"
-
+            toml_block add resolver public-suffix array "$(array_tools quotecomma "${SMTP_RESOLVER_PUBLIC_SUFFIX}")"
             toml_block add resolver.cache txt ${SMTP_RESOLVER_CACHE_TXT}
             toml_block add resolver.cache mx ${SMTP_RESOLVER_CACHE_MX}
             toml_block add resolver.cache ipv4 ${SMTP_RESOLVER_CACHE_IPV4}
@@ -1658,23 +1658,23 @@ EOF
             toml_block add session.connect script quotes "${SMTP_SESSION_CONNECT_SCRIPT}"
 
             toml_block add session.ehlo require "${SMTP_SESSION_EHLO_REQUIRE,,}"
-            toml_block add session.ehlo reject-non-fqdn array "${SMTP_SESSION_EHLO_REJECT_NON_FQDN}"
+            toml_block add session.ehlo reject-non-fqdn array "$(array_tools quotecomma "${SMTP_SESSION_EHLO_REJECT_NON_FQDN}")"
             toml_block add session.ehlo script quotes "${SMTP_SESSION_EHLO_SCRIPT}"
 
             toml_block add session.extensions pipelining "${SMTP_SESSION_EXTENSIONS_PIPELINING,,}"
             toml_block add session.extensions chunking "${SMTP_SESSION_EXTENSIONS_CHUNKING,,}"
             toml_block add session.extensions requiretls "${SMTP_SESSION_EXTENSIONS_REQUIRETLS,,}"
             toml_block add session.extensions nosoliciting quotes "${SMTP_SESSION_EXTENSIONS_NO_SOLICITING}"
-            toml_block add session.extensions dsn array "${SMTP_SESSION_EXTENSIONS_DSN}"
-            toml_block add session.extensions expn array "${SMTP_SESSION_EXTENSIONS_EXPN}"
-            toml_block add session.extensions vrfy array "${SMTP_SESSION_EXTENSIONS_VRFY}"
-            toml_block add session.extensions future-release array "${SMTP_SESSION_EXTENSIONS_FUTURE_RELEASE}"
-            toml_block add session.extensions delivery-by array "${SMTP_SESSION_EXTENSIONS_DELIVER_BY}"
-            toml_block add session.extensions mt-priority array "${SMTP_SESSION_EXTENSIONS_MT_PRIORITY}"
+            toml_block add session.extensions dsn array "$(array_tools quotecomma "${SMTP_SESSION_EXTENSIONS_DSN}")"
+            toml_block add session.extensions expn array "$(array_tools quotecomma "${SMTP_SESSION_EXTENSIONS_EXPN}")"
+            toml_block add session.extensions vrfy array "$(array_tools quotecomma "${SMTP_SESSION_EXTENSIONS_VRFY}")"
+            toml_block add session.extensions future-release array "$(array_tools quotecomma "${SMTP_SESSION_EXTENSIONS_FUTURE_RELEASE}")"
+            toml_block add session.extensions delivery-by array "$(array_tools quotecomma "${SMTP_SESSION_EXTENSIONS_DELIVER_BY}")"
+            toml_block add session.extensions mt-priority array "$(array_tools quotecomma "${SMTP_SESSION_EXTENSIONS_MT_PRIORITY}")"
 
-            toml_block add session.auth mechanisms array "${SMTP_SESSION_AUTH_MECHANISMS}"
-            toml_block add session.auth directory array "${SMTP_SESSION_AUTH_DIRECTORY}"
-            toml_block add session.auth require array "${SMTP_SESSION_AUTH_REQUIRE}"
+            toml_block add session.auth mechanisms array "$(array_tools quotecomma "${SMTP_SESSION_AUTH_MECHANISMS}")"
+            toml_block add session.auth directory array "$(array_tools quotecomma "${SMTP_SESSION_AUTH_DIRECTORY}")"s
+            toml_block add session.auth require array "$(array_tools quotecomma "${SMTP_SESSION_AUTH_REQUIRE}")"
             toml_block add session.auth allow-plain-text "${SMTP_SESSION_AUTH_ALLOW_PLAIN_TEXT,,}"
 
             toml_block add session.auth.errors total "${SMTP_SESSION_AUTH_ERRORS_TOTAL}"
@@ -1684,7 +1684,7 @@ EOF
             toml_block add session.mail rewrite "${SMTP_SESSION_MAIL_REWRITE}"
 
             toml_block add session.rcpt script quotes "${SMTP_SESSION_RCPT_SCRIPT}"
-            toml_block add session.rcpt relay array "${SMTP_SESSION_RCPT_RELAY}"
+            toml_block add session.rcpt relay array "$(array_tools quotecomma "${SMTP_SESSION_RCPT_RELAY}")"
             toml_block add session.rcpt rewrite "${SMTP_SESSION_RCPT_REWRITE}"
             toml_block add session.rcpt max-recipients "${SMTP_SESSION_RCPT_MAX_RECIPIENTS}"
             toml_block add session.rcpt directory quotes "${SMTP_SESSION_RCPT_DIRECTORY}"
@@ -1692,7 +1692,7 @@ EOF
             toml_block add session.rcpt.errors total "${SMTP_SESSION_RCPT_ERRORS_TOTAL}"
             toml_block add session.rcpt.errors wait quotes "${SMTP_SESSION_RCPT_ERRORS_WAIT}"
 
-            toml_block add session.data script array "${SMTP_SESSION_DATA_SCRIPT}"
+            toml_block add session.data script array "$(array_tools quotecomma "${SMTP_SESSION_DATA_SCRIPT}")"
 
             toml_block add session.data.limits messages ${SMTP_SESSION_DATA_LIMITS_MESSAGES}
             toml_block add session.data.limits size ${SMTP_SESSION_DATA_LIMITS_SIZE}
@@ -1769,7 +1769,7 @@ EOF
             toml_block add signature.dynamic rsa private-key quotes "${SMTP_SIGNATURE_RSA_PRIVATE_KEY:-${DEFAULT_DKIM_KEY_FILE}}"
             toml_block add signature.dynamic rsa domain quotes "${SMTP_SIGNATURE_RSA_DOMAIN:-${DEFAULT_DOMAIN}}"
             toml_block add signature.dynamic rsa selector quotes "${SMTP_SIGNATURE_RSA_SELECTOR:-${DEFAULT_DKIM_SELECTOR}}"
-            toml_block add signature.dynamic rsa headers array "${SMTP_SIGNATURE_RSA_HEADERS}"
+            toml_block add signature.dynamic rsa headers array "$(array_tools quotecomma "${SMTP_SIGNATURE_RSA_HEADERS}")"
             toml_block add signature.dynamic rsa algorithm quotes "${SMTP_SIGNATURE_RSA_ALGORITHM}"
             toml_block add signature.dynamic rsa canonicalization quotes "${SMTP_SIGNATURE_RSA_CANONICALIZATION}"
             toml_block add signature.dynamic rsa expire quotes "${SMTP_SIGNATURE_RSA_EXPIRE}"
@@ -1816,50 +1816,50 @@ EOF
             toml_block add directory.dynamic.lookup spamdb reputation-insert quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_REPUTATION_INSERT}"
             toml_block add directory.dynamic.lookup spamdb reputation-lookup quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_REPUTATION_LOOKUP}"
 
-            toml_block add directory.dynamic.schedule spamdb query array "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_SCHEDULE_QUERY}"
+            toml_block add directory.dynamic.schedule spamdb query array "$(array_tools quotecomma "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_SCHEDULE_QUERY}")"
             toml_block add directory.dynamic.schedule spamdb frequency quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_SCHEDULE_FREQUENCY}"
 
             toml_block add directory.dynamic spam type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_TYPE}"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam free-domains type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam free-domains comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_COMMENT}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam free-domains values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_VALUES}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam free-domains values array "$(array_tools quotecomma "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_VALUES}")"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEDOMAINS_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEDOMAINS_COMMENT}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPPSABLEDOMAINS_VALUES}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains values array "$(array_tools quotecomma "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPPSABLEDOMAINS_VALUES}")"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam redirectors type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam redirectors comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_COMMENT}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam redirectors values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_VALUES}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam redirectors values array "$(array_tools quotecomma "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_VALUES}")"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_COMMENT}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_VALUES}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow values array "$(array_tools quotecomma "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_VALUES}")"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_COMMENT}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_VALUES}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow values array "$(array_tools quotecomma "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_VALUES}")"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_COMMENT}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_VALUES}"
+            toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow values array "$(array_tools quotecomma "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_VALUES}")"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam mime-types type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam mime-types comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_COMMENT}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam mime-types values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_VALUES}" # TODO Parse an array properly
+            toml_block add directory.dynamic.lookup.dynamic2 spam mime-types values array "$(array_tools quotecomma "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_VALUES}")"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam trap-address type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam trap-address comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_COMMENT}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam trap-address values quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_VALUES}" ## TODO Turn into Array
+            toml_block add directory.dynamic.lookup.dynamic2 spam trap-address values array "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_VALUES}"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam scores type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam scores values quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_VALUES}"
 
             if var_true "${ENABLE_SIEVE}" ; then
-                toml_block add sieve.trusted.scripts spam-filter array "${SIEVE_TRUSTED_SCRIPTS_SPAMFILTER}"
-                toml_block add sieve.trusted.scripts track-replies array "${SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES}"
-                toml_block add sieve.trusted.scripts greylist array "${SIEVE_TRUSTED_SCRIPTS_GREYLIST}"
+                toml_block add sieve.trusted.scripts spam-filter array "$(array_tools quotecomma "${SIEVE_TRUSTED_SCRIPTS_SPAMFILTER}")"
+                toml_block add sieve.trusted.scripts track-replies array "$(array_tools quotecomma "${SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES}")"
+                toml_block add sieve.trusted.scripts greylist array "$(array_tools quotecomma "${SIEVE_TRUSTED_SCRIPTS_GREYLIST}")"
             fi
 
             cat <<EOF > "${config_dir}"/"${config_file}"
