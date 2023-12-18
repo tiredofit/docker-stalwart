@@ -501,7 +501,8 @@ EOF
             toml_block add directory.default base-dn quotes "${DIRECTORY_DEFAULT_LDAP_BASE_DN}"
 
             toml_block add directory.default.bind dn quotes "${DIRECTORY_DEFAULT_LDAP_BIND_DN}"
-            toml_block add directory.default.bind secret quotes "${DIRECTORY_DEFAULT_LDAP_BIND_SECRET}"
+            ## TODO We should add some sanity_var checks here
+            toml_block add directory.default.bind secret quotes "${DIRECTORY_DEFAULT_LDAP_BIND_PASS}"
 
             toml_block add directory.default.cache entries "${DIRECTORY_DEFAULT_LDAP_CACHE_ENTRIES}"
             toml_block add directory.default.cache ttl "${DIRECTORY_DEFAULT_LDAP_CACHE_TTL}"
@@ -527,7 +528,7 @@ EOF
 
             toml_block add directory.default.attributes uid quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_UID}"
             toml_block add directory.default.attributes description array "$(array_tools quotecomma "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_DESCRIPTION}")"
-            toml_block add directory.default.attributes secret quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_SECRET}"
+            toml_block add directory.default.attributes secret quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_PASS}"
             toml_block add directory.default.attributes groups array "$(array_tools quotecomma "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_GROUPS}")"
             toml_block add directory.default.attributes email quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_EMAIL}"
             toml_block add directory.default.attributes email-alias quotes "${DIRECTORY_DEFAULT_LDAP_ATTRIBUTES_EMAIL_ALIAS}"
@@ -560,12 +561,6 @@ EOF
             :
         fi
     }
-
-
-
-
-
-
 
     directory_configure_lmtp() {
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
@@ -636,7 +631,7 @@ EOF
             ## TODO This needs to be dynamic to allow for multiple
             toml_block add directory.dynamic.users memory name quotes "${DIRECTORY_DEFAULT_MEMORY_USER_NAME}"
             toml_block add directory.dynamic.users memory description quotes "${DIRECTORY_DEFAULT_MEMORY_USER_DESCRIPTION}"
-            toml_block add directory.dynamic.users memory secret quotes "${DIRECTORY_DEFAULT_MEMORY_USER_SECRET}"
+            toml_block add directory.dynamic.users memory secret quotes "${DIRECTORY_DEFAULT_MEMORY_USER_PASS}"
             toml_block add directory.dynamic.users memory email quotes "${DIRECTORY_DEFAULT_MEMORY_USER_EMAIL}"
             toml_block add directory.dynamic.users memory email-list quotes "${DIRECTORY_DEFAULT_MEMORY_USER_EMAIL_LIST}"
             toml_block add directory.dynamic.users memory quota quotes "${DIRECTORY_DEFAULT_MEMORY_USER_QUOTA}"
@@ -698,7 +693,7 @@ EOF
 
             toml_block add directory.dynamic.columns sql name "${DIRECTORY_DEFAULT_SQL_COLUMNS_NAME}"
             toml_block add directory.dynamic.columns sql description "${DIRECTORY_DEFAULT_SQL_COLUMNS_DESCRIPTION}"
-            toml_block add directory.dynamic.columns sql secret "${DIRECTORY_DEFAULT_SQL_COLUMNS_SECRET}"
+            toml_block add directory.dynamic.columns sql secret "${DIRECTORY_DEFAULT_SQL_COLUMNS_PASS}"
             toml_block add directory.dynamic.columns sql email "${DIRECTORY_DEFAULT_SQL_COLUMNS_EMAIL}"
             toml_block add directory.dynamic.columns sql quota "${DIRECTORY_DEFAULT_SQL_COLUMNS_QUOTA}"
             toml_block add directory.dynamic.columns sql type "${DIRECTORY_DEFAULT_SQL_COLUMNS_TYPE}"
@@ -1511,7 +1506,7 @@ EOF
             toml_block add remote.dynamic.tls local allow-invalid-certs ${SMTP_REMOTE_LOCAL_TLS_ALLOW_INVALID_CERTS,,}
 
             toml_block add remote.dynamic.auth local username quotes "${SMTP_REMOTE_LOCAL_AUTH_USERNAME}"
-            toml_block add remote.dynamic.auth local secret quotes "${SMTP_REMOTE_LOCAL_AUTH_SECRET}"
+            toml_block add remote.dynamic.auth local secret quotes "${SMTP_REMOTE_LOCAL_AUTH_PASS}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 #########################################################
@@ -2135,6 +2130,9 @@ toml_block() {
                         block_value_blanket_post=\"
                         shift 3
                         block_value=$@
+                    ;;
+                    null )
+                        return 99
                     ;;
                     singlequote | quote )
                         block_value_blanket_pre=\'
