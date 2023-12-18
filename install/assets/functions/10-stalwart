@@ -353,8 +353,6 @@ EOF
             chown "${SERVER_USER}":"${SERVER_GROUP}" "${TLS_DEFAULT_CERT_FILE}"
             #chown "${SERVER_USER}":"${SERVER_GROUP}" "${TLS_DEFAULT_KEY_FILE}"  ## TODO - Refactor function
 
-
-            ## Todo need variables
             toml_block add server.tls enable "${TLS_ENABLE,,}"
             toml_block add server.tls implicit "${TLS_IMPLICIT,,}"
             toml_block add server.tls timeout quotes "${TLS_TIMEOUT}"
@@ -607,10 +605,8 @@ EOF
     }
 
     directory_configure_memory() {
-        ## TODO - Future version
-if [ "${SETUP_TYPE,,}" = "auto" ]; then
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-            DIRECTORY_DEFAULT_MEMORY_TYPE
 
             toml_block add directory.dynamic memory type "${DIRECTORY_DEFAULT_MEMORY_TYPE}"
 
@@ -1944,37 +1940,37 @@ dkim() {
         "generate" )
             ## Usage generate <selector> <domainname> <type> <rsa_keysize>
             if [ -z "${4}" ] ; then return 3; fi
-            mkdir -p "${DATA_PATH}"/dkim ## TODO - maybe bootstrap_filesystem function
-            chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/dkim ## TODO - maybe bootstrap_filesystem function
+            if [ ! -d "${DKIM_PATH}" ]; then mkdir -p "${DKIM_PATH}" ; fi
+            if [ "$(stat -c %U "${DKIM_PATH}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${DKIM_PATH}" ; fi
 
             local _dkim_selector=${2}
             local _dkim_domain=${3}
             local _dkim_type=${4:-"${DEFAULT_DKIM_TYPE}"}
             local _dkim_key_size=${5:-"${DEFAULT_DKIM_RSA_KEY_SIZE}"}
 
-            if [ -f "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key ] || [ -f "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert ] || [ -f "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".readme ] ; then
+            if [ -f "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".key ] || [ -f "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".cert ] || [ -f "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".readme ] ; then
                 return 99
             fi
 
             case "${_dkim_type,,}" in
                 ed25519 )
-                    sudo -u "${SERVER_USER}" openssl genpkey -algorithm ed25519 -out "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key
-                    sudo -u "${SERVER_USER}" openssl pkey -in "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key -pubout -outform der | tail -c +13 | openssl base64 -A > "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert
+                    sudo -u "${SERVER_USER}" openssl genpkey -algorithm ed25519 -out "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".key
+                    sudo -u "${SERVER_USER}" openssl pkey -in "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".key -pubout -outform der | tail -c +13 | openssl base64 -A > "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".cert
                 ;;
                 rsa )
-                    sudo -u "${SERVER_USER}" openssl genrsa -out "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key ${_dkim_key_size}
-                    sudo -u "${SERVER_USER}" openssl rsa -in "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".key -pubout -outform der | openssl base64 -A > "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert
+                    sudo -u "${SERVER_USER}" openssl genrsa -out "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".key ${_dkim_key_size}
+                    sudo -u "${SERVER_USER}" openssl rsa -in "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".key -pubout -outform der | openssl base64 -A > "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".cert
                 ;;
             esac
 
-            cat <<EOF > "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".readme
+            cat <<EOF > "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".readme
 DKIM Selector: ${_dkim_selector}
 Domain: ${_dkim_domain/./_}
 
 This record was generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S %Z')
 Add the following DNS records to your domain in order to enable DKIM, SPF and DMARC:
 
-${_dkim_selector}._domainkey.${_dkim_domain/./_}. IN TXT "v=DKIM1; k=${DKIM_TYPE,,}; p=$(cat "${DATA_PATH}"/dkim/"${_dkim_selector}"_"${_dkim_domain/./_}".cert)"
+${_dkim_selector}._domainkey.${_dkim_domain/./_}. IN TXT "v=DKIM1; k=${DKIM_TYPE,,}; p=$(cat "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".cert)"
 ${_dkim_domain/./_}. IN TXT "v=spf1 a:${SERVER_NAME}.${_dkim_domain/./_} mx -all ra=postmaster"
 ${SERVER_NAME}.${_dkim_domain/./_}. IN TXT "v=spf1 a -all ra=postmaster"
 _dmarc.${_dkim_domain/./_}. IN TXT "v=DMARC1; p=none; rua=mailto:postmaster@${_dkim_domain/./_}; ruf=mailto:postmaster@${_dkim_domain/./_}"
