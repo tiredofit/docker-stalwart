@@ -1196,7 +1196,11 @@ configure_server() {
     if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
     if [ "$(stat -c %U "${config_dir}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${config_dir}" ; fi
 
-   config_file="${CONFIG_FILE}"
+    if [ -n "${CONFIG_CUSTOM_FILE}" ]; then
+        config_files=$(echo ${config_files} ; echo "${CONFIG_CUSTOM_PATH}/${CONFIG_CUSTOM_FILE},")
+    fi
+
+    config_file="${CONFIG_FILE}"
 
     if [ "${SETUP_TYPE,,}" = "auto" ]; then
         ## TODO Add ability to take environment variable for custom additions
@@ -1210,6 +1214,7 @@ configure_server() {
 [include]
 files = [
 $(for config_file in $(echo ${config_files} | tr "," "\",\n") ; do echo "          \"${config_file}," ; done)
+
         ]
 
 EOF
