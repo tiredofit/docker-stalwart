@@ -4,12 +4,18 @@ array_tools() {
     case "${1}" in
         quotecomma)
             if [ -v "${2}" ] ; then
-                variable=$(set -o posix ; set | grep ^$2 | cut -d = -f 2-)
                 for value in $(set -o posix ; set | grep ^$2 | cut -d = -f 2- | tr ',' '\n' | uniq ) ; do
                     echo "'${value}'",
                 done
             fi
         ;;
+        verify )
+            :
+            ## TODO We should check to see if there is a file or file+fallback prefix
+            ##      and verify if the file actually exists on the filesytem. If not look in the second argument to see if the file exists and copy it into where its supposed to be
+            ##      If there is a file and the default file is newer than the existing one then perhaps set a warning on console
+        ;;
+
     esac
 }
 
