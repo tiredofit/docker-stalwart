@@ -64,6 +64,9 @@ array_tools() {
         ;;
 
         verify )
+            ## TODO We should check to see if there is a file or file+fallback prefix
+            ##      and verify if the file actually exists on the filesytem. If not look in the second argument to see if the file exists and copy it into where its supposed to be
+            ##      If there is a file and the default file is newer than the existing one then perhaps set a warning on console
             shift 1
             if [ -v "${1}" ] ; then
                 variable=$1
@@ -81,9 +84,6 @@ array_tools() {
                     fi
                 done
             fi
-            ## TODO We should check to see if there is a file or file+fallback prefix
-            ##      and verify if the file actually exists on the filesytem. If not look in the second argument to see if the file exists and copy it into where its supposed to be
-            ##      If there is a file and the default file is newer than the existing one then perhaps set a warning on console
         ;;
 
     esac
@@ -95,14 +95,14 @@ bootstrap_filesystem() {
     if [ "$(stat -c %U "${CONFIG_PATH}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${CONFIG_PATH}" ; fi
 
     if [ ! -d "${DATA_PATH}" ]; then mkdir -p "${DATA_PATH}"; fi
-    if [ "$(stat -c %U "${DATA_PATH}")" != "${SERVER_USER}" ] ; then chown ${SERVER_USER}:${SERVER_GROUP} "${DATA_PATH}" ; fi
+    if [ "$(stat -c %U "${DATA_PATH}")" != "${SERVER_USER}" ] ; then chown "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}" ; fi
 
     if [ ! -d "${LOG_PATH}" ]; then mkdir -p "${LOG_PATH}" ; fi
     if [ "$(stat -c %U "${LOG_PATH}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${LOG_PATH}" ; fi
 
     case "${LOG_TYPE,,}" in
         file )
-            create_logrotate stalwart "${LOG_PATH}"/"${LOG_FILE}" ${SERVER_USER} ${SERVER_GROUP}
+            create_logrotate stalwart "${LOG_PATH}"/"${LOG_FILE}" "${SERVER_USER}" "${SERVER_GROUP}"
         ;;
     esac
 }

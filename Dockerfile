@@ -69,6 +69,7 @@ RUN source /assets/functions/00-container && \
                     && \
     package cleanup && \
     rm -rf \
-            /opt/rust
+            /opt/rust \
+            /usr/src/*
 
 COPY install /
