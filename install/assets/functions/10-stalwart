@@ -2005,8 +2005,8 @@ EOF
         config_file="spamfilter.toml"
         config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            if [ ! -d "${DATA_PATH}"/spamfilter/maps ]; then mkdir -p "${DATA_PATH}"/spamfilter/maps ; fi
-            if [ ! -d "${DATA_PATH}"/spamfilter/scripts ]; then mkdir -p "${DATA_PATH}"/spamfilter/scripts ; fi
+            if [ ! -d "${DATA_PATH}"/spamfilter/maps ]; then sudo -u "${SERVER_USER}" mkdir -p "${DATA_PATH}"/spamfilter/maps ; fi
+            if [ ! -d "${DATA_PATH}"/spamfilter/scripts ]; then sudo -u "${SERVER_USER}" mkdir -p "${DATA_PATH}"/spamfilter/scripts ; fi
             chown "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/spamfilter
 
             toml_block add directory.dynamic spamdb type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_TYPE}"
