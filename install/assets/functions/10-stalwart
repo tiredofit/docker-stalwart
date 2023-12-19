@@ -75,6 +75,10 @@ array_tools() {
                     if [[ "${value}" =~ ^file:\/\/.* ]] ; then
                         if [ ! -f "$(echo ${value} | sed "s|^file.*://||g" )" ]; then
                             if [ -f "$2/$(basename "${value}")" ]; then
+                                if [ ! -d "$(basename "$(echo "${value}" | sed "s|^file.*//||g")")" ]; then
+                                    mkdir -p "$(basename "$(echo "${value}" | sed "s|^file.*//||g")")"
+                                    chown "${SERVER_USER}":"${SERVER_GROUP}" "$(basename "$(echo "${value}" | sed "s|^file.*//||g")")"
+                                fi
                                 sudo -u "${SERVER_USER}" cp -aR "${2}"/"$(basename "${value}")" "$(echo "${value}" | sed "s|^file.*://||g")"
                             else
                                 output="$(echo "${output}" | sed "\#${value}#d")"
