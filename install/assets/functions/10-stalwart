@@ -1687,7 +1687,6 @@ EOF
         config_file="remote.toml"
 
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
             smtp_remote_instances=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_REMOTE_.*_ADDRESS=" | wc -l)
             if [ "${smtp_remote_instances}" -eq 1 ]; then
@@ -1707,9 +1706,7 @@ EOF
                 fi
             }
 
-set -x
             populate_variable address
-set +x
             populate_variable port
             populate_variable protocol
             populate_variable concurrency
@@ -1719,11 +1716,8 @@ set +x
             populate_variable auth_username
             populate_variable auth_pass
 
-
-set -x
             toml_block add remote.dynamic ${smtp_remote_name,,} address quotes "${smtp_remote_address}"
             toml_block add remote.dynamic ${smtp_remote_name,,} port "${smtp_remote_port}"
-set +x
             toml_block add remote.dynamic ${smtp_remote_name,,} protocol quotes "${smtp_remote_protocol}"
             toml_block add remote.dynamic ${smtp_remote_name,,} concurrency "${smtp_remote_concurrency}"
             toml_block add remote.dynamic ${smtp_remote_name,,} timeout quotes "${smtp_remote_timeout}"
@@ -1998,21 +1992,56 @@ EOF
 
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+            smtp_signature_instances=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_SIGNATURE_.*_SELECTOR=" | wc -l)
+            if [ "${smtp_signature_instances}" -eq 1 ]; then
+                smtp_signature_name=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_SIGNATURE_.*_SELECTOR=" | cut -d _ -f 3)
+            elif [ "${smtp_signature_instances}" -lt 1 ]; then
+                print_error "No SMTP Signature configuration found! - Setup some SMTP_SIGNATURE_ variables"
+                exit 9
+            else
+                smtp_signature_name=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_SIGNATURE_.*_SELECTOR=" | grep -Pve "^SMTP_SIGNATURE_RSA_SELECTOR=" | cut -d _ -f 3)
+            fi
+            ## TODO SMTP_SIGNATURE_NAME
+            populate_variable() {
+                if [ -v "SMTP_SIGNATURE_${smtp_signature_name^^}_${1^^}" ]; then
+                    export smtp_signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_${smtp_signature_name^^}_${1^^}=" | cut -d = -f2-)"
+                else
+                    export smtp_signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_RSA_${1^^}=" | cut -d = -f2-)"
+                fi
+            }
+
             dkim create_default
 
-            toml_block add signature.dynamic rsa public-key quotes "${SMTP_SIGNATURE_RSA_PUBLIC_KEY:-${DEFAULT_DKIM_CERT_FILE}}"
-            toml_block add signature.dynamic rsa private-key quotes "${SMTP_SIGNATURE_RSA_PRIVATE_KEY:-${DEFAULT_DKIM_KEY_FILE}}"
-            toml_block add signature.dynamic rsa domain quotes "${SMTP_SIGNATURE_RSA_DOMAIN:-${DEFAULT_DOMAIN}}"
-            toml_block add signature.dynamic rsa selector quotes "${SMTP_SIGNATURE_RSA_SELECTOR:-${DEFAULT_DKIM_SELECTOR}}"
-            toml_block add signature.dynamic rsa headers array "$(array_tools quote comma SMTP_SIGNATURE_RSA_HEADERS)"
-            toml_block add signature.dynamic rsa algorithm quotes "${SMTP_SIGNATURE_RSA_ALGORITHM}"
-            toml_block add signature.dynamic rsa canonicalization quotes "${SMTP_SIGNATURE_RSA_CANONICALIZATION}"
-            toml_block add signature.dynamic rsa expire quotes "${SMTP_SIGNATURE_RSA_EXPIRE}"
-            toml_block add signature.dynamic rsa third-party quotes "${THIRD_PARTY}"
-            toml_block add signature.dynamic rsa third-party-algo quotes "${SMTP_SIGNATURE_RSA_THIRD_PARTY_ALGO}"
-            toml_block add signature.dynamic rsa auid quotes "${SMTP_SIGNATURE_RSA_AUID}"
-            toml_block add signature.dynamic rsa set-body-length "${SMTP_SIGNATURE_RSA_SET_BODY_LENGTH,,}"
-            toml_block add signature.dynamic rsa report "${SMTP_SIGNATURE_RSA_REPORT,,}"
+            populate_variable public-key
+            populate_variable private-key
+            populate_variable domain
+            populate_variable selector
+            populate_variable headers
+            populate_variable algorithm
+            populate_variable canonicalization
+            populate_variable expire
+            populate_variable third_party
+            populate_variable third_party_algo
+            populate_variable auid
+            populate_variable set_body_length
+            populate_variable report
+
+            toml_block add signature.dynamic ${smtp_signature_name,,} public-key quotes "${smtp_signature_public_key:-${default_dkim_cert_file}}"
+            toml_block add signature.dynamic ${smtp_signature_name,,} private-key quotes "${smtp_signature_private_key:-${default_dkim_key_file}}"
+            toml_block add signature.dynamic ${smtp_signature_name,,} domain quotes "${smtp_signature_domain:-${default_domain}}"
+            toml_block add signature.dynamic ${smtp_signature_name,,} selector quotes "${smtp_signature_selector:-${default_dkim_selector}}"
+            toml_block add signature.dynamic ${smtp_signature_name,,} headers array "$(array_tools quote comma smtp_signature_headers)"
+            toml_block add signature.dynamic ${smtp_signature_name,,} algorithm quotes "${smtp_signature_algorithm}"
+            toml_block add signature.dynamic ${smtp_signature_name,,} canonicalization quotes "${smtp_signature_canonicalization}"
+            toml_block add signature.dynamic ${smtp_signature_name,,} expire quotes "${smtp_signature_expire}"
+            toml_block add signature.dynamic ${smtp_signature_name,,} third-party quotes "${third_party}"
+            toml_block add signature.dynamic ${smtp_signature_name,,} third-party-algo quotes "${smtp_signature_third_party_algo}"
+            toml_block add signature.dynamic ${smtp_signature_name,,} auid quotes "${smtp_signature_auid}"
+            toml_block add signature.dynamic ${smtp_signature_name,,} set-body-length "${smtp_signature_set_body_length,,}"
+            toml_block add signature.dynamic ${smtp_signature_name,,} report "${smtp_signature_report,,}"
+
+            smtp_signature="block_signature_${smtp_signature_name,,}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -2020,7 +2049,7 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(toml_block show "${block_signature_rsa}")
+$(toml_block show "${!smtp_signature}")
 
 EOF
         else
