@@ -40,7 +40,10 @@ RUN source /assets/functions/00-container && \
     STALWART_RUN_DEPS=" \
                             sqlite3 \
                             " && \
-    package install ${STALWART_BUILD_DEPS} && \
+    package install \
+                    ${STALWART_BUILD_DEPS} \
+                    ${STALWART_RUN_DEPS} \
+                    && \
     mkdir -p /usr/src && \
     #curl -sSL https://github.com/apple/foundationdb/releases/download/${FOUNDATIONDB_CLIENT_VERSION/-*/}/foundationdb-clients_${FOUNDATIONDB_CLIENT_VERSION}_amd64.deb -o /usr/src/foundationdb-clients.deb && \
     #dpkg -i /usr/src/foundationdb-clients.deb && \
