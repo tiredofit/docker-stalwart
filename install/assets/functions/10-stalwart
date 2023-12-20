@@ -1856,20 +1856,20 @@ EOF
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             toml_block add resolver type quotes "${SMTP_RESOLVER_TYPE}"
-            toml_block add resolver preserve-intermediates ${SMTP_RESOLVER_PRESERVE_INTERMEDIATES,,}
-            toml_block add resolver concurrency ${SMTP_RESOLVER_CONCURRENCY}
+            toml_block add resolver preserve-intermediates "${SMTP_RESOLVER_PRESERVE_INTERMEDIATES,,}"
+            toml_block add resolver concurrency "${SMTP_RESOLVER_CONCURRENCY}"
             toml_block add resolver timeout quotes "${SMTP_RESOLVER_TIMEOUT}"
-            toml_block add resolver attempts ${SMTP_RESOLVER_ATTEMPTS}
-            toml_block add resolver try-tcp-on-error ${SMTP_RESOLVER_TRY_TCP_ON_ERROR,,}
+            toml_block add resolver attempts "${SMTP_RESOLVER_ATTEMPTS}"
+            toml_block add resolver try-tcp-on-error "${SMTP_RESOLVER_TRY_TCP_ON_ERROR,,}"
             array_tools verify SMTP_RESOLVER_PUBLIC_SUFFIX /assets/stalwart/config/spamfilter/maps/
             toml_block add resolver public-suffix array "$(array_tools quote comma SMTP_RESOLVER_PUBLIC_SUFFIX)"
-            toml_block add resolver.cache txt ${SMTP_RESOLVER_CACHE_TXT}
-            toml_block add resolver.cache mx ${SMTP_RESOLVER_CACHE_MX}
-            toml_block add resolver.cache ipv4 ${SMTP_RESOLVER_CACHE_IPV4}
-            toml_block add resolver.cache ipv6 ${SMTP_RESOLVER_CACHE_IPV6}
-            toml_block add resolver.cache ptr ${SMTP_RESOLVER_CACHE_PTR}
-            toml_block add resolver.cache tlsa ${SMTP_RESOLVER_CACHE_TLSA}
-            toml_block add resolver.cache mta-sts ${SMTP_RESOLVER_CACHE_MTS_STS}
+            toml_block add resolver.cache txt "${SMTP_RESOLVER_CACHE_TXT}"
+            toml_block add resolver.cache mx "${SMTP_RESOLVER_CACHE_MX}"
+            toml_block add resolver.cache ipv4 "${SMTP_RESOLVER_CACHE_IPV4}"
+            toml_block add resolver.cache ipv6 "${SMTP_RESOLVER_CACHE_IPV6}"
+            toml_block add resolver.cache ptr "${SMTP_RESOLVER_CACHE_PTR}"
+            toml_block add resolver.cache tlsa "${SMTP_RESOLVER_CACHE_TLSA}"
+            toml_block add resolver.cache mta-sts "${SMTP_RESOLVER_CACHE_MTA_STS}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -1938,9 +1938,16 @@ EOF
 
             toml_block add session.data script array "$(array_tools noquote comma SMTP_SESSION_DATA_SCRIPT)"
 
-            toml_block add session.data.limits messages ${SMTP_SESSION_DATA_LIMITS_MESSAGES}
-            toml_block add session.data.limits size ${SMTP_SESSION_DATA_LIMITS_SIZE}
-            toml_block add session.data.limits received-headers ${SMTP_SESSION_DATA_LIMITS_RECEIVED_HEADERS}
+            toml_block add session.data.limits messages "${SMTP_SESSION_DATA_LIMITS_MESSAGES}"
+            toml_block add session.data.limits size "${SMTP_SESSION_DATA_LIMITS_SIZE}"
+            toml_block add session.data.limits received-headers "${SMTP_SESSION_DATA_LIMITS_RECEIVED_HEADERS}"
+
+            toml_block add session.data.add-headers received array "$(array tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_RECEIVED)"
+            toml_block add session.data.add-headers received-spf array "$(array tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_RECEIVED_SPF)"
+            toml_block add session.data.add-headers auth-results array "$(array tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_AUTH_RESULTS)"
+            toml_block add session.data.add-headers message-id array "$(array tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_MESSAGE_ID)"
+            toml_block add session.data.add-headers date array "$(array tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_DATE)"
+            toml_block add session.data.add-headers return-path "${SMTP_SESSION_DATA_ADDHEADERS_RETURN_PATH,,}"
 
             ## TODO Need to support multiple blocks with same name
             #toml_block add session.throttle quotes "${SMTP_SESSION_THROTTLE_}"
