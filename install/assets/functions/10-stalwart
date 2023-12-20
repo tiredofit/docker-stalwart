@@ -1991,11 +1991,11 @@ EOF
             toml_block add session.data.limits size "${SMTP_SESSION_DATA_LIMITS_SIZE}"
             toml_block add session.data.limits received-headers "${SMTP_SESSION_DATA_LIMITS_RECEIVED_HEADERS}"
 
-            toml_block add session.data.add-headers received array "$(array tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_RECEIVED)"
-            toml_block add session.data.add-headers received-spf array "$(array tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_RECEIVED_SPF)"
-            toml_block add session.data.add-headers auth-results array "$(array tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_AUTH_RESULTS)"
-            toml_block add session.data.add-headers message-id array "$(array tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_MESSAGE_ID)"
-            toml_block add session.data.add-headers date array "$(array tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_DATE)"
+            toml_block add session.data.add-headers received array "$(array_tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_RECEIVED)"
+            toml_block add session.data.add-headers received-spf array "$(array_tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_RECEIVED_SPF)"
+            toml_block add session.data.add-headers auth-results array "$(array_tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_AUTH_RESULTS)"
+            toml_block add session.data.add-headers message-id array "$(array_tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_MESSAGE_ID)"
+            toml_block add session.data.add-headers date array "$(array_tools noquote plus SMTP_SESSION_DATA_ADDHEADERS_DATE)"
             toml_block add session.data.add-headers return-path "${SMTP_SESSION_DATA_ADDHEADERS_RETURN_PATH,,}"
 
             ## TODO Need to support multiple blocks with same name
@@ -2083,9 +2083,8 @@ EOF
             }
 
             dkim create_default
-
-            populate_variable public-key
-            populate_variable private-key
+            populate_variable public_key
+            populate_variable private_key
             populate_variable domain
             populate_variable selector
             populate_variable headers
@@ -2098,8 +2097,8 @@ EOF
             populate_variable set_body_length
             populate_variable report
 
-            toml_block add signature.dynamic ${smtp_signature_name,,} public-key quotes "${smtp_signature_public_key:-${default_dkim_cert_file}}"
-            toml_block add signature.dynamic ${smtp_signature_name,,} private-key quotes "${smtp_signature_private_key:-${default_dkim_key_file}}"
+            toml_block add signature.dynamic ${smtp_signature_name,,} public-key quotes "${smtp_signature_public_key:-${DEFAULT_DKIM_CERT_FILE}}"  ## TODO This is weird. Need to deal with DKIM dynamics
+            toml_block add signature.dynamic ${smtp_signature_name,,} private-key quotes "${smtp_signature_private_key:-${DEFAULT_DKIM_KEY_FILE}}"
             toml_block add signature.dynamic ${smtp_signature_name,,} domain quotes "${smtp_signature_domain:-${default_domain}}"
             toml_block add signature.dynamic ${smtp_signature_name,,} selector quotes "${smtp_signature_selector:-${default_dkim_selector}}"
             toml_block add signature.dynamic ${smtp_signature_name,,} headers array "$(array_tools quote comma smtp_signature_headers)"
