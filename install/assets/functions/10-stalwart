@@ -1497,31 +1497,39 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            toml_block add server.listener.dynamic smtp bind array "$(array_tools quote comma SMTP_LISTENER_SMTP_BIND)"
-            toml_block add server.listener.dynamic smtp greeting quotes "${SMTP_LISTENER_SMTP_GREETING}"
-            toml_block add server.listener.dynamic smtp protocol quotes "${SMTP_LISTENER_SMTP_PROTOCOL}"
-
-            toml_block add server.listener.dynamic submission bind array "$(array_tools quote comma SMTP_LISTENER_SUBMISSION_BIND)"
-            toml_block add server.listener.dynamic submission greeting quotes "${SMTP_LISTENER_SUBMISSION_GREETING}"
-            toml_block add server.listener.dynamic submission protocol quotes "${SMTP_LISTENER_SUBMISSION_PROTOCOL}"
-
-            toml_block add server.listener.dynamic submissions bind array "$(array_tools quote comma SMTP_LISTENER_SUBMISSIONS_BIND)"
-            toml_block add server.listener.dynamic submissions greeting quotes "${SMTP_LISTENER_SUBMISSIONS_GREETING}"
-            toml_block add server.listener.dynamic submissions protocol quotes "${SMTP_LISTENER_SUBMISSIONS_PROTOCOL,,}"
-            toml_block add server.listener.dynamic submissions tls.implicit "${SMTP_LISTENER_SUBMISSIONS_TLS_IMPLICIT,,}"
-
-            toml_block add server.listener.dynamic management bind array "$(array_tools quote comma SMTP_LISTENER_MANAGEMENT_BIND)"
-            toml_block add server.listener.dynamic management protocol quotes "${SMTP_LISTENER_MANAGEMENT_PROTOCOL,,}"
-
-            if [ -n "${SMTP_MANAGEMENT_DIRECTORY}" ]; then
-                smtp_management_directory="${SMTP_MANAGEMENT_DIRECTORY}"
-            elif [ -z "${SMTP_MANAGEMENT_DIRECTORY}" ] && [ -n "${DEFAULT_DIRECTORY}" ]; then
-                smtp_management_directory="${DEFAULT_DIRECTORY}"
-            else
-                sanity_var SMTP_MANAGEMENT_DIRECTORY "directory to manage"
+            if var_true "${SMTP_ENABLE_SMTP}" ; then
+                toml_block add server.listener.dynamic smtp bind array "$(array_tools quote comma SMTP_LISTENER_SMTP_BIND)"
+                toml_block add server.listener.dynamic smtp greeting quotes "${SMTP_LISTENER_SMTP_GREETING}"
+                toml_block add server.listener.dynamic smtp protocol quotes "${SMTP_LISTENER_SMTP_PROTOCOL}"
             fi
 
-            toml_block add management directory quotes "${smtp_management_directory}"
+            if var_true "${SMTP_ENABLE_SUBMISSION}" ; then
+                toml_block add server.listener.dynamic submission bind array "$(array_tools quote comma SMTP_LISTENER_SUBMISSION_BIND)"
+                toml_block add server.listener.dynamic submission greeting quotes "${SMTP_LISTENER_SUBMISSION_GREETING}"
+                toml_block add server.listener.dynamic submission protocol quotes "${SMTP_LISTENER_SUBMISSION_PROTOCOL}"
+            fi
+
+            if var_true "${SMTP_ENABLE_SUBMISSIONS}" ; then
+                toml_block add server.listener.dynamic submissions bind array "$(array_tools quote comma SMTP_LISTENER_SUBMISSIONS_BIND)"
+                toml_block add server.listener.dynamic submissions greeting quotes "${SMTP_LISTENER_SUBMISSIONS_GREETING}"
+                toml_block add server.listener.dynamic submissions protocol quotes "${SMTP_LISTENER_SUBMISSIONS_PROTOCOL,,}"
+                toml_block add server.listener.dynamic submissions tls.implicit "${SMTP_LISTENER_SUBMISSIONS_TLS_IMPLICIT,,}"
+            fi
+
+            if var_true "${SMTP_ENABLE_MANAGEMENT}" ; then
+                toml_block add server.listener.dynamic management bind array "$(array_tools quote comma SMTP_LISTENER_MANAGEMENT_BIND)"
+                toml_block add server.listener.dynamic management protocol quotes "${SMTP_LISTENER_MANAGEMENT_PROTOCOL,,}"
+
+                if [ -n "${SMTP_MANAGEMENT_DIRECTORY}" ]; then
+                    smtp_management_directory="${SMTP_MANAGEMENT_DIRECTORY}"
+                elif [ -z "${SMTP_MANAGEMENT_DIRECTORY}" ] && [ -n "${DEFAULT_DIRECTORY}" ]; then
+                    smtp_management_directory="${DEFAULT_DIRECTORY}"
+                else
+                    sanity_var SMTP_MANAGEMENT_DIRECTORY "directory to manage"
+                fi
+
+                toml_block add management directory quotes "${smtp_management_directory}"
+            fi
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -1615,7 +1623,7 @@ EOF
             smtp_queue_outbound_next_hop=$(echo "${SMTP_QUEUE_OUTBOUND_NEXT_HOP}" | sed "s|default|${DEFAULT_DIRECTORY,,}|g")
 
             toml_block add queue.outbound next-hop array "$(array_tools noquote plus smtp_queue_outbound_next_hop)"
-            toml_block add queue.outbound ip-strategy "${SMTP_QUEUE_OUTBOUND_IP_STRATEGY}"
+            toml_block add queue.outbound ip-strategy quotes "${SMTP_QUEUE_OUTBOUND_IP_STRATEGY}"
 
             toml_block add queue.outbound.tls dane quotes "${SMTP_QUEUE_OUTBOUND_TLS_DANE,,}"
             toml_block add queue.outbound.tls mta-sts quotes "${SMTP_QUEUE_OUTBOUND_TLS_MTA_STS,,}"
