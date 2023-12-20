@@ -1036,15 +1036,7 @@ configure_jmap() {
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            if [ "${directory_instances}" -eq 1 ] ; then
-                jmap_directory=${JMAP_DIRECTORY:-"$(set -o posix ; set | printenv | sort | grep -P "^DIRECTORY01_.*_TYPE=" | grep -Pve "^DIRECTORY01_.*_SQL_COLUMNS_TYPE=" | cut -d _ -f2 | tr '[A-Z]' '[a-z]')"}
-            elif [ "${directory_instances}" -lt 1 ] || [ "${directory_instances}" -ge 2 ] || [ -z "${JMAP_DIRECTORY}" ]; then
-                print_error "Can't set authentication for JMAP because I don't know what directory to point to"
-                exit 9
-            else
-                jmap_directory=${jmap_directory:-"${JMAP_DIRECTORY}"}
-            fi
-
+            jmap_directory=${JMAP_DIRECTORY:-"${DEFAULT_DIRECTORY,,}"}
             toml_block add jmap directory quotes "${jmap_directory}"
             toml_block add jmap.session.cache ttl quotes "${JMAP_SESSION_CACHE_TTL}"
             toml_block add jmap.session.cache size "${JMAP_SESSION_CACHE_SIZE}"
@@ -1697,18 +1689,54 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
 
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+            smtp_remote_instances=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_REMOTE_.*_ADDRESS=" | wc -l)
+            if [ "${smtp_remote_instances}" -eq 1 ]; then
+                smtp_remote_name=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_REMOTE_.*_ADDRESS=" | cut -d _ -f 3)
+            elif [ "${smtp_remote_instances}" -lt 1 ]; then
+                print_error "No SMTP Remote configuration found found! - Setup some SMTP_REMOTE_ variables"
+                exit 9
+            else
+                smtp_remote_name=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_REMOTE_.*_ADDRESS=" | grep -Pve "^SMTP_REMOTE_LOCAL_ADDRESS=" | cut -d _ -f 3)
+            fi
 
-            toml_block add remote.dynamic local address quotes "${SMTP_REMOTE_LOCAL_ADDRESS}"
-            toml_block add remote.dynamic local port "${SMTP_REMOTE_LOCAL_PORT}"
-            toml_block add remote.dynamic local protocol quotes "${SMTP_REMOTE_LOCAL_PROTOCOL}"
-            toml_block add remote.dynamic local concurrency "${SMTP_REMOTE_LOCAL_CONCURRENCY}"
-            toml_block add remote.dynamic local timeout quotes "${SMTP_REMOTE_LOCAL_TIMEOUT}"
+            populate_variable() {
+                if [ -v "SMTP_REMOTE_${smtp_remote_name^^}_${1^^}" ]; then
+                    export smtp_remote_${1,,}="$(printenv | grep "^SMTP_REMOTE_${smtp_remote_name^^}_${1^^}=" | cut -d = -f2-)"
+                else
+                    export smtp_remote_${1,,}="$(printenv | grep "^SMTP_REMOTE_LOCAL_${1^^}=" | cut -d = -f2-)"
+                fi
+            }
 
-            toml_block add remote.dynamic.tls local implicit ${SMTP_REMOTE_LOCAL_TLS_IMPLICIT,,}
-            toml_block add remote.dynamic.tls local allow-invalid-certs ${SMTP_REMOTE_LOCAL_TLS_ALLOW_INVALID_CERTS,,}
+set -x
+            populate_variable address
+set +x
+            populate_variable port
+            populate_variable protocol
+            populate_variable concurrency
+            populate_variable timeout
+            populate_variable tls_implicit
+            populate_variable tls_allow_invalid_certs
+            populate_variable auth_username
+            populate_variable auth_pass
 
-            toml_block add remote.dynamic.auth local username quotes "${SMTP_REMOTE_LOCAL_AUTH_USERNAME}"
-            toml_block add remote.dynamic.auth local secret quotes "${SMTP_REMOTE_LOCAL_AUTH_PASS}"
+
+set -x
+            toml_block add remote.dynamic ${smtp_remote_name,,} address quotes "${smtp_remote_address}"
+            toml_block add remote.dynamic ${smtp_remote_name,,} port "${smtp_remote_port}"
+set +x
+            toml_block add remote.dynamic ${smtp_remote_name,,} protocol quotes "${smtp_remote_protocol}"
+            toml_block add remote.dynamic ${smtp_remote_name,,} concurrency "${smtp_remote_concurrency}"
+            toml_block add remote.dynamic ${smtp_remote_name,,} timeout quotes "${smtp_remote_timeout}"
+
+            toml_block add remote.dynamic.tls ${smtp_remote_name,,} implicit "${smtp_remote_tls_implicit,,}"
+            toml_block add remote.dynamic.tls ${smtp_remote_name,,} allow-invalid-certs "${smtp_remote_tls_allow_invalid_certs,,}"
+
+            toml_block add remote.dynamic.auth ${smtp_remote_name,,} username quotes "${smtp_remote_auth_username}"
+            toml_block add remote.dynamic.auth ${smtp_remote_name,,} secret quotes "${smtp_remote_auth_pass}"
+
+            smtp_remote="block_remote_${smtp_remote_name,,}"
+            smtp_remote_tls="block_remote_${smtp_remote_name,,}_tls"
+            smtp_remote_auth="block_remote_${smtp_remote_name,,}_auth"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 #########################################################
@@ -1716,11 +1744,11 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(toml_block show "${block_remote_local}")
+$(toml_block show "${!smtp_remote}")
 
-$(toml_block show "${block_remote_local_tls}")
+$(toml_block show "${!smtp_remote_tls}")
 
-$(toml_block show "${block_remote_local_auth}")
+$(toml_block show "${!smtp_remote_auth}")
 
 EOF
         else
@@ -1893,8 +1921,7 @@ EOF
             toml_block add session.rcpt rewrite "${SMTP_SESSION_RCPT_REWRITE}"
             toml_block add session.rcpt max-recipients "${SMTP_SESSION_RCPT_MAX_RECIPIENTS}"
 
-
-            smtp_session_rcpt_directory=$(echo "${SMTP_SESSION_RCPT_DIRECTORY}" | sed "s|default|${DEFAULT_DIRECTORY,,}|g")
+            smtp_session_rcpt_directory=${SMTP_SESSION_RCPT_DIRECTORY:-"${DEFAULT_DIRECTORY,,}"}
             toml_block add session.rcpt directory quotes "${smtp_session_rcpt_directory}"
 
             toml_block add session.rcpt.errors total "${SMTP_SESSION_RCPT_ERRORS_TOTAL}"
