@@ -509,7 +509,6 @@ EOF
 }
 
 configure_directory() {
-    ## TODO Parse multiple values of DIRECTORY_<name>_TYPE and dynamically generate configuration
     local config_dir
     local config_file
 
@@ -1728,9 +1727,9 @@ EOF
             toml_block add remote.dynamic.auth ${smtp_remote_name,,} username quotes "${smtp_remote_auth_username}"
             toml_block add remote.dynamic.auth ${smtp_remote_name,,} secret quotes "${smtp_remote_auth_pass}"
 
-            smtp_remote="block_remote_${smtp_remote_name,,}"
-            smtp_remote_tls="block_remote_${smtp_remote_name,,}_tls"
-            smtp_remote_auth="block_remote_${smtp_remote_name,,}_auth"
+            block_smtp_remote="block_remote_${smtp_remote_name,,}"
+            block_smtp_remote_tls="block_remote_${smtp_remote_name,,}_tls"
+            block_smtp_remote_auth="block_remote_${smtp_remote_name,,}_auth"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 #########################################################
@@ -1738,11 +1737,11 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(toml_block show "${!smtp_remote}")
+$(toml_block show "${!block_smtp_remote}")
 
-$(toml_block show "${!smtp_remote_tls}")
+$(toml_block show "${!block_smtp_remote_tls}")
 
-$(toml_block show "${!smtp_remote_auth}")
+$(toml_block show "${!block_smtp_remote_auth}")
 
 EOF
         else
@@ -2041,7 +2040,7 @@ EOF
             toml_block add signature.dynamic ${smtp_signature_name,,} set-body-length "${smtp_signature_set_body_length,,}"
             toml_block add signature.dynamic ${smtp_signature_name,,} report "${smtp_signature_report,,}"
 
-            smtp_signature="block_signature_${smtp_signature_name,,}"
+            block_smtp_signature="block_signature_${smtp_signature_name,,}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
@@ -2049,7 +2048,7 @@ EOF
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
-$(toml_block show "${!smtp_signature}")
+$(toml_block show "${!block_smtp_signature}")
 
 EOF
         else
