@@ -2146,6 +2146,7 @@ EOF
             if [ ! -d "${DATA_PATH}"/spamfilter/scripts ]; then sudo -u "${SERVER_USER}" mkdir -p "${DATA_PATH}"/spamfilter/scripts ; fi
             chown "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/spamfilter
 
+            ## TODO Support MYSQL and Postgresql alongside SQLite
             toml_block add directory.dynamic spamdb type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_TYPE}"
             toml_block add directory.dynamic spamdb address quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_ADDRESS}"
 
