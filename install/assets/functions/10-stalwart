@@ -437,35 +437,84 @@ EOF
     }
 
     common_configure_tls() {
-        config_file="tls.toml"
 
-        if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-            certificates "${TLS_DEFAULT_CERT_FILE}"
-            chown "${SERVER_USER}":"${SERVER_GROUP}" "${TLS_DEFAULT_CERT_FILE}"
-            #chown "${SERVER_USER}":"${SERVER_GROUP}" "${TLS_DEFAULT_KEY_FILE}"  ## TODO - Refactor function
+        if var_true "${ENABLE_TLS}" ; then
+            if [ "${SETUP_TYPE,,}" = "auto" ]; then
+                tls_cert_instances=$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_.*_CERT_FILE=" | wc -l)
 
-            toml_block add server.tls enable "${TLS_ENABLE,,}"
-            toml_block add server.tls implicit "${TLS_IMPLICIT,,}"
-            toml_block add server.tls timeout quotes "${TLS_TIMEOUT}"
-            toml_block add server.tls certificate quotes "${TLS_CERTIFICATE}"
-            toml_block add server.tls ignore-client-order "${TLS_IGNORE_CLIENT_ORDER,,}"
+                for (( tls_cert_instance = 01; tls_cert_instance <= tls_cert_instances; tls_cert_instance++ )); do
+                    tls_cert_instance=$(printf "%02d" $tls_cert_instance)
+                    tls_cert_name=$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_.*_CERT_FILE=" | cut -d _ -f 3)
 
-            cat <<EOF > "${config_dir}"/"${config_file}"
+                    config_file="tls_cert_${tls_cert_name,,}.toml"
+                    config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+                    populate_variable() {
+                        if [ -v "TLS_CERTIFICATE_${tls_cert_name}_${1^^}" ]; then
+                            export tls_certificate_${1,,}="$(printenv | grep "^TLS_CERTIFICATE_${tls_cert_name^^}_${1^^}=" | cut -d = -f2-)"
+                        fi
+                    }
+
+                    if [ ! -f "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)" ] || [ ! -f "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_${tls_cert_name^^}_KEY_FILE=" | cut -d = -f 2)" ]; then
+                        certificates "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)"
+                        chown "${SERVER_USER}":"${SERVER_GROUP}" "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)"
+                        chown "${SERVER_USER}":"${SERVER_GROUP}" "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_${tls_cert_name^^}_KEY_FILE=" | cut -d = -f 2)"
+                    fi
+
+                    populate_variable cert_file
+                    populate_variable key_file
+
+                    toml_block add certificate.dynamic "${tls_cert_name,,}" cert quotes "file://${tls_certificate_cert_file}"
+                    toml_block add certificate.dynamic "${tls_cert_name,,}" private-key quotes "file://${tls_certificate_key_file}"
+
+                    block_certificate="block_certificate_${tls_cert_name,,}"
+
+                    cat <<EOF > "${config_dir}"/"${config_file}"
+################################################################################
+# Common TLS Certificate ${tls_cert_instance} ${tls_cert_name} configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+################################################################################
+
+$(toml_block show "${!block_certificate}")
+
+EOF
+                done
+
+                config_file="tls.toml"
+                config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+                toml_block add server.tls enable "${TLS_ENABLE,,}"
+                toml_block add server.tls implicit "${TLS_IMPLICIT,,}"
+                toml_block add server.tls timeout quotes "${TLS_TIMEOUT}"
+
+                if [ "${tls_cert_instances}" -eq 1 ]; then
+                    TLS_CERTIFICATE=${TLS_CERTIFICATE:-"$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_.*_CERT_FILE=" | cut -d _ -f 3)"}
+                elif [ "${tls_cert_instances}" -lt 1 ]; then
+                    print_error "No TLS Certificate found! - Setup some TLS_CERTIFICATE_ variables"
+                    exit 9
+                else
+                    if [ -z "${TLS_CERTIFICATE}" ; then
+                        sanity_var TLS_CERTIFICATE "need to select certificate to use"
+                    fi
+                fi
+
+                toml_block add server.tls certificate quotes "${TLS_CERTIFICATE}"
+                toml_block add server.tls ignore-client-order "${TLS_IGNORE_CLIENT_ORDER,,}"
+
+                cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
 # Common configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
 $(toml_block show "${block_server_tls}")
-
-[certificate."default"]
-cert = "file:///${TLS_DEFAULT_CERT_FILE}"
-private-key = "file:///${TLS_DEFAULT_KEY_FILE}"
 EOF
-        else
-            :
+
+            else
+                :
+            fi
         fi
+    set +x
     }
 
     common_configure_tracing() {
