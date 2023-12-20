@@ -1513,7 +1513,15 @@ EOF
             toml_block add server.listener.dynamic management bind array "$(array_tools quote comma SMTP_LISTENER_MANAGEMENT_BIND)"
             toml_block add server.listener.dynamic management protocol quotes "${SMTP_LISTENER_MANAGEMENT_PROTOCOL,,}"
 
-            toml_block add management directory quotes "${SMTP_MANAGEMENT_DIRECTORY}"
+            if [ -n "${SMTP_MANAGEMENT_DIRECTORY}" ]; then
+                smtp_management_directory="${SMTP_MANAGEMENT_DIRECTORY}"
+            elif [ -z "${SMTP_MANAGEMENT_DIRECTORY}" ] && [ -n "${DEFAULT_DIRECTORY}" ]; then
+                smtp_management_directory="${DEFAULT_DIRECTORY}"
+            else
+                sanity_var SMTP_MANAGEMENT_DIRECTORY "directory to manage"
+            fi
+
+            toml_block add management directory quotes "${smtp_management_directory}"
 
             cat <<EOF > "${config_dir}"/"${config_file}"
 ##########################################################
