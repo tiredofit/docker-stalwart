@@ -82,7 +82,7 @@ array_tools() {
                                 sudo -u "${SERVER_USER}" cp -aR "${2}"/"$(basename "${value}")" "$(echo "${value}" | sed "s|^file.*://||g")"
                             else
                                 output="$(echo "${output}" | sed "\#${value}#d")"
-                                export $1="$output"
+                                export $1="$(echo "${output}" | tr "\n" ",")"
                             fi
                         fi
                     fi
@@ -1669,7 +1669,13 @@ EOF
 
             toml_block add queue.outbound hostname quotes "${SMTP_QUEUE_OUTBOUND_HOSTNAME}"
 
-            smtp_queue_outbound_next_hop=$(echo "${SMTP_QUEUE_OUTBOUND_NEXT_HOP}" | sed "s|default|${DEFAULT_DIRECTORY,,}|g")
+            SMTP_QUEUE_OUTBOUND_NEXT_HOP=$(echo "${SMTP_QUEUE_OUTBOUND_NEXT_HOP}" | sed "s|default|${DEFAULT_DIRECTORY,,}|g")
+            case "${SMTP_MODE,,}" in
+                "forward" )
+                    SMTP_QUEUE_OUTBOUND_NEXT_HOP=$(echo "${SMTP_QUEUE_OUTBOUND_NEXT_HOP}" | sed "s|local|${smtp_remote_name,,}|g")
+                ;;
+            esac
+            smtp_queue_outbound_next_hop="${SMTP_QUEUE_OUTBOUND_NEXT_HOP}"
 
             toml_block add queue.outbound next-hop array "$(array_tools noquote plus smtp_queue_outbound_next_hop)"
             toml_block add queue.outbound ip-strategy quotes "${SMTP_QUEUE_OUTBOUND_IP_STRATEGY}"
@@ -1748,55 +1754,57 @@ EOF
     }
 
     smtp_configure_remote() {
-        config_file="remote.toml"
+        case "${SMTP_MODE,,}" in
+            "forward" )
+                config_file="remote.toml"
 
-        if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-            smtp_remote_instances=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_REMOTE_.*_ADDRESS=" | wc -l)
-            if [ "${smtp_remote_instances}" -eq 1 ]; then
-                smtp_remote_name=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_REMOTE_.*_ADDRESS=" | cut -d _ -f 3)
-            elif [ "${smtp_remote_instances}" -lt 1 ]; then
-                print_error "No SMTP Remote configuration found found! - Setup some SMTP_REMOTE_ variables"
-                exit 9
-            else
-                smtp_remote_name=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_REMOTE_.*_ADDRESS=" | grep -Pve "^SMTP_REMOTE_LOCAL_ADDRESS=" | cut -d _ -f 3)
-            fi
+                if [ "${SETUP_TYPE,,}" = "auto" ]; then
+                    config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+                    smtp_remote_instances=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_REMOTE_.*_ADDRESS=" | wc -l)
+                    if [ "${smtp_remote_instances}" -eq 1 ]; then
+                        smtp_remote_name=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_REMOTE_.*_ADDRESS=" | cut -d _ -f 3)
+                    elif [ "${smtp_remote_instances}" -lt 1 ]; then
+                        print_error "No SMTP Remote configuration found found! - Setup some SMTP_REMOTE_ variables"
+                        exit 9
+                    else
+                        smtp_remote_name=$(set -o posix ; set | printenv | sort | grep -P "^SMTP_REMOTE_.*_ADDRESS=" | grep -Pve "^SMTP_REMOTE_LMTP_ADDRESS=" | cut -d _ -f 3)
+                    fi
 
-            populate_variable() {
-                if [ -v "SMTP_REMOTE_${smtp_remote_name^^}_${1^^}" ]; then
-                    export smtp_remote_${1,,}="$(printenv | grep "^SMTP_REMOTE_${smtp_remote_name^^}_${1^^}=" | cut -d = -f2-)"
-                else
-                    export smtp_remote_${1,,}="$(printenv | grep "^SMTP_REMOTE_LOCAL_${1^^}=" | cut -d = -f2-)"
-                fi
-            }
+                    populate_variable() {
+                        if [ -v "SMTP_REMOTE_${smtp_remote_name^^}_${1^^}" ]; then
+                            export smtp_remote_${1,,}="$(printenv | grep "^SMTP_REMOTE_${smtp_remote_name^^}_${1^^}=" | cut -d = -f2-)"
+                        else
+                            export smtp_remote_${1,,}="$(printenv | grep "^SMTP_REMOTE_LMTP_${1^^}=" | cut -d = -f2-)"
+                        fi
+                    }
 
-            populate_variable address
-            populate_variable port
-            populate_variable protocol
-            populate_variable concurrency
-            populate_variable timeout
-            populate_variable tls_implicit
-            populate_variable tls_allow_invalid_certs
-            populate_variable auth_username
-            populate_variable auth_pass
+                    populate_variable address
+                    populate_variable port
+                    populate_variable protocol
+                    populate_variable concurrency
+                    populate_variable timeout
+                    populate_variable tls_implicit
+                    populate_variable tls_allow_invalid_certs
+                    populate_variable auth_username
+                    populate_variable auth_pass
 
-            toml_block add remote.dynamic ${smtp_remote_name,,} address quotes "${smtp_remote_address}"
-            toml_block add remote.dynamic ${smtp_remote_name,,} port "${smtp_remote_port}"
-            toml_block add remote.dynamic ${smtp_remote_name,,} protocol quotes "${smtp_remote_protocol}"
-            toml_block add remote.dynamic ${smtp_remote_name,,} concurrency "${smtp_remote_concurrency}"
-            toml_block add remote.dynamic ${smtp_remote_name,,} timeout quotes "${smtp_remote_timeout}"
+                    toml_block add remote.dynamic ${smtp_remote_name,,} address quotes "${smtp_remote_address}"
+                    toml_block add remote.dynamic ${smtp_remote_name,,} port "${smtp_remote_port}"
+                    toml_block add remote.dynamic ${smtp_remote_name,,} protocol quotes "${smtp_remote_protocol}"
+                    toml_block add remote.dynamic ${smtp_remote_name,,} concurrency "${smtp_remote_concurrency}"
+                    toml_block add remote.dynamic ${smtp_remote_name,,} timeout quotes "${smtp_remote_timeout}"
 
-            toml_block add remote.dynamic.tls ${smtp_remote_name,,} implicit "${smtp_remote_tls_implicit,,}"
-            toml_block add remote.dynamic.tls ${smtp_remote_name,,} allow-invalid-certs "${smtp_remote_tls_allow_invalid_certs,,}"
+                    toml_block add remote.dynamic.tls ${smtp_remote_name,,} implicit "${smtp_remote_tls_implicit,,}"
+                    toml_block add remote.dynamic.tls ${smtp_remote_name,,} allow-invalid-certs "${smtp_remote_tls_allow_invalid_certs,,}"
 
-            toml_block add remote.dynamic.auth ${smtp_remote_name,,} username quotes "${smtp_remote_auth_username}"
-            toml_block add remote.dynamic.auth ${smtp_remote_name,,} secret quotes "${smtp_remote_auth_pass}"
+                    toml_block add remote.dynamic.auth ${smtp_remote_name,,} username quotes "${smtp_remote_auth_username}"
+                    toml_block add remote.dynamic.auth ${smtp_remote_name,,} secret quotes "${smtp_remote_auth_pass}"
 
-            block_smtp_remote="block_remote_${smtp_remote_name,,}"
-            block_smtp_remote_tls="block_remote_${smtp_remote_name,,}_tls"
-            block_smtp_remote_auth="block_remote_${smtp_remote_name,,}_auth"
+                    block_smtp_remote="block_remote_${smtp_remote_name,,}"
+                    block_smtp_remote_tls="block_remote_${smtp_remote_name,,}_tls"
+                    block_smtp_remote_auth="block_remote_${smtp_remote_name,,}_auth"
 
-            cat <<EOF > "${config_dir}"/"${config_file}"
+                    cat <<EOF > "${config_dir}"/"${config_file}"
 #########################################################
 # SMTP remote servers configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
@@ -1809,9 +1817,12 @@ $(toml_block show "${!block_smtp_remote_tls}")
 $(toml_block show "${!block_smtp_remote_auth}")
 
 EOF
-        else
-            :
-        fi
+                else
+                    :
+                fi
+
+            ;;
+        esac
     }
 
     smtp_configure_report() {
@@ -2199,6 +2210,7 @@ EOF
             toml_block add directory.dynamic.lookup.dynamic2 spam scores values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_VALUES)"
 
             if var_true "${ENABLE_SIEVE}" ; then
+
                 array_tools verify SIEVE_TRUSTED_SCRIPTS_SPAMFILTER /assets/stalwart/config/spamfilter/scripts/
                 toml_block add sieve.trusted.scripts spam-filter array "$(array_tools quote comma SIEVE_TRUSTED_SCRIPTS_SPAMFILTER)"
                 array_tools verify SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES /assets/stalwart/config/spamfilter/scripts/
@@ -2250,17 +2262,18 @@ EOF
         fi
     }
 
-    if var_true ${SMTP_ENABLE_AUTH} ; then smtp_configure_auth; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_DKIM} ; then smtp_configure_dkim; fi ## Define what this is for
+    # This should stay in this order
     if var_true ${SMTP_ENABLE_LISTENER} ; then smtp_configure_listener; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_MILTER} ; then smtp_configure_milter; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_QUEUE} ; then smtp_configure_queue; fi ## Define what this is for
     if var_true ${SMTP_ENABLE_REMOTE} ; then smtp_configure_remote; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_DKIM} ; then smtp_configure_dkim; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_AUTH} ; then smtp_configure_auth; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_MILTER} ; then smtp_configure_milter; fi ## Define what this is for
     if var_true ${SMTP_ENABLE_REPORT} ; then smtp_configure_report; fi ## Define what this is for
     if var_true ${SMTP_ENABLE_RESOLVER} ; then smtp_configure_resolver; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_SESSION} ; then smtp_configure_session; fi ## Define what this is for
     if var_true ${SMTP_ENABLE_SIGNATURE} ; then smtp_configure_signature; fi ## Define what this is for
     if var_true ${SMTP_ENABLE_SPAMFILTER} ; then smtp_configure_spamfilter; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_SESSION} ; then smtp_configure_session; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_QUEUE} ; then smtp_configure_queue; fi ## Define what this is for
 }
 
 dkim() {
