@@ -716,7 +716,7 @@ EOF
                         toml_block add directory.dynamic.object-classes ${directory_name,,} user quotes "${directory_ldap_objectclasses_user}"
                         toml_block add directory.dynamic.object-classes ${directory_name,,} group quotes "${directory_ldap_objectclasses_group}"
 
-                        toml_block add directory.dynamic.attributes ${directory_name,,} uid quotes "${directory_ldap_attributes_uid}"
+                        toml_block add directory.dynamic.attributes ${directory_name,,} name quotes "${directory_ldap_attributes_name}"
                         toml_block add directory.dynamic.attributes ${directory_name,,} description array "$(array_tools quote comma directory_ldap_attributes_description)"
                         toml_block add directory.dynamic.attributes ${directory_name,,} secret quotes "${directory_ldap_attributes_pass}"
                         toml_block add directory.dynamic.attributes ${directory_name,,} groups array "$(array_tools quote comma directory_ldap_attributes_groups)"
