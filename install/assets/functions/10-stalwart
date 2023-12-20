@@ -1431,8 +1431,8 @@ configure_smtp() {
             toml_block add auth.dkim verify quotes "${SMTP_AUTH_DKIM_VERIFY}"
             toml_block add auth.dkim sign array "$(array_tools noquote plus SMTP_AUTH_DKIM_SIGN)"
 
-            toml_block add auth.spf.ehlo array "$(array_tools noquote plus SMTP_AUTH_SPF_VERIFY_EHLO)"
-            toml_block add auth.spf.mail-from array "$(array_tools noquote plus SMTP_AUTH_SPF_VERIFY_MAIL_FROM)"
+            toml_block add auth.spf.verify ehlo array "$(array_tools noquote plus SMTP_AUTH_SPF_VERIFY_EHLO)"
+            toml_block add auth.spf.verify mail-from array "$(array_tools noquote plus SMTP_AUTH_SPF_VERIFY_MAIL_FROM)"
 
             toml_block add auth.arc verify quotes "${SMTP_AUTH_ARC_VERIFY}"
             toml_block add auth.arc seal array "$(array_tools quote comma SMTP_AUTH_ARC_SEAL)"
