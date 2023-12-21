@@ -2431,13 +2431,27 @@ setup_container_mode() {
                         if [[ "$(grep -cq 'create_log_stalwart=TRUE' /tmp/.container/stalwart/.mode-env)" -eq 0 ]] ; then
                             echo "create_log_stalwart=TRUE" >> /tmp/.container/stalwart/.mode-env
                         fi
+
+                        IMAP_ENABLE_LISTENER=TRUE
+                        IMAP_ENABLE_SETTINGS=TRUE
                     ;;
                     "jmap" )
                         print_debug "[setup_container_mode] Enabling Container Mode for: SMTP"
                         echo "ENABLE_JMAP=TRUE" >> /tmp/.container/stalwart/.mode-env
+
+                        JMAP_ENABLE_AUTH=TRUE
+                        JMAP_ENABLE_LISTENER=TRUE
+                        JMAP_ENABLE_OAUTH=TRUE
+                        JMAP_ENABLE_PROTOCOL=TRUE
+                        JMAP_ENABLE_PUSH=TRUE
+                        JMAP_ENABLE_RATELIMIT=TRUE
+                        JMAP_ENABLE_STORE=TRUE
+                        JMAP_ENABLE_WEBSOCKETS=TRUE
+
                         if [[ "$(grep -cq 'create_log_stalwart=TRUE' /tmp/.container/stalwart/.mode-env)" -eq 0 ]] ; then
                             echo "create_log_stalwart=TRUE" >> /tmp/.container/stalwart/.mode-env
                         fi
+
                     ;;
                     "smtp" )
                         print_debug "[setup_container_mode] Enabling Container Mode for: SMTP"
@@ -2445,6 +2459,12 @@ setup_container_mode() {
                         echo "ENABLE_JMAP=TRUE" >> /tmp/.container/stalwart/.mode-env
                         if [[ "$(grep -cq 'create_log_stalwart=TRUE' /tmp/.container/stalwart/.mode-env)" -eq 0 ]] ; then
                             echo "create_log_stalwart=TRUE" >> /tmp/.container/stalwart/.mode-env
+                        fi
+
+                        if [ "${SMTP_MODE,,}" = "forward" ]; then
+                            SMTP_QUEUE_OUTBOUND_NEXT_HOP=$(echo "${SMTP_QUEUE_OUTBOUND_NEXT_HOP}" | sed "s|local|${smtp_remote_name,,}|g")
+                            JMAP_ENABLE_AUTH=TRUE
+                            JMAP_ENABLE_STORE=TRUE
                         fi
                     ;;
                     *)
