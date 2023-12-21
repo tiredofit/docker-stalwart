@@ -2462,7 +2462,6 @@ setup_container_mode() {
                         fi
 
                         if [ "${SMTP_MODE,,}" = "forward" ]; then
-                            SMTP_QUEUE_OUTBOUND_NEXT_HOP=$(echo "${SMTP_QUEUE_OUTBOUND_NEXT_HOP}" | sed "s|local|${smtp_remote_name,,}|g")
                             JMAP_ENABLE_AUTH=TRUE
                             JMAP_ENABLE_STORE=TRUE
                         fi
