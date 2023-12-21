@@ -2294,7 +2294,9 @@ $(toml_block show "${block_sieve_trusted_scripts}")
 EOF
 
             update_spam_config() {
-                sed -i "s|\"$1\" \".*\"|\"$2\"|g" $3
+                set -x
+                sed -i "s|\"$1\" \".*\"|\"$1\" \"$2\"|g" $3
+                set +x
             }
 
             update_spam_config ADD_HEADER_SPAM "${SPAMFILTER_ADD_X_SPAM_STATUS_HEADER,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
@@ -2307,7 +2309,7 @@ EOF
             update_spam_config SCORE_SPAM_THRESHOLD "${SPAMFILTER_THRESHOLD_SPAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
             update_spam_config SCORE_DISCARD_THRESHOLD "${SPAMFILTER_THRESHOLD_DISCARD}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
             update_spam_config SCORE_REJECT_THRESHOLD "${SPAMFILTER_THRESHOLD_REJECT}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-            update_spam_config DOMAIN_DIRECTORY "'${DEFAULT_DIRECTORY}'"
+            update_spam_config DOMAIN_DIRECTORY "'${DEFAULT_DIRECTORY}'" "${DATA_PATH}"/spamfilter/scripts/config.sieve
             if var_true "${SPAMFILTER_ENABLE_GREYLISTING}" ; then SMTP_SESSION_RCPT_SCRIPT="greylist" ; fi
 
         else
