@@ -2140,8 +2140,9 @@ EOF
 
     smtp_configure_spamfilter() {
         config_file="spamfilter.toml"
-        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
             if [ ! -d "${DATA_PATH}"/spamfilter/maps ]; then sudo -u "${SERVER_USER}" mkdir -p "${DATA_PATH}"/spamfilter/maps ; fi
             if [ ! -d "${DATA_PATH}"/spamfilter/scripts ]; then sudo -u "${SERVER_USER}" mkdir -p "${DATA_PATH}"/spamfilter/scripts ; fi
             chown "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/spamfilter
@@ -2292,6 +2293,24 @@ $(toml_block show "${block_sieve_trusted_scripts}")
 ## TODO TRUSTED SCRIPTS MIGHT BE CARRYING FORWARD FROM ANOTHER FUNCTION!
 
 EOF
+
+        update_spam_config() {
+            "s|\"$1\" \".*\"|\"$2\"|g" $3
+        }
+
+        update_spam_config ADD_HEADER_SPAM "${SPAMFILTER_ADD_X_SPAM_STATUS_HEADER,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+        update_spam_config ADD_HEADER_SPAM_RESULT "${SPAMFILTER_ADD_X_SPAM_RESULT_HEADER,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+        update_spam_config AUTOLEARN_REPLIES_HAM "${SPAMFILTER_AUTOLEARN_REPLIES_HAM,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+        update_spam_config AUTOLEARN_ENABLE "${SPAMFILTER_ENABLE_AUTOLEARN,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+        update_spam_config AUTOLEARN_HAM_THRESHOLD "${SPAMFILTER_AUTOLEARN_THRESHOLD_HAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+        update_spam_config AUTOLEARN_SPAM_THRESHOLD "${SPAMFILTER_AUTOLEARN_THRESHOLD_SPAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+        update_spam_config AUTOLEARN_SPAM_HAM_BALANCE "${SPAMFILTER_AUTOLEARN_DIFFERENCE_SPAM_HAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+        update_spam_config SCORE_SPAM_THRESHOLD "${SPAMFILTER_THRESHOLD_SPAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+        update_spam_config SCORE_DISCARD_THRESHOLD "${SPAMFILTER_THRESHOLD_DISCARD}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+        update_spam_config SCORE_REJECT_THRESHOLD "${SPAMFILTER_THRESHOLD_REJECT}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+        update_spam_config DOMAIN_DIRECTORY "'${DEFAULT_DIRECTORY}'"
+        if var_true "${SPAMFILTER_ENABLE_GREYLISTING}" ; then SMTP_SESSION_RCPT_SCRIPT="greylist" ; fi
+
         else
             :
         fi
