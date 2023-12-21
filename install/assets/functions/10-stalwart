@@ -437,16 +437,16 @@ EOF
     }
 
     common_configure_tls() {
-set -x
-
         if var_true "${ENABLE_TLS}" ; then
             if [ "${SETUP_TYPE,,}" = "auto" ]; then
                 tls_cert_instances=$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE([0-9]+)_.*_CERT_FILE=" | wc -l)
+
                 if [ "${tls_cert_instances}" -eq 0 ]; then
                     TLS_CERTIFICATE01_DEFAULT_CERT_FILE="${TLS_CERTIFICATE_DEFAULT_CERT_FILE}"
                     TLS_CERTIFICATE01_DEFAULT_KEY_FILE="${TLS_CERTIFICATE_DEFAULT_KEY_FILE}"
                     tls_cert_instances=1
                 fi
+
                 for (( tls_cert_instance = 01; tls_cert_instance <= tls_cert_instances; tls_cert_instance++ )); do
                     tls_cert_instance=$(printf "%02d" $tls_cert_instance)
                     tls_cert_name=$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_.*_CERT_FILE=" | cut -d _ -f 3)
@@ -470,7 +470,6 @@ set -x
 
                     toml_block add certificate.dynamic "${tls_cert_name,,}" cert quotes "file://${tls_certificate_cert_file}"
                     toml_block add certificate.dynamic "${tls_cert_name,,}" private-key quotes "file://${tls_certificate_key_file}"
-set +x
                     block_certificate="block_certificate_${tls_cert_name,,}"
                     cat <<EOF > "${config_dir}"/"${config_file}"
 ################################################################################
@@ -1548,18 +1547,21 @@ EOF
 
             if var_true "${SMTP_ENABLE_SMTP}" ; then
                 toml_block add server.listener.dynamic smtp bind array "$(array_tools quote comma SMTP_LISTENER_SMTP_BIND)"
+                SMTP_LISTENER_SMTP_GREETING=${SMTP_LISTENER_SMTP_GREETING:-"${SMTP_LISTENER_GREETING}"}
                 toml_block add server.listener.dynamic smtp greeting quotes "${SMTP_LISTENER_SMTP_GREETING}"
                 toml_block add server.listener.dynamic smtp protocol quotes "${SMTP_LISTENER_SMTP_PROTOCOL}"
             fi
 
             if var_true "${SMTP_ENABLE_SUBMISSION}" ; then
                 toml_block add server.listener.dynamic submission bind array "$(array_tools quote comma SMTP_LISTENER_SUBMISSION_BIND)"
+                SMTP_LISTENER_SUBMISSION_GREETING=${SMTP_LISTENER_SUBMISSION_GREETING:-"${SMTP_LISTENER_GREETING}"}
                 toml_block add server.listener.dynamic submission greeting quotes "${SMTP_LISTENER_SUBMISSION_GREETING}"
                 toml_block add server.listener.dynamic submission protocol quotes "${SMTP_LISTENER_SUBMISSION_PROTOCOL}"
             fi
 
             if var_true "${SMTP_ENABLE_SUBMISSIONS}" ; then
                 toml_block add server.listener.dynamic submissions bind array "$(array_tools quote comma SMTP_LISTENER_SUBMISSIONS_BIND)"
+                SMTP_LISTENER_SUBMISSIONS_GREETING=${SMTP_LISTENER_SUBMISSIONS_GREETING:-"${SMTP_LISTENER_GREETING}"}
                 toml_block add server.listener.dynamic submissions greeting quotes "${SMTP_LISTENER_SUBMISSIONS_GREETING}"
                 toml_block add server.listener.dynamic submissions protocol quotes "${SMTP_LISTENER_SUBMISSIONS_PROTOCOL,,}"
                 toml_block add server.listener.dynamic submissions tls.implicit "${SMTP_LISTENER_SUBMISSIONS_TLS_IMPLICIT,,}"
