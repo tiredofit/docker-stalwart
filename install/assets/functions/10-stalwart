@@ -2246,7 +2246,6 @@ EOSQLITE
             toml_block add directory.dynamic.lookup.dynamic2 spam scores values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_VALUES)"
 
             if var_true "${ENABLE_SIEVE}" ; then
-
                 array_tools verify SIEVE_TRUSTED_SCRIPTS_SPAMFILTER /assets/stalwart/config/spamfilter/scripts/
                 toml_block add sieve.trusted.scripts spam-filter array "$(array_tools quote comma SIEVE_TRUSTED_SCRIPTS_SPAMFILTER)"
                 array_tools verify SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES /assets/stalwart/config/spamfilter/scripts/
@@ -2294,22 +2293,22 @@ $(toml_block show "${block_sieve_trusted_scripts}")
 
 EOF
 
-        update_spam_config() {
-            "s|\"$1\" \".*\"|\"$2\"|g" $3
-        }
+            update_spam_config() {
+                sed -i "s|\"$1\" \".*\"|\"$2\"|g" $3
+            }
 
-        update_spam_config ADD_HEADER_SPAM "${SPAMFILTER_ADD_X_SPAM_STATUS_HEADER,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-        update_spam_config ADD_HEADER_SPAM_RESULT "${SPAMFILTER_ADD_X_SPAM_RESULT_HEADER,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-        update_spam_config AUTOLEARN_REPLIES_HAM "${SPAMFILTER_AUTOLEARN_REPLIES_HAM,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-        update_spam_config AUTOLEARN_ENABLE "${SPAMFILTER_ENABLE_AUTOLEARN,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-        update_spam_config AUTOLEARN_HAM_THRESHOLD "${SPAMFILTER_AUTOLEARN_THRESHOLD_HAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-        update_spam_config AUTOLEARN_SPAM_THRESHOLD "${SPAMFILTER_AUTOLEARN_THRESHOLD_SPAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-        update_spam_config AUTOLEARN_SPAM_HAM_BALANCE "${SPAMFILTER_AUTOLEARN_DIFFERENCE_SPAM_HAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-        update_spam_config SCORE_SPAM_THRESHOLD "${SPAMFILTER_THRESHOLD_SPAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-        update_spam_config SCORE_DISCARD_THRESHOLD "${SPAMFILTER_THRESHOLD_DISCARD}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-        update_spam_config SCORE_REJECT_THRESHOLD "${SPAMFILTER_THRESHOLD_REJECT}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-        update_spam_config DOMAIN_DIRECTORY "'${DEFAULT_DIRECTORY}'"
-        if var_true "${SPAMFILTER_ENABLE_GREYLISTING}" ; then SMTP_SESSION_RCPT_SCRIPT="greylist" ; fi
+            update_spam_config ADD_HEADER_SPAM "${SPAMFILTER_ADD_X_SPAM_STATUS_HEADER,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+            update_spam_config ADD_HEADER_SPAM_RESULT "${SPAMFILTER_ADD_X_SPAM_RESULT_HEADER,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+            update_spam_config AUTOLEARN_REPLIES_HAM "${SPAMFILTER_AUTOLEARN_REPLIES_HAM,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+            update_spam_config AUTOLEARN_ENABLE "${SPAMFILTER_ENABLE_AUTOLEARN,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+            update_spam_config AUTOLEARN_HAM_THRESHOLD "${SPAMFILTER_AUTOLEARN_THRESHOLD_HAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+            update_spam_config AUTOLEARN_SPAM_THRESHOLD "${SPAMFILTER_AUTOLEARN_THRESHOLD_SPAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+            update_spam_config AUTOLEARN_SPAM_HAM_BALANCE "${SPAMFILTER_AUTOLEARN_DIFFERENCE_SPAM_HAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+            update_spam_config SCORE_SPAM_THRESHOLD "${SPAMFILTER_THRESHOLD_SPAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+            update_spam_config SCORE_DISCARD_THRESHOLD "${SPAMFILTER_THRESHOLD_DISCARD}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+            update_spam_config SCORE_REJECT_THRESHOLD "${SPAMFILTER_THRESHOLD_REJECT}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+            update_spam_config DOMAIN_DIRECTORY "'${DEFAULT_DIRECTORY}'"
+            if var_true "${SPAMFILTER_ENABLE_GREYLISTING}" ; then SMTP_SESSION_RCPT_SCRIPT="greylist" ; fi
 
         else
             :
