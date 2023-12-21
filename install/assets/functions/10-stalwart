@@ -2154,9 +2154,6 @@ EOF
         config_file="spamfilter.toml"
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-
-            if [ ! -d "${DATA_PATH}"/spamfilter/maps ]; then sudo -u "${SERVER_USER}" mkdir -p "${DATA_PATH}"/spamfilter/maps ; fi
-            if [ ! -d "${DATA_PATH}"/spamfilter/scripts ]; then sudo -u "${SERVER_USER}" mkdir -p "${DATA_PATH}"/spamfilter/scripts ; fi
             chown "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/spamfilter
 
             ## TODO Support MYSQL and Postgresql alongside SQLite
