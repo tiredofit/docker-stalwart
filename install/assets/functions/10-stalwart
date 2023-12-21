@@ -440,25 +440,26 @@ EOF
 
         if var_true "${ENABLE_TLS}" ; then
             if [ "${SETUP_TYPE,,}" = "auto" ]; then
-                tls_cert_instances=$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_.*_CERT_FILE=" | wc -l)
+                tls_cert_instances=$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE([0-9]+)_.*_CERT_FILE=" | wc -l)
 
                 for (( tls_cert_instance = 01; tls_cert_instance <= tls_cert_instances; tls_cert_instance++ )); do
                     tls_cert_instance=$(printf "%02d" $tls_cert_instance)
-                    tls_cert_name=$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_.*_CERT_FILE=" | cut -d _ -f 3)
+                    tls_cert_name=$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_.*_CERT_FILE=" | cut -d _ -f 3)
 
                     config_file="tls_cert_${tls_cert_name,,}.toml"
                     config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
                     populate_variable() {
                         if [ -v "TLS_CERTIFICATE_${tls_cert_name}_${1^^}" ]; then
-                            export tls_certificate_${1,,}="$(printenv | grep "^TLS_CERTIFICATE_${tls_cert_name^^}_${1^^}=" | cut -d = -f2-)"
+                            export tls_certificate_${1,,}="$(printenv | grep "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_${1^^}=" | cut -d = -f2-)"
                         fi
                     }
 
-                    if [ ! -f "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)" ] || [ ! -f "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_${tls_cert_name^^}_KEY_FILE=" | cut -d = -f 2)" ]; then
-                        certificates "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)"
-                        chown "${SERVER_USER}":"${SERVER_GROUP}" "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)"
-                        chown "${SERVER_USER}":"${SERVER_GROUP}" "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE_${tls_cert_name^^}_KEY_FILE=" | cut -d = -f 2)"
+                    if [ ! -f "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)" ] || [ ! -f "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_KEY_FILE=" | cut -d = -f 2)" ]; then
+                        echo "I AM FIRING FOR A REASON I DONT KNOW WHY"
+                        certificates "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)"
+                        chown "${SERVER_USER}":"${SERVER_GROUP}" "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)"
+                        chown "${SERVER_USER}":"${SERVER_GROUP}" "$(set -o posix ; set | printenv | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_KEY_FILE=" | cut -d = -f 2)"
                     fi
 
                     populate_variable cert_file
@@ -468,7 +469,6 @@ EOF
                     toml_block add certificate.dynamic "${tls_cert_name,,}" private-key quotes "file://${tls_certificate_key_file}"
 
                     block_certificate="block_certificate_${tls_cert_name,,}"
-
                     cat <<EOF > "${config_dir}"/"${config_file}"
 ################################################################################
 # Common TLS Certificate ${tls_cert_instance} ${tls_cert_name} configuration ${config_file}
@@ -567,7 +567,8 @@ configure_directory() {
 
     directory_configure_instances() {
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            directory_instances=$(set -o posix ; set | printenv | sort | grep -P "^DIRECTORY[0-9].*_TYPE=" | grep -Pve "^DIRECTORY[0-9].*_SQL_COLUMNS_TYPE=" | wc -l)
+        set -x
+            directory_instances=$(set -o posix ; set | printenv | sort | grep -P "^DIRECTORY([0-9]+)_.*_TYPE=" | grep -Pve "^DIRECTORY([0-9]+)_.*_SQL_COLUMNS_TYPE=" | wc -l)
             if [ "${directory_instances}" -eq 1 ]; then
                 DEFAULT_DIRECTORY=${DEFAULT_DIRECTORY:-"$(set -o posix ; set | printenv | sort | grep -P "^DIRECTORY01_.*_TYPE=" | grep -Pve "^DIRECTORY01_.*_SQL_COLUMNS_TYPE=" | cut -d _ -f2 | tr '[A-Z]' '[a-z]')"}
             elif [ "${directory_instances}" -lt 1 ]; then
@@ -579,7 +580,7 @@ configure_directory() {
                     exit 9
                 fi
             fi
-
+set +x
             for (( directory_instance = 01; directory_instance <= directory_instances; directory_instance++ )); do
                 directory_instance=$(printf "%02d" $directory_instance)
                 directory_varvalue="$(set -o posix ; set | printenv | sort | grep "^DIRECTORY${directory_instance}_.*_TYPE=" | grep -ve "^DIRECTORY${directory_instance}.*_.*_SQL_COLUMNS_TYPE=")"
