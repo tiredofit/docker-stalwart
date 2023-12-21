@@ -68,21 +68,31 @@ array_tools() {
             ##      and verify if the file actually exists on the filesytem. If not look in the second argument to see if the file exists and copy it into where its supposed to be
             ##      If there is a file and the default file is newer than the existing one then perhaps set a warning on console
             shift 1
+            local _transform
+            if [ "${1,,}" = "transform" ] ; then
+                _transform=true
+                shift 1
+            fi
             if [ -v "${1}" ] ; then
-                variable=$1
+                variable="$1"
                 output="$(set -o posix ; set | grep ^$1 | cut -d = -f 2- | tr "," "\n" | uniq )"
                 for value in $output ; do
                     if [[ "${value}" =~ ^file:\/\/.* ]] ; then
                         if [ ! -f "$(echo ${value} | sed "s|^file.*://||g" )" ]; then
                             if [ -f "$2/$(basename "${value}")" ]; then
-                                if [ ! -d "$(basename "$(echo "${value}" | sed "s|^file.*//||g")")" ]; then
-                                    mkdir -p "$(basename "$(echo "${value}" | sed "s|^file.*//||g")")"
-                                    chown "${SERVER_USER}":"${SERVER_GROUP}" "$(basename "$(echo "${value}" | sed "s|^file.*//||g")")"
+                                if var_true "${_transform}" ; then
+                                    output=$(echo "${output}" | sed "s#$(echo "${value}" | sed "s#^file.*://##g")#$2$(basename "${value}")#g")
+                                    export "$1"="$(echo "${output}" | tr "\n" ",")"
+                                else
+                                    if [ ! -d "$(basename "$(echo "${value}" | sed "s|^file.*//||g")")" ]; then
+                                        mkdir -p "$(basename "$(echo "${value}" | sed "s|^file.*//||g")")"
+                                        chown "${SERVER_USER}":"${SERVER_GROUP}" "$(basename "$(echo "${value}" | sed "s|^file.*//||g")")"
+                                    fi
+                                    sudo -u "${SERVER_USER}" cp -aR "${2}"/"$(basename "${value}")" "$(echo "${value}" | sed "s|^file.*://||g")"
                                 fi
-                                sudo -u "${SERVER_USER}" cp -aR "${2}"/"$(basename "${value}")" "$(echo "${value}" | sed "s|^file.*://||g")"
                             else
                                 output="$(echo "${output}" | sed "\#${value}#d")"
-                                export $1="$(echo "${output}" | tr "\n" ",")"
+                                export "$1"="$(echo "${output}" | tr "\n" ",")"
                             fi
                         fi
                     fi
@@ -1923,7 +1933,7 @@ EOF
             toml_block add resolver timeout quotes "${SMTP_RESOLVER_TIMEOUT}"
             toml_block add resolver attempts "${SMTP_RESOLVER_ATTEMPTS}"
             toml_block add resolver try-tcp-on-error "${SMTP_RESOLVER_TRY_TCP_ON_ERROR,,}"
-            array_tools verify SMTP_RESOLVER_PUBLIC_SUFFIX /assets/stalwart/config/spamfilter/maps/
+            array_tools verify transform SMTP_RESOLVER_PUBLIC_SUFFIX /assets/stalwart/config/spamfilter/maps/
             toml_block add resolver public-suffix array "$(array_tools quote comma SMTP_RESOLVER_PUBLIC_SUFFIX)"
             toml_block add resolver.cache txt "${SMTP_RESOLVER_CACHE_TXT}"
             toml_block add resolver.cache mx "${SMTP_RESOLVER_CACHE_MX}"
@@ -2205,54 +2215,54 @@ EOSQLITE
 
             toml_block add directory.dynamic.lookup.dynamic2 spam free-domains type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam free-domains comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_COMMENT}"
-            array_tools verify SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_VALUES /assets/stalwart/config/spamfilter/maps
+            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_VALUES /assets/stalwart/config/spamfilter/maps/
             toml_block add directory.dynamic.lookup.dynamic2 spam free-domains values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_VALUES)"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEDOMAINS_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEDOMAINS_COMMENT}"
-            array_tools verify SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEALLOW_VALUES /assets/stalwart/config/spamfilter/maps
+            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEDOMAINS_VALUES /assets/stalwart/config/spamfilter/maps/
             toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEDOMAINS_VALUES)"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam redirectors type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam redirectors comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_COMMENT}"
-            array_tools verify SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_VALUES /assets/stalwart/config/spamfilter/maps
+            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_VALUES /assets/stalwart/config/spamfilter/maps/
             toml_block add directory.dynamic.lookup.dynamic2 spam redirectors values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_VALUES)"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_COMMENT}"
-            array_tools verify SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_VALUES /assets/stalwart/config/spamfilter/maps
+            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_VALUES /assets/stalwart/config/spamfilter/maps/
             toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_VALUES)"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_COMMENT}"
-            array_tools verify SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_VALUES /assets/stalwart/config/spamfilter/maps
+            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_VALUES /assets/stalwart/config/spamfilter/maps/
             toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_VALUES)"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_COMMENT}"
-            array_tools verify SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_VALUES /assets/stalwart/config/spamfilter/maps
+            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_VALUES /assets/stalwart/config/spamfilter/maps/
             toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_VALUES)"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam mime-types type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam mime-types comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_COMMENT}"
-            array_tools verify SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_VALUES /assets/stalwart/config/spamfilter/maps
+            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_VALUES /assets/stalwart/config/spamfilter/maps/
             toml_block add directory.dynamic.lookup.dynamic2 spam mime-types values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_VALUES)"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam trap-address type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_TYPE}"
             toml_block add directory.dynamic.lookup.dynamic2 spam trap-address comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_COMMENT}"
-            array_tools verify SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_VALUES /assets/stalwart/config/spamfilter/maps
+            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_VALUES /assets/stalwart/config/spamfilter/maps/
             toml_block add directory.dynamic.lookup.dynamic2 spam trap-address values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_VALUES)"
 
             toml_block add directory.dynamic.lookup.dynamic2 spam scores type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_TYPE}"
-            array_tools verify SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_VALUES /assets/stalwart/config/spamfilter/maps
+            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_VALUES /assets/stalwart/config/spamfilter/maps/
             toml_block add directory.dynamic.lookup.dynamic2 spam scores values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_VALUES)"
 
             if var_true "${ENABLE_SIEVE}" ; then
-                array_tools verify SIEVE_TRUSTED_SCRIPTS_SPAMFILTER /assets/stalwart/config/spamfilter/scripts/
+                array_tools verify transform SIEVE_TRUSTED_SCRIPTS_SPAMFILTER /assets/stalwart/config/spamfilter/scripts/
                 toml_block add sieve.trusted.scripts spam-filter array "$(array_tools quote comma SIEVE_TRUSTED_SCRIPTS_SPAMFILTER)"
-                array_tools verify SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES /assets/stalwart/config/spamfilter/scripts/
+                array_tools verify transform SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES /assets/stalwart/config/spamfilter/scripts/
                 toml_block add sieve.trusted.scripts track-replies array "$(array_tools quote comma SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES)"
-                array_tools verify SIEVE_TRUSTED_SCRIPTS_GREYLIST /assets/stalwart/config/spamfilter/scripts/
+                array_tools verify transform SIEVE_TRUSTED_SCRIPTS_GREYLIST /assets/stalwart/config/spamfilter/scripts/
                 toml_block add sieve.trusted.scripts greylist array "$(array_tools quote comma SIEVE_TRUSTED_SCRIPTS_GREYLIST)"
             fi
 
@@ -2299,17 +2309,25 @@ EOF
                 sed -i "s|\"$1\" \".*\"|\"$1\" \"$2\"|g" $3
             }
 
-            update_spam_config ADD_HEADER_SPAM "${SPAMFILTER_ADD_X_SPAM_STATUS_HEADER,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-            update_spam_config ADD_HEADER_SPAM_RESULT "${SPAMFILTER_ADD_X_SPAM_RESULT_HEADER,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-            update_spam_config AUTOLEARN_REPLIES_HAM "${SPAMFILTER_AUTOLEARN_REPLIES_HAM,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-            update_spam_config AUTOLEARN_ENABLE "${SPAMFILTER_ENABLE_AUTOLEARN,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-            update_spam_config AUTOLEARN_HAM_THRESHOLD "${SPAMFILTER_AUTOLEARN_THRESHOLD_HAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-            update_spam_config AUTOLEARN_SPAM_THRESHOLD "${SPAMFILTER_AUTOLEARN_THRESHOLD_SPAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-            update_spam_config AUTOLEARN_SPAM_HAM_BALANCE "${SPAMFILTER_AUTOLEARN_DIFFERENCE_SPAM_HAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-            update_spam_config SCORE_SPAM_THRESHOLD "${SPAMFILTER_THRESHOLD_SPAM}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-            update_spam_config SCORE_DISCARD_THRESHOLD "${SPAMFILTER_THRESHOLD_DISCARD}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-            update_spam_config SCORE_REJECT_THRESHOLD "${SPAMFILTER_THRESHOLD_REJECT}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
-            update_spam_config DOMAIN_DIRECTORY "'${DEFAULT_DIRECTORY}'" "${DATA_PATH}"/spamfilter/scripts/config.sieve
+            if [ -f "${DATA_PATH}"/spamfilter/scripts/config.sieve ] ; then
+                spamfilter_config_file="${DATA_PATH}/spamfilter/scripts/config.sieve"
+            elif [ -f "/assets/stalwart/config/spamfilter/scripts/config.sieve" ]; then
+                spamfilter_config_file="/assets/stalwart/config/spamfilter/scripts/config.sieve"
+            else
+                print_error "Can't configure SPAM Filter as I don't know what the config file is"
+            fi
+
+            update_spam_config ADD_HEADER_SPAM "${SPAMFILTER_ADD_X_SPAM_STATUS_HEADER,,}" "${spamfilter_config_file}"
+            update_spam_config ADD_HEADER_SPAM_RESULT "${SPAMFILTER_ADD_X_SPAM_RESULT_HEADER,,}" "${spamfilter_config_file}"
+            update_spam_config AUTOLEARN_REPLIES_HAM "${SPAMFILTER_AUTOLEARN_REPLIES_HAM,,}" "${spamfilter_config_file}"
+            update_spam_config AUTOLEARN_ENABLE "${SPAMFILTER_ENABLE_AUTOLEARN,,}" "${spamfilter_config_file}"
+            update_spam_config AUTOLEARN_HAM_THRESHOLD "${SPAMFILTER_AUTOLEARN_THRESHOLD_HAM}" "${spamfilter_config_file}"
+            update_spam_config AUTOLEARN_SPAM_THRESHOLD "${SPAMFILTER_AUTOLEARN_THRESHOLD_SPAM}" "${spamfilter_config_file}"
+            update_spam_config AUTOLEARN_SPAM_HAM_BALANCE "${SPAMFILTER_AUTOLEARN_DIFFERENCE_SPAM_HAM}" "${spamfilter_config_file}"
+            update_spam_config SCORE_SPAM_THRESHOLD "${SPAMFILTER_THRESHOLD_SPAM}" "${spamfilter_config_file}"
+            update_spam_config SCORE_DISCARD_THRESHOLD "${SPAMFILTER_THRESHOLD_DISCARD}" "${spamfilter_config_file}"
+            update_spam_config SCORE_REJECT_THRESHOLD "${SPAMFILTER_THRESHOLD_REJECT}" "${spamfilter_config_file}"
+            update_spam_config DOMAIN_DIRECTORY "'${DEFAULT_DIRECTORY}'" "${spamfilter_config_file}"
             if var_true "${SPAMFILTER_ENABLE_GREYLISTING}" ; then SMTP_SESSION_RCPT_SCRIPT="greylist" ; fi
 
         else
