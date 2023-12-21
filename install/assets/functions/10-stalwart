@@ -2294,9 +2294,7 @@ $(toml_block show "${block_sieve_trusted_scripts}")
 EOF
 
             update_spam_config() {
-                set -x
                 sed -i "s|\"$1\" \".*\"|\"$1\" \"$2\"|g" $3
-                set +x
             }
 
             update_spam_config ADD_HEADER_SPAM "${SPAMFILTER_ADD_X_SPAM_STATUS_HEADER,,}" "${DATA_PATH}"/spamfilter/scripts/config.sieve
