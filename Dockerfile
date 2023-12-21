@@ -27,6 +27,11 @@ RUN source /assets/functions/00-container && \
             --disabled-password \
             stalwart && \
     \
+    curl -sSLk https://mariadb.org/mariadb_release_signing_key.asc | apt-key add - && \
+    mariadb_client_ver="$(curl -sSLk https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | grep "mariadb_server_version=mariadb-" | head -n 1 | cut -d = -f 2 | cut -d - -f 2)" && \
+    echo "deb https://mirror.its.dal.ca/mariadb/repo/${mariadb_client_ver}/debian $(cat /etc/os-release |grep "VERSION=" | awk 'NR>1{print $1}' RS='(' FS=')') main" > /etc/apt/sources.list.d/mariadb.list && \
+    curl -ssL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    echo "deb http://apt.postgresql.org/pub/repos/apt/ $(cat /etc/os-release |grep "VERSION=" | awk 'NR>1{print $1}' RS='(' FS=')')-pgdg main" > /etc/apt/sources.list.d/postgres.list && \
     package update && \
     package upgrade && \
     \
@@ -38,6 +43,8 @@ RUN source /assets/functions/00-container && \
                             " && \
     \
     STALWART_RUN_DEPS=" \
+                            mariadb-client\
+                            postgresql-client \
                             sqlite3 \
                             " && \
     package install \
