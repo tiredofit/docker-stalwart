@@ -707,9 +707,9 @@ EOF
                         toml_block add directory.dynamic.cache ${directory_name,,} ttl "${directory_ldap_cache_ttl}"
 
                         toml_block add directory.dynamic.filter ${directory_name,,} name quotes "${directory_ldap_filter_name}"
-                        toml_block add directory.dynamic.filter ${directory_name,,} email quotes "${directory_ldap_filter_name}"
-                        toml_block add directory.dynamic.filter ${directory_name,,} verify quotes "${directory_ldap_filter_name}"
-                        toml_block add directory.dynamic.filter ${directory_name,,} expand quotes "${directory_ldap_filter_name}"
+                        toml_block add directory.dynamic.filter ${directory_name,,} email quotes "${directory_ldap_filter_email}"
+                        toml_block add directory.dynamic.filter ${directory_name,,} verify quotes "${directory_ldap_filter_verify}"
+                        toml_block add directory.dynamic.filter ${directory_name,,} expand quotes "${directory_ldap_filter_expand}"
                         toml_block add directory.dynamic.filter ${directory_name,,} domains quotes "${directory_ldap_filter_domains}"
 
                         toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_ldap_options_catch_all,,}"
