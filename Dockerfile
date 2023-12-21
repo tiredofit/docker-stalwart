@@ -69,7 +69,7 @@ RUN source /assets/functions/00-container && \
     cp -R /usr/src/stalwart/target/release/stalwart-mail /usr/sbin && \
     mkdir -p /assets/stalwart/config && \
     cp -R resources/config/* /assets/stalwart/config/ && \
-    for filename in $(find /assets/stalwart/config/* -type f) ; do sed -i "1 i\# Originally copied for ${IMAGE_NAME}. Stalwart version: ${STALWART_VERSION} on $(date +'%Y-%m-%d %H:%M:%S')" $filename ; done && \
+    for filename in $(find /assets/stalwart/config/* -type f) ; do if [[ ! ${filename##*.} =~ gz*|tar|zip|zst* ]] ; then sed -i "1 i\# Originally copied for ${IMAGE_NAME}. Stalwart version: ${STALWART_VERSION} on $(date +'%Y-%m-%d %H:%M:%S')" $filename ; fi ; done && \
     mkdir -p /assets/stalwart/htx && \
     cp -R resources/htx /assets/stalwart/htx/ &&\
     chown -R stalwart:stalwart /assets/stalwart && \
