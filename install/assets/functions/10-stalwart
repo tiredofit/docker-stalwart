@@ -2327,6 +2327,141 @@ EOF
             update_spam_config DOMAIN_DIRECTORY "'${DEFAULT_DIRECTORY}'" "${spamfilter_config_file}"
             if var_true "${SPAMFILTER_ENABLE_GREYLISTING}" ; then SMTP_SESSION_RCPT_SCRIPT="greylist" ; fi
 
+            ## AllowDMARC domains
+            for allowdmarc_entry in $(echo "${SPAMFILTER_ALLOW_DMARC}" | tr ',' '\n') ; do
+                allowdmarc_value=$(echo "${allowdmarc_entry}" | awk '{ print $1 }')
+
+                if [ -f "${DATA_PATH}"/spamfilter/maps/allow_dmarc.list ] ; then
+                    spamfilter_allowdmarc_file="${DATA_PATH}/spamfilter/maps/allow_dmarc.list"
+                elif [ -f "/assets/stalwart/config/spamfilter/maps/allow_dmarc.list" ]; then
+                    spamfilter_allowdmarc_file="/assets/stalwart/config/spamfilter/maps/allow_dmarc.list"
+                else
+                    print_error "Can't configure SPAM Filter Allow DMARC as I don't know what the Allow DMARC file is"
+                fi
+
+                if [[ "${allowdmarc_value,,}" == -* ]]; then
+                    print_debug "[spamfilter] [allowdmarc] Removing '${allowdmarc_value}' from '${spamfilter_allowdmarc_file}'"
+                    sudo -u "${SERVER_USER}" sed -i "/^${allowdmarc_value}/d" "${spamfilter_allowdmarc_file}"
+                else
+                    if ! grep -Pq "^${allowdmarc_value}" "${spamfilter_allowdmarc_file}"; then
+                        print_debug "[spamfilter] [allowdmarc] '${allowdmarc_value}' already exists in '${spamfilter_allowdmarc_file}'"
+                    else
+                        print_debug "[spamfilter] [allowdmarc] Adding '${allowdmarc_value}' to '${spamfilter_allowdmarc_file}'"
+                        sudo -u "${SERVER_USER}" sed -i "$a${allowdmarc_value}" "${spamfilter_allowdmarc_file}"
+                    fi
+                fi
+            done
+            sudo -u "${SERVER_USER}" sort -d -u "${spamfilter_allowdmarc_file}" -o "${spamfilter_allowdmarc_file}"
+
+            ## Allow domains
+            for allowdomains_entry in $(echo "${SPAMFILTER_ALLOW_DOMAINS}" | tr ',' '\n') ; do
+                allowdomains_value=$(echo "${allowdomains_entry}" | awk '{ print $1 }')
+
+                if [ -f "${DATA_PATH}"/spamfilter/maps/allow_domains.list ] ; then
+                    spamfilter_allowdomains_file="${DATA_PATH}/spamfilter/maps/allow_domains.list"
+                elif [ -f "/assets/stalwart/config/spamfilter/maps/allow_domains.list" ]; then
+                    spamfilter_allowdomains_file="/assets/stalwart/config/spamfilter/maps/allow_domains.list"
+                else
+                    print_error "Can't configure SPAM Filter Allow Domains as I don't know what the Allow Domains file is"
+                fi
+
+                if [[ "${allowdomains_value,,}" == -* ]]; then
+                    print_debug "[spamfilter] [allowdomains] Removing '${allowdomains_value}' from '${spamfilter_allowdomains_file}'"
+                    sudo -u "${SERVER_USER}" sed -i "/^${allowdomains_value}/d" "${spamfilter_allowdomains_file}"
+                else
+                    if ! grep -Pq "^${allowdmarc_value}" "${spamfilter_allowdomains_file}"; then
+                        print_debug "[spamfilter] [allowdomains] '${allowdomains_value}' already exists in '${spamfilter_allowdomains_file}'"
+                    else
+                        print_debug "[spamfilter] [allowdomains] Adding '${allowdmarc_value}' to '${spamfilter_allowdomains_file}'"
+                        sudo -u "${SERVER_USER}" sed -i "$a${allowdomains_value}" "${spamfilter_allowdomains_file}"
+                    fi
+                fi
+            done
+            sudo -u "${SERVER_USER}" sort -d -u "${spamfilter_allowdomains_file}" -o "${spamfilter_allowdomains_file}"
+
+            ## Allowphishing domains
+            for allowphishing_entry in $(echo "${SPAMFILTER_ALLOW_PHISHING}" | tr ',' '\n') ; do
+                allowphishing_value=$(echo "${allowphishing_entry}" | awk '{ print $1 }')
+
+                if [ -f "${DATA_PATH}"/spamfilter/maps/allow_phishing.list ] ; then
+                    spamfilter_allowphishing_file="${DATA_PATH}/spamfilter/maps/allow_phishing.list"
+                elif [ -f "/assets/stalwart/config/spamfilter/maps/allow_phishing.list" ]; then
+                    spamfilter_allowphishing_file="/assets/stalwart/config/spamfilter/maps/allow_phishing.list"
+                else
+                    print_error "Can't configure SPAM Filter Allow phishing as I don't know what the Allow phishing file is"
+                fi
+
+                if [[ "${allowphishing_value,,}" == -* ]]; then
+                    print_debug "[spamfilter] [allowphishing] Removing '${allowphishing_value}' from '${spamfilter_allowphishing_file}'"
+                    sudo -u "${SERVER_USER}" sed -i "/^${allowphishing_value}/d" "${spamfilter_allowphishing_file}"
+                else
+                    if ! grep -Pq "^${allowphishing_value}" "${spamfilter_allowphishing_file}"; then
+                        print_debug "[spamfilter] [allowphishing] '${allowphishing_value}' already exists in '${spamfilter_allowphishing_file}'"
+                    else
+                        print_debug "[spamfilter] [allowphishing] Adding '${allowphishing_value}' to '${spamfilter_allowphishing_file}'"
+                        sudo -u "${SERVER_USER}" sed -i "$a${allowphishing_value}" "${spamfilter_allowphishing_file}"
+                    fi
+                fi
+            done
+            sudo -u "${SERVER_USER}" sort -d -u "${spamfilter_allowphishing_file}" -o "${spamfilter_allowphishing_file}"
+
+            ## Allow SPF DKIM domains
+            for allowspfdkim_entry in $(echo "${SPAMFILTER_ALLOW_SPFDKIM}" | tr ',' '\n') ; do
+                allowspfdkim_value=$(echo "${allowspfdkim_entry}" | awk '{ print $1 }')
+
+                if [ -f "${DATA_PATH}"/spamfilter/maps/allow_spf_dkim.list ] ; then
+                    spamfilter_allowspfdkim_file="${DATA_PATH}/spamfilter/maps/allow_spf_dkim.list"
+                elif [ -f "/assets/stalwart/config/spamfilter/maps/allow_spf_dkim.list" ]; then
+                    spamfilter_allowspfdkim_file="/assets/stalwart/config/spamfilter/maps/allow_spf_dkim.list"
+                else
+                    print_error "Can't configure SPAM Filter Allow spfdkim as I don't know what the Allow spfdkim file is"
+                fi
+
+                if [[ "${allowspfdkim_value,,}" == -* ]]; then
+                    print_debug "[spamfilter] [allowspfdkim] Removing '${allowspfdkim_value}' from '${spamfilter_allowspfdkim_file}'"
+                    sudo -u "${SERVER_USER}" sed -i "/^${allowspfdkim_value}/d" "${spamfilter_allowspfdkim_file}"
+                else
+                    if ! grep -Pq "^${allowspfdkim_value}" "${spamfilter_allowspfdkim_file}"; then
+                        print_debug "[spamfilter] [allowspfdkim] '${allowspfdkim_value}' already exists in '${spamfilter_allowspfdkim_file}'"
+                    else
+                        print_debug "[spamfilter] [allowspfdkim] Adding '${allowspfdkim_value}' to '${spamfilter_allowspfdkim_file}'"
+                        sudo -u "${SERVER_USER}" sed -i "$a${allowspfdkim_value}" "${spamfilter_allowspfdkim_file}"
+                    fi
+                fi
+            done
+            sudo -u "${SERVER_USER}" sort -d -u "${spamfilter_allowspfdkim_file}" -o "${spamfilter_allowspfdkim_file}"
+
+            ## MIME Types
+            for mime_entry in $(echo "${SPAMFILTER_MIMETYPE}" | tr ',' '\n') ; do
+                mime_type=$(echo "${mime_entry}" | awk '{ print $1 }')
+                mime_value=$(echo "${mime_entry}" | awk '{ print $1 }')
+
+                if [ -f "${DATA_PATH}"/spamfilter/maps/mime_types.map ] ; then
+                    spamfilter_mimetypes_file="${DATA_PATH}/spamfilter/maps/mime_types.map"
+                elif [ -f "/assets/stalwart/config/spamfilter/maps/mime_types.map" ]; then
+                    spamfilter_mimetypes_file="/assets/stalwart/config/spamfilter/maps/mimetypes.map"
+                else
+                    print_error "Can't configure SPAM Filter MIME Types as I don't know what the mimetypes file is"
+                fi
+
+                case "${mime_value,,}" in
+                    null )
+                        print_debug "[spamfilter] [mimetypes] Removing ${mime_type} from file entirely"
+                        sudo -u "${SERVER_USER}" sed -i "/^${mime_type}/d" "${spamfilter_mimetypes_file}"
+                    ;;
+                    * )
+                        if grep -Pq "^${mime_type}" "${spamfilter_mimetypes_file}"; then
+                            print_debug "[spamfilter] [mimetypes] Adjusting '${mime_type}' to '${mime_value}'"
+                            sudo -u "${SERVER_USER}" sed -i "s|^${mime_type} .*|${mime_type} ${mime_value}|g" "${spamfilter_mimetypes_file}"
+                        else
+                            print_debug "[spamfilter] [mimetypes] Adding '${mime_type}' with '${mime_value}'"
+                            sudo -u "${SERVER_USER}" sed -i "$a${mime_type} ${mime_value}" "${spamfilter_mimetypes_file}"
+                        fi
+                    ;;
+                esac
+            done
+            sudo -u "${SERVER_USER}" sort -d -u "${spamfilter_mimetypes_file}" -o "${spamfilter_mimetypes_file}"
+
             ## Scores
             for score_entry in $(set -o posix ; set ; printenv | sort | uniq | grep -P "^SPAMFILTER_SCORE_.*=") ; do
                 score_type=$(echo "${score_entry}" | cut -d = -f1)
@@ -2356,8 +2491,33 @@ EOF
                     ;;
                 esac
             done
+            sudo -u "${SERVER_USER}" sort -d -u "${spamfilter_score_file}" -o "${spamfilter_score_file}"
 
-            sudo "${SERVER_USER}" sort -d -u "${spamfilter_score_file}" -o "${spamfilter_score_file}"
+            ## SPAMTrap
+            for spamtrap_entry in $(echo "${SPAMFILTER_SPAMTRAP}" | tr ',' '\n') ; do
+                spamtrap_value=$(echo "${spamtrap_entry}" | awk '{ print $1 }')
+
+                if [ -f "${DATA_PATH}"/spamfilter/maps/spam_trap.list ] ; then
+                    spamfilter_spamtrap_file="${DATA_PATH}/spamfilter/maps/spam_trap.list"
+                elif [ -f "/assets/stalwart/config/spamfilter/maps/spam_trap.list" ]; then
+                    spamfilter_spamtrap_file="/assets/stalwart/config/spamfilter/maps/spam_trap.list"
+                else
+                    print_error "Can't configure SPAM Filter  spamtrap as I don't know what the  spamtrap file is"
+                fi
+
+                if [[ "${spamtrap_value,,}" == -* ]]; then
+                    print_debug "[spamfilter] [spamtrap] Removing '${spamtrap_value}' from '${spamfilter_spamtrap_file}'"
+                    sudo -u "${SERVER_USER}" sed -i "/^${spamtrap_value}/d" "${spamfilter_spamtrap_file}"
+                else
+                    if ! grep -Pq "^${spamtrap_value}" "${spamfilter_spamtrap_file}"; then
+                        print_debug "[spamfilter] [spamtrap] '${spamtrap_value}' already exists in '${spamfilter_spamtrap_file}'"
+                    else
+                        print_debug "[spamfilter] [spamtrap] Adding '${spamtrap_value}' to '${spamfilter_spamtrap_file}'"
+                        sudo -u "${SERVER_USER}" sed -i "$a${spamtrap_value}" "${spamfilter_spamtrap_file}"
+                    fi
+                fi
+            done
+            sudo -u "${SERVER_USER}" sort -d -u "${spamfilter_spamtrap_file}" -o "${spamfilter_spamtrap_file}"
         else
             :
         fi
