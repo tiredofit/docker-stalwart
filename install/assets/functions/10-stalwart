@@ -2514,7 +2514,7 @@ EOF
                 sudo -u "${SERVER_USER}" sort -d -u "${spamfilter_mimetypes_file}" -o "${spamfilter_mimetypes_file}"
             fi
 
-            if [ "$(set -o posix ; set ; sort | uniq | grep -cP "^SPAMFILTER_SCORE_.*=")" -gt 1 ]; then
+            if [ "$(set -o posix ; set | sort | uniq | grep -cP "^SPAMFILTER_SCORE_.*=")" -gt 1 ]; then
                 ## Scores
                 for score_entry in $(set -o posix ; set ; printenv | sort | uniq | grep -P "^SPAMFILTER_SCORE_.*=") ; do
                     score_type=$(echo "${score_entry}" | cut -d = -f1)
