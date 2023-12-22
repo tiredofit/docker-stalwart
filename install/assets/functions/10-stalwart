@@ -64,9 +64,6 @@ array_tools() {
         ;;
 
         verify )
-            ## TODO We should check to see if there is a file or file+fallback prefix
-            ##      and verify if the file actually exists on the filesytem. If not look in the second argument to see if the file exists and copy it into where its supposed to be
-            ##      If there is a file and the default file is newer than the existing one then perhaps set a warning on console
             shift 1
             local _transform
             if [ "${1,,}" = "transform" ] ; then
@@ -532,7 +529,6 @@ EOF
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             case "${LOG_TYPE,,}" in
-                ## TODO Allow for comma seperated and allow for multiple blocks with same name
                 "console" )
                     toml_block add global.tracing method quotes stdout
                     toml_block add global.tracing level quotes ${LOG_LEVEL,,}
@@ -694,13 +690,15 @@ EOF
                         populate_variable ldap_pool_max_lifetime
                         populate_variable ldap_pool_min_connections
 
-                        ## todo be able to handle multiple directories
                         toml_block add directory.dynamic ${directory_name,,} type quotes "ldap"
                         toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_ldap_address}"
+                        sanity_var directory_ldap_base_dn "LDAP Base DN"
                         toml_block add directory.dynamic ${directory_name,,} base-dn quotes "${directory_ldap_base_dn}"
 
+                        sanity_var directory_ldap_bind_dn "LDAP Bind DN"
                         toml_block add directory.dynamic.bind ${directory_name,,} dn quotes "${directory_ldap_bind_dn}"
-                        ## todo we should add some sanity_var checks here
+                        sanity_var directory_ldap_bind_pass "LDAP Bind Password"
+
                         toml_block add directory.dynamic.bind ${directory_name,,} secret quotes "${directory_ldap_bind_pass}"
 
                         toml_block add directory.dynamic.cache ${directory_name,,} entries "${directory_ldap_cache_entries}"
@@ -857,24 +855,66 @@ EOF
                         toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_memory_options_subaddressing,,}"
                         toml_block add directory.dynamic.options ${directory_name,,} superuser-group quotes "${directory_memory_options_superuser_group}"
 
-                        ## TODO Need to support Multiple Users
-                        toml_block add directory.dynamic.users ${directory_name,,} name quotes "${directory_memory_user_name}"
-                        toml_block add directory.dynamic.users ${directory_name,,} description quotes "${directory_memory_user_description}"
-                        toml_block add directory.dynamic.users ${directory_name,,} secret quotes "${directory_memory_user_pass}"
-                        toml_block add directory.dynamic.users ${directory_name,,} email quotes "${directory_memory_user_email}"
-                        toml_block add directory.dynamic.users ${directory_name,,} email-list quotes "${directory_memory_user_email_list}"
-                        toml_block add directory.dynamic.users ${directory_name,,} quota quotes "${directory_memory_user_quota}"
-                        toml_block add directory.dynamic.users ${directory_name,,} member-of quotes "${directory_memory_user_memberof}"
+                        memory_user_instances=$(set -o posix ; set | printenv | sort | grep -P "^DIRECTORY_${directory_name,,}_MEMORY_USER([0-9]+)_.*=" | wc -l)
+                        for (( memory_user_instance = 01; memory_user_instance <= memory_user_instances; memory_user_instance++ )); do
+                            memory_user_instance=$(printf "%02d" $memory_user_instance)
 
-                        ## TODO Need to support Multiple Groups
-                        toml_block add directory.dynamic.groups ${directory_name,,} name quotes "${directory_memory_group_name}"
-                        toml_block add directory.dynamic.groups ${directory_name,,} description quotes "${directory_memory_group_description}"
+                            populate_variable() {
+                                if [ -v "^DIRECTORY_${directory_name,,}_MEMORY_USER([0-9]+)_${1^^}" ]; then
+                                    export directory_memory_user_${1,,}="$(printenv | grep "^DIRECTORY_${directory_name,,}_MEMORY_USER([0-9]+)_${1^^}=" | cut -d = -f2-)"
+                                fi
+                            }
+
+                            export block_directory_memory_user_${memory_user_instance}="$(cat <<EOF
+[[directory."${directory_name,,}".users]]
+$(if [ -n "${directory_memory_user_name}" ]; then echo "name = \"${directory_memory_user_name}\""; fi)
+$(if [ -n "${directory_memory_user_description}" ]; then echo "description = \"${directory_memory_user_description}\""; fi)
+$(if [ -n "${directory_memory_user_pass}" ]; then echo "secret = \"${directory_memory_user_pass}\""; fi)
+$(if [ -n "${directory_memory_user_email}" ]; then echo "email = $(array_tools quote comma directory_memory_user_email)"; fi)
+$(if [ -n "${directory_memory_user_user_email_list}" ]; then echo "email-list = $(array_tools quote comma directory_memory_user_email_list)"; fi)
+$(if [ -n "${directory_memory_user_quota}" ]; then echo "quota = ${directory_memory_user_name}"; fi)
+$(if [ -n "${directory_memory_user_memberof}" ]; then echo "member-of = $(array_tools quote comma directory_memory_user_memberof)"; fi)
+EOF
+                                                                                        )"
+                            ## TODO Cleanup blank lines
+
+                            #toml_block add directory.dynamic.users ${directory_name,,} name quotes "${directory_memory_user_name}"
+                            #toml_block add directory.dynamic.users ${directory_name,,} description quotes "${directory_memory_user_description}"
+                            #toml_block add directory.dynamic.users ${directory_name,,} secret quotes "${directory_memory_user_pass}"
+                            #toml_block add directory.dynamic.users ${directory_name,,} email quotes "${directory_memory_user_email}"
+                            #toml_block add directory.dynamic.users ${directory_name,,} email-list quotes "${directory_memory_user_email_list}"
+                            #toml_block add directory.dynamic.users ${directory_name,,} quota quotes "${directory_memory_user_quota}"
+                            #toml_block add directory.dynamic.users ${directory_name,,} member-of quotes "${directory_memory_user_memberof}"
+                        done
+
+                    memory_user_groups=$(set -o posix ; set | printenv | sort | grep -P "^DIRECTORY_${directory_name,,}_MEMORY_GROUP([0-9]+)_.*=" | wc -l)
+                        for (( memory_group_instance = 01; memory_group_instance <= memory_user_instances; memory_group_instance++ )); do
+                            memory_group_instance=$(printf "%02d" $memory_group_instance)
+
+                            populate_variable() {
+                                if [ -v "^DIRECTORY_${directory_name,,}_MEMORY_GROUP([0-9]+)_${1^^}" ]; then
+                                    export directory_memory_group_${1,,}="$(printenv | grep "^DIRECTORY_${directory_name,,}_MEMORY_GROUP([0-9]+)_${1^^}=" | cut -d = -f2-)"
+                                fi
+                            }
+
+                            export block_directory_memory_group_${memory_group_instance}="$(cat <<EOF
+[[directory."${directory_name,,}".users]]
+$(if [ -n "${directory_memory_group_name}" ]; then echo "name = \"${directory_memory_group_name}\""; fi)
+$(if [ -n "${directory_memory_group_description}" ]; then echo "description = \"${directory_memory_ugroup_description}\""; fi)
+EOF
+
+                        ## TODO Cleanup blank lines
+                                                                                        )"
+                        #toml_block add directory.dynamic.groups ${directory_name,,} name quotes "${directory_memory_group_name}"
+                        #toml_block add directory.dynamic.groups ${directory_name,,} description quotes "${directory_memory_group_description}"
+
+                        done
 
                         toml_block add directory.dynamic.lookup ${directory_name,,} domains array "$(array_tools quote comma directory_memory_lookup_domains)"
 
-                        block_directory_memory="block_directory_${directory_name,,}_lookup"
-                        block_directory_memory_users="block_directory_${directory_name,,}_users"
-                        block_directory_memory_groups="block_directory_${directory_name,,}_groups"
+                        block_directory_memory="block_directory_${directory_name,,}"
+                        #block_directory_memory_users="block_directory_${directory_name,,}_users"
+                        #block_directory_memory_groups="block_directory_${directory_name,,}_groups"
                         block_directory_memory_lookup="block_directory_${directory_name,,}_lookup"
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
@@ -885,9 +925,11 @@ EOF
 
 $(toml_block show "${!block_directory_memory}")
 
-$(toml_block show "${!block_directory_memory_users}")
+$(for block_user in $(set -o posix ; set | printenv | sort | grep -P "^block_directory_memory_user_.*="); do echo "${block_user}" ; done)
+\#$(toml_block show "${!block_directory_memory_users}")
 
-$(toml_block show "${!block_directory_memory_groups}")
+$(for block_group in $(set -o posix ; set | printenv | sort | grep -P "^block_directory_memory_group_.*="); do echo "${block_group}" ; done)
+\#$(toml_block show "${!block_directory_memory_groups}")
 
 $(toml_block show "${!block_directory_memory_lookup}")
 
