@@ -1188,7 +1188,13 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            toml_block add oauth key quotes "${JMAP_OAUTH_KEY}"
+            if [ -z "${JMAP_OAUTH_KEY}" ]; then
+                print_warn "No JMAP_OAUTH_KEY detected - Auto generating. You should set a permanent one!"
+                jmap_oauth_key="$(openssl rand -base64 64 | tr -d '\n')"
+            else
+                jmap_oauth_key=${JMAP_OAUTH_KEY}
+            fi
+            toml_block add oauth key quotes "${jmap_oauth_key}"
             toml_block add oauth.auth max-attempts "${JMAP_OAUTH_AUTH_MAX_ATTEMPTS}"
 
             toml_block add oauth.expiry user-code quotes "${JMAP_OAUTH_EXPIRY_USER_CODE}"
