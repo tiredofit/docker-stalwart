@@ -2357,7 +2357,7 @@ EOF
                 esac
             done
 
-            sudo "${SERVER_USER}" sort -u "${spamfilter_score_file}" -o "${spamfilter_score_file}"
+            sudo "${SERVER_USER}" sort -d -u "${spamfilter_score_file}" -o "${spamfilter_score_file}"
         else
             :
         fi
