@@ -2303,7 +2303,7 @@ $(toml_block show "${block_sieve_trusted_scripts}")
 EOF
 
             update_spam_config() {
-                sed -i "s|\"$1\" \".*\"|\"$1\" \"$2\"|g" $3
+                sudo -u "${SERVER_USER}" sed -i "s|\"$1\" \".*\"|\"$1\" \"$2\"|g" $3
             }
 
             if [ -f "${DATA_PATH}"/spamfilter/scripts/config.sieve ] ; then
@@ -2327,6 +2327,36 @@ EOF
             update_spam_config DOMAIN_DIRECTORY "'${DEFAULT_DIRECTORY}'" "${spamfilter_config_file}"
             if var_true "${SPAMFILTER_ENABLE_GREYLISTING}" ; then SMTP_SESSION_RCPT_SCRIPT="greylist" ; fi
 
+            ## Scores
+            for score_entry in $(set -o posix ; set ; printenv | sort | uniq | grep -P "^SPAMFILTER_SCORE_.*=") ; do
+                score_type=$(echo "${score_entry}" | cut -d = -f1)
+                score_value=$(echo "${score_entry}" | cut -d = -f2)
+
+                if [ -f "${DATA_PATH}"/spamfilter/maps/scores.map ] ; then
+                    spamfilter_score_file="${DATA_PATH}/spamfilter/maps/scores.map"
+                elif [ -f "/assets/stalwart/config/spamfilter/maps/scores.map" ]; then
+                    spamfilter_score_file="/assets/stalwart/config/spamfilter/maps/scores.map"
+                else
+                    print_error "Can't configure SPAM Filter scores as I don't know what the score file is"
+                fi
+
+                case "${score_value,,}" in
+                    null )
+                        print_debug "[spamfilter] [scores] Removing ${score_type} from file entirely"
+                        sudo -u "${SERVER_USER}" sed -i "/^${score_type}/d" "${spamfilter_score_file}"
+                    ;;
+                    * )
+                        if grep -Pq "^${score_type}" "${spamfilter_score_file}"; then
+                            print_debug "[spamfilter] [scores] Adjusting '${score_type}' to '${score_value}'"
+                            sudo -u "${SERVER_USER}" sed -i "s|^${score_type} .*|${score_type} ${score_value}|g" "${spamfilter_score_file}"
+                        else
+                            print_debug "[spamfilter] [scores] Adding '${score_type}' with '${score_value}'"
+                            sudo -u "${SERVER_USER}" sed -i "$a${score_type} ${score_value}" "${spamfilter_score_file}"
+                        fi
+                    ;;
+                esac
+
+            done
         else
             :
         fi
