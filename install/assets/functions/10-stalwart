@@ -854,7 +854,7 @@ EOF
                             memory_user_instance=$(printf "%02d" $memory_user_instance)
 
                             populate_variable() {
-                                if [ -v "^DIRECTORY_${directory_name,,}_MEMORY_USER([0-9]+)_${1^^}" ]; then
+                                if [ -v "^DIRECTORY_${directory_name^^}_MEMORY_USER([0-9]+)_${1^^}" ]; then
                                     export directory_memory_user_${1,,}="$(printenv | grep "^DIRECTORY_${directory_name,,}_MEMORY_USER([0-9]+)_${1^^}=" | cut -d = -f2-)"
                                 fi
                             }
@@ -887,7 +887,7 @@ EOF
                             memory_group_instance=$(printf "%02d" $memory_group_instance)
 
                             populate_variable() {
-                                if [ -v "^DIRECTORY_${directory_name,,}_MEMORY_GROUP([0-9]+)_${1^^}" ]; then
+                                if [ -v "^DIRECTORY_${directory_name^^}_MEMORY_GROUP([0-9]+)_${1^^}" ]; then
                                     export directory_memory_group_${1,,}="$(printenv | grep "^DIRECTORY_${directory_name,,}_MEMORY_GROUP([0-9]+)_${1^^}=" | cut -d = -f2-)"
                                 fi
                             }
@@ -944,19 +944,44 @@ EOF
                         populate_variable sql_options_subaddressing
                         populate_variable sql_pool_max_connections
                         populate_variable sql_pool_min_connections
-                        populate_variable sql_query_domains
-                        populate_variable sql_query_emails
-                        populate_variable sql_query_expand
-                        populate_variable sql_query_members
-                        populate_variable sql_query_name
-                        populate_variable sql_query_recipients
-                        populate_variable sql_query_verify
                         populate_variable sql_type
 
                         if [ -z "${directory_sql_type}" ]; then
                             print_error "You need to set SQL Type for the directory!"
                             exit 9
                         fi
+
+                        case "${directory_sql_type,,}" in
+                            maria | mysql )
+                                directory_sql_type=mysql
+                            ;;
+                            pgsql | postgres* )
+                                directory_sql_type=postgres
+                            ;;
+                            sqlite* )
+                                directory_sql_type=sqlite
+                            ;;
+                            * )
+                                print_error "[configure_directory] [sql] I don't know SQL type '${directory_sql_type,,}'"
+                                exit 9
+                            ;;
+                        esac
+
+                        populate_variable_sql() {
+                            if [ -v "^DIRECTORY_${directory_name^^}_SQL_${1^^}" ]; then
+                                export directory_sql_${1,,}="$(set -o posix ; set | grep -P "^DIRECTORY_${directory_name^^}_SQL_${1^^}=" | cut -d = -f2-)"
+                            else
+                                export directory_sql_${1,,}="$(set -o posix; set | grep -P "^DIRECTORY_DEFAULT_SQL_${directory_sql_type^^}_${1^^}=" | cut -d = -f2-)"
+                            fi
+                        }
+
+                        populate_variable_sql query_domains
+                        populate_variable_sql query_emails
+                        populate_variable_sql query_expand
+                        populate_variable_sql query_members
+                        populate_variable_sql query_name
+                        populate_variable_sql query_recipients
+                        populate_variable_sql query_verify
 
                         toml_block add directory.dynamic ${directory_name,,} type quotes "sql"
                         toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_sql_address}"
