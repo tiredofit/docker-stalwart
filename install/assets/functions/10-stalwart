@@ -503,7 +503,7 @@ EOF
                         sanity_var TLS_CERTIFICATE "need to select certificate to use"
                     fi
                 fi
-set +x
+
                 toml_block add server.tls certificate quotes "${TLS_CERTIFICATE}"
                 toml_block add server.tls ignore-client-order "${TLS_IGNORE_CLIENT_ORDER,,}"
 
@@ -520,7 +520,6 @@ EOF
                 :
             fi
         fi
-    set +x
     }
 
     common_configure_tracing() {
@@ -572,9 +571,9 @@ configure_directory() {
 
     directory_configure_instances() {
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            directory_instances=$(set -o posix ; set | sort | grep -P "^DIRECTORY([0-9]+)_.*_TYPE=" | grep -Pve "^DIRECTORY([0-9]+)_.*_SQL_COLUMNS_TYPE=" | wc -l) ## TODO - Catch new TYPES var.
+            directory_instances=$(set -o posix ; set | sort | grep -P "^DIRECTORY_([A-Z0-9]+)_TYPE=" | wc -l)
             if [ "${directory_instances}" -eq 1 ]; then
-                DEFAULT_DIRECTORY=${DEFAULT_DIRECTORY:-"$(set -o posix ; set | sort | grep -P "^DIRECTORY01_.*_TYPE=" | grep -Pve "^DIRECTORY01_.*_SQL_COLUMNS_TYPE=" | cut -d _ -f2 | tr '[A-Z]' '[a-z]')"}
+                DEFAULT_DIRECTORY=${DEFAULT_DIRECTORY:-"$(set -o posix ; set | sort | grep -P "^DIRECTORY_([A-Z0-9]+)_TYPE=" | cut -d _ -f2 | tr '[A-Z]' '[a-z]')"}
             elif [ "${directory_instances}" -lt 1 ]; then
                 print_error "No Directories Found! - Setup some DIRECTORY_ variables"
                 exit 9
@@ -584,22 +583,19 @@ configure_directory() {
                     exit 9
                 fi
             fi
-
-            for (( directory_instance = 01; directory_instance <= directory_instances; directory_instance++ )); do
-                directory_instance=$(printf "%02d" $directory_instance)
-                directory_varvalue="$(set -o posix ; set | sort | grep "^DIRECTORY${directory_instance}_.*_TYPE=" | grep -ve "^DIRECTORY${directory_instance}.*_.*_SQL_COLUMNS_TYPE=")"
-                directory_name="$(echo "${directory_varvalue}" | cut -d _ -f2)"
-                directory_type="$(echo "${directory_varvalue}" | cut -d = -f2)"
+            for directory_instance in $(set -o posix; set ; sort | uniq | grep -p "^DIRECTORY_([A-Z0-9]+)_TYPE=") ; do
+                directory_name="$(echo "${directory_instance}" | cut -d _ -f2)"
+                directory_type="$(echo "${directory_instance}" | cut -d = -f2)"
 
                 populate_variable() {
-                    if [ -v "DIRECTORY${directory_instance}_${directory_name}_${1^^}" ]; then
-                        export directory_${1,,}="$(printenv | grep "^DIRECTORY${directory_instance}_${directory_name}_${1^^}=" | cut -d = -f2-)"
+                    if [ -v "DIRECTORY_${directory_name^^}_${1^^}" ]; then
+                        export directory_${1,,}="$(printenv | grep "^DIRECTORY_${directory_name^^}_${1^^}=" | cut -d = -f2-)"
                     else
-                        export directory_${1,,}="$(printenv | grep "^DIRECTORY_DEFAULT_${1^^}=" | cut -d = -f2-)"
+                        export directory_${1,,}="$(printenv | grep "^DIRECTORY_DEFAULT_${directory_type^^}_${1^^}=" | cut -d = -f2-)"
                     fi
                 }
 
-                config_file="${directory_type,,}_${directory_instance}.toml"
+                config_file="${directory_type,,}_${directory_name,,}.toml"
                 config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
                 case "${directory_type,,}" in
@@ -955,6 +951,12 @@ EOF
                         populate_variable sql_query_name
                         populate_variable sql_query_recipients
                         populate_variable sql_query_verify
+                        populate_variable sql_type
+
+                        if [ -z "${directory_sql_type}" ]; then
+                            print_error "You need to set SQL Type for the directory!"
+                            exit 9
+                        fi
 
                         toml_block add directory.dynamic ${directory_name,,} type quotes "sql"
                         toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_sql_address}"
@@ -2517,7 +2519,7 @@ EOF
 
             if [ "$(set -o posix ; set | sort | uniq | grep -cP "^SPAMFILTER_SCORE_.*=")" -gt 1 ]; then
                 ## Scores
-                for score_entry in $(set -o posix ; set ; printenv | sort | uniq | grep -P "^SPAMFILTER_SCORE_.*=") ; do
+                for score_entry in $(set -o posix ; set ; sort | uniq | grep -P "^SPAMFILTER_SCORE_.*=") ; do
                     score_type=$(echo "${score_entry}" | cut -d = -f1)
                     score_value=$(echo "${score_entry}" | cut -d = -f2)
 
