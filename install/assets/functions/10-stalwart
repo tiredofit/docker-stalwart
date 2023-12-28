@@ -1406,9 +1406,7 @@ EOF
 
             toml_block add jmap.fts default-language quotes "${JMAP_FTS_DEFAULT_LANGUAGE}"
 
-            toml_block add jmap.purge.schedule db quotes "${JMAP_PURGE_SCHEDULE_DB}"
-            toml_block add jmap.purge.schedule blobs quotes "${JMAP_PURGE_SCHEDULE_BLOBS}"
-            toml_block add jmap.purge.schedule sessions quotes "${JMAP_PURGE_SCHEDULE_SESSIONS}"
+            toml_block add jmap.purge.sessions frequency quotes "${JMAP_PURGE_SESSIONS_FREQUENCY}"
 
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
@@ -1433,7 +1431,7 @@ $(toml_block show "${block_jmap_encryption}")
 
 $(toml_block show "${block_jmap_fts}")
 
-$(toml_block show "${block_jmap_purge_schedule}")
+$(toml_block show "${block_jmap_purge_sessions}")
 
 EOF
 
