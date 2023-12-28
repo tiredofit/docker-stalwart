@@ -7,7 +7,7 @@ services:
       - /logs:/logs/
     environment:
       - TIMEZONE=America/Vancouver
-      - CONTAINER_NAME=stalwart
+      - CONTAINER_NAME=stalwart-app
 
       - MODE=SMTP
 
