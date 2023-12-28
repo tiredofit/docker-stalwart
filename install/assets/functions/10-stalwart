@@ -572,7 +572,7 @@ configure_directory() {
 
     directory_configure_instances() {
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            directory_instances=$(set -o posix ; set | sort | grep -P "^DIRECTORY([0-9]+)_.*_TYPE=" | grep -Pve "^DIRECTORY([0-9]+)_.*_SQL_COLUMNS_TYPE=" | wc -l)
+            directory_instances=$(set -o posix ; set | sort | grep -P "^DIRECTORY([0-9]+)_.*_TYPE=" | grep -Pve "^DIRECTORY([0-9]+)_.*_SQL_COLUMNS_TYPE=" | wc -l) ## TODO - Catch new TYPES var.
             if [ "${directory_instances}" -eq 1 ]; then
                 DEFAULT_DIRECTORY=${DEFAULT_DIRECTORY:-"$(set -o posix ; set | sort | grep -P "^DIRECTORY01_.*_TYPE=" | grep -Pve "^DIRECTORY01_.*_SQL_COLUMNS_TYPE=" | cut -d _ -f2 | tr '[A-Z]' '[a-z]')"}
             elif [ "${directory_instances}" -lt 1 ]; then
@@ -669,6 +669,7 @@ EOF
                         populate_variable ldap_attributes_name
                         populate_variable ldap_attributes_quota
                         populate_variable ldap_attributes_pass
+                        populate_variable ldap_attributes_type
                         populate_variable ldap_base_dn
                         populate_variable ldap_bind_dn
                         populate_variable ldap_bind_pass
@@ -728,6 +729,7 @@ EOF
                         toml_block add directory.dynamic.attributes ${directory_name,,} email quotes "${directory_ldap_attributes_email}"
                         toml_block add directory.dynamic.attributes ${directory_name,,} email-alias quotes "${directory_ldap_attributes_email_alias}"
                         toml_block add directory.dynamic.attributes ${directory_name,,} quota quotes "${directory_ldap_attributes_quota}"
+                        toml_block add directory.dynamic.attributes ${directory_name,,} type quotes "${directory_ldap_attributes_type}"
 
                         block_directory_ldap="block_directory_${directory_name,,}"
                         block_directory_ldap_bind="block_directory_${directory_name,,}_bind"
@@ -844,6 +846,7 @@ EOF
                         populate_variable memory_users_name
                         populate_variable memory_users_quota
                         populate_variable memory_users_pass
+                        populate_variable memory_users_type
 
                         toml_block add directory.dynamic ${directory_name,,} type "memory"
 
@@ -864,6 +867,7 @@ EOF
 [[directory."${directory_name,,}".users]]
 $(if [ -n "${directory_memory_user_name}" ]; then echo "name = \"${directory_memory_user_name}\""; fi)
 $(if [ -n "${directory_memory_user_description}" ]; then echo "description = \"${directory_memory_user_description}\""; fi)
+$(if [ -n "${directory_memory_user_type}" ]; then echo "type = \"${directory_memory_user_type}\""; fi)
 $(if [ -n "${directory_memory_user_pass}" ]; then echo "secret = \"${directory_memory_user_pass}\""; fi)
 $(if [ -n "${directory_memory_user_email}" ]; then echo "email = $(array_tools quote comma directory_memory_user_email)"; fi)
 $(if [ -n "${directory_memory_user_user_email_list}" ]; then echo "email-list = $(array_tools quote comma directory_memory_user_email_list)"; fi)
