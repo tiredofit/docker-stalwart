@@ -683,7 +683,6 @@ EOF
                         populate_variable ldap_objectclasses_user
                         populate_variable ldap_options_catch_all
                         populate_variable ldap_options_subaddressing
-                        populate_variable ldap_options_superuser_group
                         populate_variable ldap_pool_connect_timeout
                         populate_variable ldap_pool_idle_timeout
                         populate_variable ldap_pool_max_connections
@@ -712,7 +711,6 @@ EOF
 
                         toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_ldap_options_catch_all,,}"
                         toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_ldap_options_subaddressing,,}"
-                        toml_block add directory.dynamic.options ${directory_name,,} superuser-group quotes "${directory_ldap_options_superuser_group}"
 
                         toml_block add directory.dynamic.pool ${directory_name,,} max-connections ${directory_ldap_pool_max_connections}
                         toml_block add directory.dynamic.pool ${directory_name,,} min-connections ${directory_ldap_pool_min_connections}
@@ -801,7 +799,6 @@ EOF
 
                         toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_lmtp_options_catch_all,,}"
                         toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_lmtp_options_subaddressing,,}"
-                        toml_block add directory.dynamic.options ${directory_name,,} superuser-group quotes "${directory_lmtp_options_superuser_group}"
 
                         toml_block add directory.dynamic.lookup ${directory_name,,} domains array "$(array_tools quote comma directory_lmtp_lookup_domains)"
 
@@ -840,7 +837,6 @@ EOF
                         populate_variable memory_lookup_domains
                         populate_variable memory_options_catch_all
                         populate_variable memory_options_subaddressing
-                        populate_variable memory_options_superuser_group
                         populate_variable memory_users_description
                         populate_variable memory_users_email
                         populate_variable memory_users_email_list
@@ -853,7 +849,6 @@ EOF
 
                         toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_memory_options_catch_all,,}"
                         toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_memory_options_subaddressing,,}"
-                        toml_block add directory.dynamic.options ${directory_name,,} superuser-group quotes "${directory_memory_options_superuser_group}"
 
                         memory_user_instances=$(set -o posix ; set | sort | grep -P "^DIRECTORY_${directory_name,,}_MEMORY_USER([0-9]+)_.*=" | wc -l)
                         for (( memory_user_instance = 01; memory_user_instance <= memory_user_instances; memory_user_instance++ )); do
@@ -947,7 +942,6 @@ EOF
                         populate_variable sql_columns_type
                         populate_variable sql_options_catch_all
                         populate_variable sql_options_subaddressing
-                        populate_variable sql_options_superuser_group
                         populate_variable sql_pool_max_connections
                         populate_variable sql_pool_min_connections
                         populate_variable sql_query_domains
@@ -963,7 +957,6 @@ EOF
 
                         toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_sql_options_catch_all,,}"
                         toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_sql_options_subaddressing,,}"
-                        toml_block add directory.dynamic.options ${directory_name,,} superuser-group quotes "${directory_sql_options_superuser_group}"
 
                         toml_block add directory.dynamic.pool ${directory_name,,} max-connections "${directory_sql_pool_max_connections}"
                         toml_block add directory.dynamic.pool ${directory_name,,} min-connections "${directory_sql_pool_min_connections}"
