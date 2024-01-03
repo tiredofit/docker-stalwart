@@ -7,9 +7,8 @@ LABEL maintainer="Dave Conroy (github.com/tiredofit)"
 ARG STALWART_VERSION
 ARG STALWART_REPO_URL
 
-ENV STALWART_VERSION=${STALWART_VERSION:-"v0.5.0"} \
+ENV STALWART_VERSION=${STALWART_VERSION:-"v0.5.1"} \
     STALWART_REPO_URL=${STALWART_REPO_URL:-"https://github.com/stalwartlabs/mail-server"} \
-    #FOUNDATIONDB_CLIENT_VERSION=${FOUNDATIONDB_CLIENT_VERSION:-"7.1.43-1"} \
     CONTAINER_ENABLE_MESSAGING=FALSE \
     IMAGE_NAME="tiredofit/stalwart" \
     IMAGE_REPO_URL="https://github.com/tiredofit/docker-stalwart/"
