@@ -74,7 +74,6 @@ RUN source /assets/functions/00-container && \
     \
     package remove \
                     "${STALWART_BUILD_DEPS}"\
-                    #foundationdb-clients \
                     && \
     package cleanup && \
     rm -rf \
