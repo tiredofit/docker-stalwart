@@ -36,8 +36,8 @@ RUN source /assets/functions/00-container && \
     \
     STALWART_BUILD_DEPS=" \
                             build-essential \
-                            cmake \
                             clang \
+                            cmake \
                             protobuf-compiler \
                             " && \
     \
@@ -51,12 +51,9 @@ RUN source /assets/functions/00-container && \
                     ${STALWART_RUN_DEPS} \
                     && \
     mkdir -p /usr/src && \
-    #curl -sSL https://github.com/apple/foundationdb/releases/download/${FOUNDATIONDB_CLIENT_VERSION/-*/}/foundationdb-clients_${FOUNDATIONDB_CLIENT_VERSION}_amd64.deb -o /usr/src/foundationdb-clients.deb && \
-    #dpkg -i /usr/src/foundationdb-clients.deb && \
     curl https://sh.rustup.rs -sSf | env CARGO_HOME=/opt/rust/cargo sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path && \
     \
     clone_git_repo "${STALWART_REPO_URL}" "${STALWART_VERSION}" /usr/src/stalwart && \
-    #CARGO_HOME=/opt/rust/cargo /opt/rust/cargo/bin/cargo build --manifest-path=crates/main/Cargo.toml --no-default-features --features foundationdb --release && \
     CARGO_HOME=/opt/rust/cargo /opt/rust/cargo/bin/cargo build --manifest-path=crates/cli/Cargo.toml --release && \
     strip /usr/src/stalwart/target/release/stalwart-cli && \
     cp -R /usr/src/stalwart/target/release/stalwart-cli /usr/sbin && \
