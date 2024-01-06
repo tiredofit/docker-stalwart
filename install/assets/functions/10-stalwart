@@ -2755,12 +2755,15 @@ EOF
                     ;;
                     filesystem* )
                         store_type=fs
+
                         populate_variable filesystem_path
+                        if [ ! -d "${filesystem_path}" ]; then mkdir -p "${filesystem_path}" ; fi
+                        if [ "$(stat -c %U "${filesystem_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${filesystem_path}" ; fi
+
                         populate_variable filesystem_depth
                         populate_variable filesystem_disable
                         populate_variable filesystem_purge_frequency
 
-                        ## TODO Create the path
                         toml_block add store.dynamic ${store_name,,} type quotes "fs"
                         toml_block add store.dynamic ${store_name,,} path quotes "${store_filesystem_path}"
                         toml_block add store.dynamic ${store_name,,} depth "${store_filesystem_depth,,}"
@@ -2782,12 +2785,15 @@ $(toml_block show "${!block_store_filesystem}")
 $(toml_block show "${!block_store_filesystem_purge}")
 
 EOF
-
                     ;;
                     foundation* )
                         store_type=foundationdb
 
                         populate_variable foundationdb_path
+                        ## Is this already a full path+name - Should we dirname
+                        if [ ! -d "${foundationdb_path}" ]; then mkdir -p "${foundationdb_path}" ; fi
+                        if [ "$(stat -c %U "${foundationdb_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${foundationdb_path}" ; fi
+
                         populate_variable foundationdb_disable
                         populate_variable foundationdb_transaction_timeout
                         populate_variable foundationdb_transaction_retry_limit
@@ -2797,7 +2803,6 @@ EOF
                         populate_variable foundationdb_purge_frequency
 
                         toml_block add store.dynamic ${store_name,,} type quotes "foundationdb"
-                        ## TODO - Create or check the path
                         toml_block add store.dynamic ${store_name,,} path quotes "${store_foundationdb_path}"
                         toml_block add store.dynamic ${store_name,,} disable "${store_foundationdb_disable,,}"
 
@@ -3022,6 +3027,10 @@ EOF
                     rocks* )
                         store_type=rocksdb
                         populate_variable rocksdb_path
+                        ## Is this a full path and we need to dirname?
+                        if [ ! -d "${rocksdb_path}" ]; then mkdir -p "${rocksdb_path}" ; fi
+                        if [ "$(stat -c %U "${rocksdb_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${rocksdb_path}" ; fi
+
                         populate_variable rocksdb_disable
 
                         populate_variable rocksdb_settings_min_blob_size
@@ -3032,7 +3041,6 @@ EOF
                         populate_variable rocksdb_purge_frequency
 
                         toml_block add store.dynamic ${store_name,,} type quotes "rocksdb"
-                        ## TODO Create the path
                         toml_block add store.dynamic ${store_name,,} path quotes "${store_rocksdb_path}"
                         toml_block add store.dynamic ${store_name,,} disable "${store_rocksdb_disable,,}"
 
@@ -3107,6 +3115,9 @@ EOF
                     sqlite*)
                         store_type=sqlite
                         populate_variable sqlite_path
+                        if [ ! -d "${sqlite_path}" ]; then mkdir -p "${sqlite_path}" ; fi
+                        if [ "$(stat -c %U "${sqlite_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${sqlite_path}" ; fi
+
                         populate_variable sqlite_disable
 
                         populate_variable sqlite_pool_max_connections
@@ -3168,462 +3179,6 @@ EOF
                     ;;
                     * )
                         print_error "[configure_store] Don't know what to do with store type '${store_type,,}'"
-                    ;;
-                esac
-
-
-                case "${foo}" in
-                    imap )
-                        populate_variable imap_address
-                        populate_variable imap_pool_max_connections
-
-
-                        toml_block add directory.dynamic ${directory_name,,} type quotes "imap"
-                        toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_imap_address}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} max-connections "${directory_imap_pool_max_connections}"
-                        block_directory_imap="block_directory_${directory_name,,}"
-                        block_directory_imap_pool="block_directory_${directory_name,,}_pool"
-$(toml_block show "${!block_directory_imap}")
-
-$(toml_block show "${!block_directory_imap_pool}")
-                        populate_variable imap_cache_entries
-                        populate_variable imap_cache_ttl
-                        populate_variable imap_lookup_domains
-                        populate_variable imap_pool_connect_timeout
-                        populate_variable imap_pool_idle_timeout
-                        populate_variable imap_pool_max_connections
-                        populate_variable imap_pool_max_lifetime
-                        populate_variable imap_pool_min_connections
-                        populate_variable imap_port
-                        populate_variable imap_tls_allow_invalid_certs
-                        populate_variable imap_tls_implicit
-
-                        toml_block add directory.dynamic ${directory_name,,} type quotes "imap"
-                        toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_imap_address}"
-                        toml_block add directory.dynamic ${directory_name,,} port "${directory_imap_port}"
-
-                        toml_block add directory.dynamic.pool ${directory_name,,} max-connections "${directory_imap_pool_max_connections}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} min-connections "${directory_imap_pool_min_connections}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} max-lifetime quotes "${directory_imap_pool_max_lifetime}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} idle-timeout quotes "${directory_imap_pool_idle_timeout}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} connect-timeout quotes "${directory_imap_pool_connect_timeout}"
-
-                        toml_block add directory.dynamic.tls ${directory_name,,} implicit "${directory_imap_tls_implicit,,}"
-                        toml_block add directory.dynamic.tls ${directory_name,,} allow-invalid-certs "${directory_imap_tls_allow_invalid_certs,,}"
-
-                        toml_block add directory.dynamic.cache ${directory_name,,} entries "${directory_imap_cache_entries}"
-                        toml_block add directory.dynamic.cache ${directory_name,,} ttl "${directory_imap_cache_ttl}"
-
-                        toml_block add directory.dynamic.lookup ${directory_name,,} domains array "$(array_tools quote comma directory_imap_lookup_domains)"
-
-                        block_directory_imap="block_directory_${directory_name,,}"
-                        block_directory_imap_pool="block_directory_${directory_name,,}_pool"
-                        block_directory_imap_tls="block_directory_${directory_name,,}_tls"
-                        block_directory_imap_cache="block_directory_${directory_name,,}_cache"
-                        block_directory_imap_lookup="block_directory_${directory_name,,}_lookup"
-
-                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Directory ${directory_instance} ${directory_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
-
-$(toml_block show "${!block_directory_imap}")
-
-$(toml_block show "${!block_directory_imap_pool}")
-
-$(toml_block show "${!block_directory_imap_tls}")
-
-$(toml_block show "${!block_directory_imap_cache}")
-
-$(toml_block show "${!block_directory_imap_lookup}")
-
-EOF
-
-                    ;;
-                    ldap )
-                        populate_variable ldap_address
-                        populate_variable ldap_attributes_description
-                        populate_variable ldap_attributes_email
-                        populate_variable ldap_attributes_email_alias
-                        populate_variable ldap_attributes_groups
-                        populate_variable ldap_attributes_name
-                        populate_variable ldap_attributes_quota
-                        populate_variable ldap_attributes_pass
-                        populate_variable ldap_attributes_type
-                        populate_variable ldap_base_dn
-                        populate_variable ldap_bind_dn
-                        populate_variable ldap_bind_pass
-                        populate_variable ldap_cache_entries
-                        populate_variable ldap_cache_ttl
-                        populate_variable ldap_filter_domains
-                        populate_variable ldap_filter_email
-                        populate_variable ldap_filter_expand
-                        populate_variable ldap_filter_name
-                        populate_variable ldap_filter_verify
-                        populate_variable ldap_objectclasses_group
-                        populate_variable ldap_objectclasses_user
-                        populate_variable ldap_options_catch_all
-                        populate_variable ldap_options_subaddressing
-                        populate_variable ldap_pool_connect_timeout
-                        populate_variable ldap_pool_idle_timeout
-                        populate_variable ldap_pool_max_connections
-                        populate_variable ldap_pool_max_lifetime
-                        populate_variable ldap_pool_min_connections
-
-                        toml_block add directory.dynamic ${directory_name,,} type quotes "ldap"
-                        toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_ldap_address}"
-                        sanity_var directory_ldap_base_dn "LDAP Base DN"
-                        toml_block add directory.dynamic ${directory_name,,} base-dn quotes "${directory_ldap_base_dn}"
-
-                        sanity_var directory_ldap_bind_dn "LDAP Bind DN"
-                        toml_block add directory.dynamic.bind ${directory_name,,} dn quotes "${directory_ldap_bind_dn}"
-                        sanity_var directory_ldap_bind_pass "LDAP Bind Password"
-
-                        toml_block add directory.dynamic.bind ${directory_name,,} secret quotes "${directory_ldap_bind_pass}"
-
-                        toml_block add directory.dynamic.cache ${directory_name,,} entries "${directory_ldap_cache_entries}"
-                        toml_block add directory.dynamic.cache ${directory_name,,} ttl "${directory_ldap_cache_ttl}"
-
-                        toml_block add directory.dynamic.filter ${directory_name,,} name quotes "${directory_ldap_filter_name}"
-                        toml_block add directory.dynamic.filter ${directory_name,,} email quotes "${directory_ldap_filter_email}"
-                        toml_block add directory.dynamic.filter ${directory_name,,} verify quotes "${directory_ldap_filter_verify}"
-                        toml_block add directory.dynamic.filter ${directory_name,,} expand quotes "${directory_ldap_filter_expand}"
-                        toml_block add directory.dynamic.filter ${directory_name,,} domains quotes "${directory_ldap_filter_domains}"
-
-                        toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_ldap_options_catch_all,,}"
-                        toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_ldap_options_subaddressing,,}"
-
-                        toml_block add directory.dynamic.pool ${directory_name,,} max-connections ${directory_ldap_pool_max_connections}
-                        toml_block add directory.dynamic.pool ${directory_name,,} min-connections ${directory_ldap_pool_min_connections}
-                        toml_block add directory.dynamic.pool ${directory_name,,} max-lifetime quotes "${directory_ldap_pool_max_lifetime}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} idle-timeout quotes "${directory_ldap_pool_idle_timeout}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} connect-timeout quotes "${directory_ldap_pool_connect_timeout}"
-
-                        toml_block add directory.dynamic.object-classes ${directory_name,,} user quotes "${directory_ldap_objectclasses_user}"
-                        toml_block add directory.dynamic.object-classes ${directory_name,,} group quotes "${directory_ldap_objectclasses_group}"
-
-                        toml_block add directory.dynamic.attributes ${directory_name,,} name quotes "${directory_ldap_attributes_name}"
-                        toml_block add directory.dynamic.attributes ${directory_name,,} description array "$(array_tools quote comma directory_ldap_attributes_description)"
-                        toml_block add directory.dynamic.attributes ${directory_name,,} secret quotes "${directory_ldap_attributes_pass}"
-                        toml_block add directory.dynamic.attributes ${directory_name,,} groups array "$(array_tools quote comma directory_ldap_attributes_groups)"
-                        toml_block add directory.dynamic.attributes ${directory_name,,} email quotes "${directory_ldap_attributes_email}"
-                        toml_block add directory.dynamic.attributes ${directory_name,,} email-alias quotes "${directory_ldap_attributes_email_alias}"
-                        toml_block add directory.dynamic.attributes ${directory_name,,} quota quotes "${directory_ldap_attributes_quota}"
-                        toml_block add directory.dynamic.attributes ${directory_name,,} type quotes "${directory_ldap_attributes_type}"
-
-                        block_directory_ldap="block_directory_${directory_name,,}"
-                        block_directory_ldap_bind="block_directory_${directory_name,,}_bind"
-                        block_directory_ldap_cache="block_directory_${directory_name,,}_cache"
-                        block_directory_ldap_options="block_directory_${directory_name,,}_options"
-                        block_directory_ldap_pool="block_directory_${directory_name,,}_pool"
-                        block_directory_ldap_filter="block_directory_${directory_name,,}_filter"
-                        block_directory_ldap_object_classes="block_directory_${directory_name,,}_object_classes"
-                        block_directory_ldap_attributes="block_directory_${directory_name,,}_attributes"
-
-                        cat <<EOF > "${config_dir}"/"${config_file,,}"
-##########################################################
-# Directory ${directory_instance} ${directory_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
-
-$(toml_block show "${!block_directory_ldap}")
-
-$(toml_block show "${!block_directory_ldap_bind}")
-
-$(toml_block show "${!block_directory_ldap_cache}")
-
-$(toml_block show "${!block_directory_ldap_options}")
-
-$(toml_block show "${!block_directory_ldap_pool}")
-
-$(toml_block show "${!block_directory_ldap_filter}")
-
-$(toml_block show "${!block_directory_ldap_object_classes}")
-
-$(toml_block show "${!block_directory_ldap_attributes}")
-
-EOF
-                    ;;
-                    lmtp )
-                        populate_variable lmtp_address
-                        populate_variable lmtp_cache_entries
-                        populate_variable lmtp_cache_ttl
-                        populate_variable lmtp_limits_auth_errors
-                        populate_variable lmtp_limits_rcpt
-                        populate_variable lmtp_lookup_domains
-                        populate_variable lmtp_pool_connect_timeout
-                        populate_variable lmtp_pool_idle_timeout
-                        populate_variable lmtp_pool_max_connections
-                        populate_variable lmtp_pool_max_lifetime
-                        populate_variable lmtp_pool_min_connections
-                        populate_variable lmtp_port
-                        populate_variable lmtp_tls_allow_invalid_certs
-                        populate_variable lmtp_tls_implicit
-
-                        toml_block add directory.dynamic ${directory_name,,} type quotes "lmtp"
-                        toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_lmtp_address}"
-                        toml_block add directory.dynamic ${directory_name,,} port "${directory_lmtp_port}"
-
-                        toml_block add directory.dynamic.limits ${directory_name,,} auth-errors "${directory_lmtp_limits_auth_errors}"
-                        toml_block add directory.dynamic.limits ${directory_name,,} rcpt "${directory_lmtp_limits_rcpt}"
-
-                        toml_block add directory.dynamic.pool ${directory_name,,} max-connections "${directory_lmtp_pool_max_connections}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} min-connections "${directory_lmtp_pool_min_connections}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} max-lifetime quotes "${directory_lmtp_pool_max_lifetime}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} idle-timeout quotes "${directory_lmtp_pool_idle_timeout}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} connect-timeout quotes "${directory_lmtp_pool_connect_timeout}"
-
-                        toml_block add directory.dynamic.tls ${directory_name,,} implicit "${directory_lmtp_tls_implicit,,}"
-                        toml_block add directory.dynamic.tls ${directory_name,,} allow-invalid-certs "${directory_lmtp_tls_allow_invalid_certs,,}"
-
-                        toml_block add directory.dynamic.cache ${directory_name,,} entries "${directory_lmtp_cache_entries}"
-                        toml_block add directory.dynamic.cache ${directory_name,,} ttl "${directory_lmtp_cache_ttl}"
-
-                        toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_lmtp_options_catch_all,,}"
-                        toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_lmtp_options_subaddressing,,}"
-
-                        toml_block add directory.dynamic.lookup ${directory_name,,} domains array "$(array_tools quote comma directory_lmtp_lookup_domains)"
-
-                        block_directory_lmtp="block_directory_${directory_name,,}"
-                        block_directory_lmtp_limits="block_directory_${directory_name,,}_limits"
-                        block_directory_lmtp_pool="block_directory_${directory_name,,}_pool"
-                        block_directory_lmtp_tls="block_directory_${directory_name,,}_tls"
-                        block_directory_lmtp_cache="block_directory_${directory_name,,}_cache"
-                        block_directory_lmtp_options="block_directory_${directory_name,,}_options"
-                        block_directory_lmtp_lookup="block_directory_${directory_name,,}_lookup"
-
-                        cat <<EOF > "${config_dir}"/"${config_file,,}"
-##########################################################
-# Directory ${directory_instance} ${directory_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
-
-$(toml_block show "${!block_directory_lmtp}")
-
-$(toml_block show "${!block_directory_lmtp_limits}")
-
-$(toml_block show "${!block_directory_lmtp_pool}")
-
-$(toml_block show "${!block_directory_lmtp_tls}")
-
-$(toml_block show "${!block_directory_lmtp_cache}")
-
-$(toml_block show "${!block_directory_lmtp_options}")
-
-$(toml_block show "${!block_directory_lmtp_lookup}")
-EOF
-                    ;;
-                    memory )
-                        populate_variable memory_groups_description
-                        populate_variable memory_groups_name
-                        populate_variable memory_lookup_domains
-                        populate_variable memory_options_catch_all
-                        populate_variable memory_options_subaddressing
-                        populate_variable memory_users_description
-                        populate_variable memory_users_email
-                        populate_variable memory_users_email_list
-                        populate_variable memory_users_memberof
-                        populate_variable memory_users_name
-                        populate_variable memory_users_quota
-                        populate_variable memory_users_pass
-                        populate_variable memory_users_type
-
-                        toml_block add directory.dynamic ${directory_name,,} type "memory"
-
-                        toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_memory_options_catch_all,,}"
-                        toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_memory_options_subaddressing,,}"
-
-                        memory_user_instances=$(set -o posix ; set | sort | grep -P "^DIRECTORY_${directory_name,,}_MEMORY_USER([0-9]+)_.*=" | wc -l)
-                        for (( memory_user_instance = 01; memory_user_instance <= memory_user_instances; memory_user_instance++ )); do
-                            memory_user_instance=$(printf "%02d" $memory_user_instance)
-
-                            populate_variable() {
-                                if [ -v "^DIRECTORY_${directory_name^^}_MEMORY_USER([0-9]+)_${1^^}" ]; then
-                                    export directory_memory_user_${1,,}="$(printenv | grep "^DIRECTORY_${directory_name,,}_MEMORY_USER([0-9]+)_${1^^}=" | cut -d = -f2-)"
-                                fi
-                            }
-
-                            export block_directory_memory_user_${memory_user_instance}="$(cat <<EOF
-[[directory."${directory_name,,}".users]]
-$(if [ -n "${directory_memory_user_name}" ]; then echo "name = \"${directory_memory_user_name}\""; fi)
-$(if [ -n "${directory_memory_user_description}" ]; then echo "description = \"${directory_memory_user_description}\""; fi)
-$(if [ -n "${directory_memory_user_type}" ]; then echo "type = \"${directory_memory_user_type}\""; fi)
-$(if [ -n "${directory_memory_user_pass}" ]; then echo "secret = \"${directory_memory_user_pass}\""; fi)
-$(if [ -n "${directory_memory_user_email}" ]; then echo "email = $(array_tools quote comma directory_memory_user_email)"; fi)
-$(if [ -n "${directory_memory_user_user_email_list}" ]; then echo "email-list = $(array_tools quote comma directory_memory_user_email_list)"; fi)
-$(if [ -n "${directory_memory_user_quota}" ]; then echo "quota = ${directory_memory_user_name}"; fi)
-$(if [ -n "${directory_memory_user_memberof}" ]; then echo "member-of = $(array_tools quote comma directory_memory_user_memberof)"; fi)
-EOF
-                                                                                        )"
-                            ## TODO Cleanup blank lines
-
-                            #toml_block add directory.dynamic.users ${directory_name,,} name quotes "${directory_memory_user_name}"
-                            #toml_block add directory.dynamic.users ${directory_name,,} description quotes "${directory_memory_user_description}"
-                            #toml_block add directory.dynamic.users ${directory_name,,} secret quotes "${directory_memory_user_pass}"
-                            #toml_block add directory.dynamic.users ${directory_name,,} email quotes "${directory_memory_user_email}"
-                            #toml_block add directory.dynamic.users ${directory_name,,} email-list quotes "${directory_memory_user_email_list}"
-                            #toml_block add directory.dynamic.users ${directory_name,,} quota quotes "${directory_memory_user_quota}"
-                            #toml_block add directory.dynamic.users ${directory_name,,} member-of quotes "${directory_memory_user_memberof}"
-                        done
-
-                    memory_user_groups=$(set -o posix ; set | sort | grep -P "^DIRECTORY_${directory_name,,}_MEMORY_GROUP([0-9]+)_.*=" | wc -l)
-                        for (( memory_group_instance = 01; memory_group_instance <= memory_user_instances; memory_group_instance++ )); do
-                            memory_group_instance=$(printf "%02d" $memory_group_instance)
-
-                            populate_variable() {
-                                if [ -v "^DIRECTORY_${directory_name^^}_MEMORY_GROUP([0-9]+)_${1^^}" ]; then
-                                    export directory_memory_group_${1,,}="$(printenv | grep "^DIRECTORY_${directory_name,,}_MEMORY_GROUP([0-9]+)_${1^^}=" | cut -d = -f2-)"
-                                fi
-                            }
-
-                            export block_directory_memory_group_${memory_group_instance}="$(cat <<EOF
-[[directory."${directory_name,,}".users]]
-$(if [ -n "${directory_memory_group_name}" ]; then echo "name = \"${directory_memory_group_name}\""; fi)
-$(if [ -n "${directory_memory_group_description}" ]; then echo "description = \"${directory_memory_ugroup_description}\""; fi)
-EOF
-
-                            ## TODO Cleanup blank lines
-                                                                                            )"
-                            #toml_block add directory.dynamic.groups ${directory_name,,} name quotes "${directory_memory_group_name}"
-                            #toml_block add directory.dynamic.groups ${directory_name,,} description quotes "${directory_memory_group_description}"
-
-                        done
-
-                        toml_block add directory.dynamic.lookup ${directory_name,,} domains array "$(array_tools quote comma directory_memory_lookup_domains)"
-
-                        block_directory_memory="block_directory_${directory_name,,}"
-                        #block_directory_memory_users="block_directory_${directory_name,,}_users"
-                        #block_directory_memory_groups="block_directory_${directory_name,,}_groups"
-                        block_directory_memory_lookup="block_directory_${directory_name,,}_lookup"
-
-                        cat <<EOF > "${config_dir}"/"${config_file,,}"
-##########################################################
-# Directory ${directory_instance} ${directory_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
-
-$(toml_block show "${!block_directory_memory}")
-
-$(for block_user in $(set -o posix ; set | sort | grep -P "^block_directory_memory_user_.*="); do echo "${block_user}" ; done)
-\#$(toml_block show "${!block_directory_memory_users}")
-
-$(for block_group in $(set -o posix ; set | sort | grep -P "^block_directory_memory_group_.*="); do echo "${block_group}" ; done)
-\#$(toml_block show "${!block_directory_memory_groups}")
-
-$(toml_block show "${!block_directory_memory_lookup}")
-
-EOF
-                    ;;
-                    sql )
-                        populate_variable sql_address
-                        populate_variable sql_cache_entries
-                        populate_variable sql_cache_ttl
-                        populate_variable sql_columns_description
-                        populate_variable sql_columns_email
-                        populate_variable sql_columns_name
-                        populate_variable sql_columns_quota
-                        populate_variable sql_columns_pass
-                        populate_variable sql_columns_type
-                        populate_variable sql_options_catch_all
-                        populate_variable sql_options_subaddressing
-                        populate_variable sql_pool_max_connections
-                        populate_variable sql_pool_min_connections
-
-                        ## TODO this actually needs to be in stores
-                        populate_variable sql_type
-
-                        if [ -z "${directory_sql_type}" ]; then
-                            print_error "You need to set SQL Type for the directory!"
-                            exit 9
-                        fi
-
-                        case "${directory_sql_type,,}" in
-                            maria | mysql )
-                                directory_sql_type=mysql
-                            ;;
-                            pgsql | postgres* )
-                                directory_sql_type=postgres
-                            ;;
-                            sqlite* )
-                                directory_sql_type=sqlite
-                            ;;
-                            * )
-                                print_error "[configure_directory] [sql] I don't know SQL type '${directory_sql_type,,}'"
-                                exit 9
-                            ;;
-                        esac
-
-                        populate_variable_sql() {
-                            if [ -v "^DIRECTORY_${directory_name^^}_SQL_${1^^}" ]; then
-                                export directory_sql_${1,,}="$(set -o posix ; set | grep -P "^DIRECTORY_${directory_name^^}_SQL_${1^^}=" | cut -d = -f2-)"
-                            else
-                                export directory_sql_${1,,}="$(set -o posix; set | grep -P "^DIRECTORY_DEFAULT_SQL_${directory_sql_type^^}_${1^^}=" | cut -d = -f2-)"
-                            fi
-                        }
-
-                        populate_variable_sql query_domains
-                        populate_variable_sql query_emails
-                        populate_variable_sql query_expand
-                        populate_variable_sql query_members
-                        populate_variable_sql query_name
-                        populate_variable_sql query_recipients
-                        populate_variable_sql query_verify
-
-                        toml_block add directory.dynamic ${directory_name,,} type quotes "sql"
-                        toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_sql_address}"
-
-                        toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_sql_options_catch_all,,}"
-                        toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_sql_options_subaddressing,,}"
-
-                        toml_block add directory.dynamic.pool ${directory_name,,} max-connections "${directory_sql_pool_max_connections}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} min-connections "${directory_sql_pool_min_connections}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} idle-timeout quotes "${directory_sql_idle_timeout}"
-
-                        toml_block add directory.dynamic.cache ${directory_name,,} entries "${directory_sql_cache_entries}"
-                        toml_block add directory.dynamic.cache ${directory_name,,} ttl "${directory_sql_cache_ttl}"
-
-                        toml_block add directory.dynamic.query ${directory_name,,} name "${directory_sql_query_name}"
-                        toml_block add directory.dynamic.query ${directory_name,,} members "${directory_sql_query_members}"
-                        toml_block add directory.dynamic.query ${directory_name,,} recipients "${directory_sql_query_recipients}"
-                        toml_block add directory.dynamic.query ${directory_name,,} emails "${directory_sql_query_emails}"
-                        toml_block add directory.dynamic.query ${directory_name,,} verify "${directory_sql_query_verify}"
-                        toml_block add directory.dynamic.query ${directory_name,,} expand "${directory_sql_query_expand}"
-                        toml_block add directory.dynamic.query ${directory_name,,} domains "${directory_sql_query_domains}"
-
-                        toml_block add directory.dynamic.columns ${directory_name,,} name "${directory_sql_columns_name}"
-                        toml_block add directory.dynamic.columns ${directory_name,,} description "${directory_sql_columns_description}"
-                        toml_block add directory.dynamic.columns ${directory_name,,} secret "${directory_sql_columns_pass}"
-                        toml_block add directory.dynamic.columns ${directory_name,,} email "${directory_sql_columns_email}"
-                        toml_block add directory.dynamic.columns ${directory_name,,} quota "${directory_sql_columns_quota}"
-                        toml_block add directory.dynamic.columns ${directory_name,,} type "${directory_sql_columns_type}"
-
-                        block_directory_sql="block_directory_${directory_name,,}"
-                        block_directory_sql_options="block_directory_${directory_name,,}_options"
-                        block_directory_sql_pool="block_directory_${directory_name,,}_pool"
-                        block_directory_sql_cache="block_directory_${directory_name,,}_cache"
-                        block_directory_sql_query="block_directory_${directory_name,,}_query"
-                        block_directory_sql_columns="block_directory_${directory_name,,}_columns"
-
-                        cat <<EOF > "${config_dir}"/"${config_file,,}"
-##########################################################
-# Directory ${directory_instance} ${directory_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
-
-$(toml_block show "${!block_directory_sql}")
-
-$(toml_block show "${!block_directory_sql_options}")
-
-$(toml_block show "${!block_directory_sql_pool}")
-
-$(toml_block show "${!block_directory_sql_cache}")
-
-$(toml_block show "${!block_directory_sql_query}")
-
-$(toml_block show "${!block_directory_sql_columns}")
-
-EOF
                     ;;
                 esac
             done
