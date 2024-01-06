@@ -496,6 +496,49 @@ EOF
                 toml_block add server.tls implicit "${TLS_IMPLICIT,,}"
                 toml_block add server.tls timeout quotes "${TLS_TIMEOUT}"
 
+                acme_instances=$(set -o posix ; set | sort | grep -P "^TLS_ACME_([A-Z0-9]+)_DIRECTORY=" | wc -l)
+                if [ "${acme_instances}" -eq 1 ]; then
+                    TLS_ACME=${TLS_ACME:-"$(set -o posix ; set | sort | grep -P "^TLS_ACME_([A-Z0-9]+)_DIRECTORY=" | cut -d _ -f3 | tr '[A-Z]' '[a-z]')"}
+                else
+                    if [ -z "${TLS_ACME}" ] && [ "${acme_instances}" -ge 2 ]; then
+                        print_error "Multiple ACME configurations detected - Set TLS_ACME environment variable"
+                        exit 9
+                    fi
+                fi
+
+                if [ "${acme_instances}" -ge 1 ]; then
+                    for acme_instance in $(set -o posix; set ; sort | uniq | grep -p "^TLS_ACME_([A-Z0-9]+)_DIRECTORY=") ; do
+                        acme_name="$(echo "${acme_instance}" | cut -d _ -f3)"
+                        acme_directory="$(echo "${acme_instance}" | cut -d = -f2)"
+
+                        populate_variable() {
+                            if [ -v "TLS_ACME_${acme_name^^}_${1^^}" ]; then
+                                export acme_${1,,}="$(set -o posix ; set | grep "^TLS_ACME_${acme_name^^}_${1^^}=" | cut -d = -f2-)"
+                            else
+                                export acme_${1,,}="$(set -o posix ; set | grep "^TLS_ACME_DEFAULT_${1^^}=" | cut -d = -f2-)"
+                            fi
+                        }
+
+                        ## TODO - 0.5.3 and up
+                        toml_block add server.tls acme quotes "${TLS_ACME}"
+
+                        populate_variable acme_directory
+                        populate_variable acme_contact
+                        populate_variable acme_cache
+                        populate_variable acme_port
+                        populate_variable acme_renew_before
+
+                        toml_block acme.dynamic "${acme_name,,}" directory quotes "${acme_directory}"
+                        toml_block acme.dynamic "${acme_name,,}" contact quotes "${acme_contact}"
+                        ## TODO Make sure path exists
+                        toml_block acme.dynamic "${acme_name,,}" cache quotes "${acme_cache}"
+                        toml_block acme.dynamic "${acme_name,,}" port "${acme_port}"
+                        toml_block acme.dynamic "${acme_name,,}" renew-before quotes "${acme_renew_before}"
+
+                        block_acme="block_acme_${acme_name,,}"
+                    done
+                fi
+
                 if [ "${tls_cert_instances}" -eq 1 ]; then
                     TLS_CERTIFICATE=${TLS_CERTIFICATE:-"$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE([0-9]+)_.*_CERT_FILE=" | cut -d _ -f 3 | tr '[A-Z]' '[a-z]')"}
                 else
@@ -509,11 +552,14 @@ EOF
 
                 cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
 ##########################################################
-# Common configuration ${config_file}
+# TLS configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
 $(toml_block show "${block_server_tls}")
+
+$(toml block show "${block_acme}")
+
 EOF
 
             else
@@ -3056,26 +3102,6 @@ $(toml_block show "${!block_store_s3}")
 $(toml_block show "${!block_store_s3_purge}")
 
 EOF
-
-##############################################
-## S3/MinIO Blob Store configuration
-##############################################
-#
-#[store."s3"]
-#type = "s3"
-#bucket = "stalwart"
-#region = "eu-central-1"
-#access-key = "minioadmin"
-#secret-key = "minioadmin"
-##endpoint = ""
-##security-token = ""
-##profile = ""
-#timeout = "30s"
-#disable = true
-#
-#[store."s3".purge]
-#frequency = "0 3 *"
-                        :
                     ;;
                     sqlite*)
                         store_type=sqlite
