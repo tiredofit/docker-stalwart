@@ -656,6 +656,10 @@ $(toml_block show "${!block_directory_imap_lookup}")
 EOF
 
                     ;;
+                    internal )
+                            ## TODO CONFIGURE INTERNAL DIRECTORY
+                        :
+                    ;;
                     ldap )
                         populate_variable ldap_address
                         populate_variable ldap_attributes_description
@@ -1697,7 +1701,7 @@ EOF
                 toml_block add session.data.milter.dynamic rspamd hostname quotes "${SMTP_SESSION_DATA_MILTER_RSPAMD_HOSTNAME}"
                 toml_block add session.data.milter.dynamic rspamd port "${SMTP_SESSION_DATA_MILTER_RSPAMD_PORT}"
                 toml_block add session.data.milter.dynamic rspamd tls "${SMTP_SESSION_DATA_MILTER_RSPAMD_TLS}"
-                toml_block add session.data.milter.dynamic rspamd allow-invalid-certs "${SMTP_SESSION_DATA_MILTER_RSPAMD_ALLOW_INVALID_CERTS}"
+                toml_block add session.data.milter.dynamic rspamd allow-invalid-certs "${SMTP_SESSION_DATA_MILTER_RSPAMD_ALLOW_INVALID_CERTS,,}"
 
                 toml_block add session.data.milter.dynamic.timeout rspamd connect quotes "${SMTP_SESSION_DATA_MILTER_RSPAMD_TIMEOUT_CONNECT}"
                 toml_block add session.data.milter.dynamic.timeout rspamd command quotes"${SMTP_SESSION_DATA_MILTER_RSPAMD_TIMEOUT_COMMAND}"
@@ -2662,33 +2666,478 @@ configure_store() {
 
                 case "${store_type,,}" in
                     elasticsearch* )
-                        :
+                        populate_variable elasticsearch_url
+                        populate_variable elasticsearch_user
+                        populate_variable elasticsearch_pass
+                        populate_variable elasticsearch_cloudid
+                        populate_variable elasticsearch_disable
+
+                        populate_variable elasticsearch_tls_allow_invaid_certs
+                        populate_variable elasticsearch_index_shards
+                        populate_variable elasticsearch_index_replicas
+
+                        toml_block add store.dynamic ${store_name,,} type quotes "elasticsearch"
+                        toml_block add store.dynamic ${store_name,,} url quotes "${store_elasticsearch_url}"
+                        toml_block add store.dynamic ${store_name,,} user quotes "${store_elasticsearch_user}"
+                        toml_block add store.dynamic ${store_name,,} password quotes "${store_elasticsearch_pass}"
+                        toml_block add store.dynamic ${store_name,,} cloud-id quotes "${store_elasticsearch_cloudid}"
+                        toml_block add store.dynamic ${store_name,,} disable "${store_elasticsearch_disable,,}"
+
+                        toml_block add store.dynamic.tls ${store_name,,} allow-invalid-certs "${store_elasticsearch_tls_allow_invalid_certs,,}"
+
+                        toml_block add store.dynamic.index ${store_name,,} replicas "${store_elasticsearch_index_replicas}"
+                        toml_block add store.dynamic.index ${store_name,,} shards "${store_elasticsearch_index_shards}"
+
+                        block_store_elasticsearch="block_store_${store_name,,}"
+                        block_store_elasticsearch_tls="block_store_${store_name,,}_tls"
+                        block_store_elasticsearch_index="block_store_${store_name,,}_index"
+
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
+##########################################################
+# Store ${store_name} ${store_type^^} configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${!block_store_elasticsearch}")
+
+$(toml_block show "${!block_store_elasticsearch_tls}")
+
+$(toml_block show "${!block_store_elasticsearch_index}")
+
+EOF
                     ;;
                     filesystem* )
-                        :
+                        store_type=fs
+                        populate_variable filesystem_path
+                        populate_variable filesystem_depth
+                        populate_variable filesystem_disable
+                        populate_variable filesystem_purge_frequency
+
+                        ## TODO Create the path
+                        toml_block add store.dynamic ${store_name,,} type quotes "fs"
+                        toml_block add store.dynamic ${store_name,,} path quotes "${store_filesystem_path}"
+                        toml_block add store.dynamic ${store_name,,} depth "${store_filesystem_depth,,}"
+                        toml_block add store.dynamic ${store_name,,} disable "${store_filesystem_disable,,}"
+
+                        toml_block add store.dynamic.purge ${store_name,,} frequency quotes "${store_filesystem_purge_frequency}"
+
+                        block_store_filesystem="block_store_${store_name,,}"
+                        block_store_filesystem_timeout="block_store_${store_name,,}_timeout"
+
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
+##########################################################
+# Store ${store_name} ${store_type^^} configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${!block_store_filesystem}")
+
+$(toml_block show "${!block_store_filesystem_purge}")
+
+EOF
+
                     ;;
                     foundation* )
-                        ## TODO Another time
-                        :
+                        store_type=foundationdb
+
+                        populate_variable foundationdb_path
+                        populate_variable foundationdb_disable
+                        populate_variable foundationdb_transaction_timeout
+                        populate_variable foundationdb_transaction_retry_limit
+                        populate_variable foundationdb_transaction_max_retry_delay
+                        populate_variable foundationdb_transaction_machine_id
+                        populate_variable foundationdb_transaction_datacenter_id
+                        populate_variable foundationdb_purge_frequency
+
+                        toml_block add store.dynamic ${store_name,,} type quotes "foundationdb"
+                        ## TODO - Create or check the path
+                        toml_block add store.dynamic ${store_name,,} path quotes "${store_foundationdb_path}"
+                        toml_block add store.dynamic ${store_name,,} disable "${store_foundationdb_disable,,}"
+
+                        toml_block add store.dynamic.transaction ${store_name,,} timeout quotes "${store_foundationdb_transaction_timeout}"
+                        toml_block add store.dynamic.transaction ${store_name,,} retry-limit "${store_foundationdb_transaction_retry_limit}"
+                        toml_block add store.dynamic.transaction ${store_name,,} max-retry-delay quotes "${store_foundationdb_transaction_max_retry_delay}"
+                        toml_block add store.dynamic.transaction ${store_name,,} machine-id quotes "${store_foundationdb_transaction_machine_id}"
+                        toml_block add store.dynamic.transaction ${store_name,,} data-center-id quotes "${store_foundationdb_transaction_datacenter_id}"
+
+                        toml_block add store.dynamic.purge ${store_name,,} frequency quotes "${store_foundationdb_purge_frequency}"
+
+                        block_store_foundationdb="block_store_${store_name,,}"
+                        block_store_foundationdb_transaction="block_store_${store_name,,}_transaction"
+                        block_store_foundationdb_purge="block_store_${store_name,,}_purge"
+
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
+##########################################################
+# Store ${store_name} ${store_type^^} configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${!block_store_foundationdb}")
+
+$(toml_block show "${!block_store_foundationdb_transaction}")
+
+$(toml_block show "${!block_store_foundationdb_purge}")
+
+EOF
                     ;;
                     maria* | mysql )
                         store_type=mysql
-                    ;;
-                    memory )
-                        :
+
+                        populate_variable mysql_host
+                        populate_variable mysql_port
+                        populate_variable mysql_name
+                        populate_variable mysql_user
+                        populate_variable mysql_pass
+                        populate_variable mysql_disable
+
+                        populate_variable mysql_timeout_wait
+
+                        populate_variable mysql_pool_max_connections
+                        populate_variable mysql_pool_min_connections
+
+                        populate_variable mysql_init_execute
+                        populate_variable mysql_query_name
+                        populate_variable mysql_query_members
+                        populate_variable mysql_query_recipients
+                        populate_variable mysql_query_emails
+                        populate_variable mysql_query_verify
+                        populate_variable mysql_query_domains
+
+                        populate_variable mysql_purge_frequency
+
+                        toml_block add store.dynamic ${store_name,,} type quotes "mysql"
+                        toml_block add store.dynamic ${store_name,,} host quotes "${store_mysql_host}"
+                        toml_block add store.dynamic ${store_name,,} port "${store_mysql_port}"
+                        toml_block add store.dynamic ${store_name,,} name quotes "${store_mysql_name}"
+                        toml_block add store.dynamic ${store_name,,} user quotes "${store_mysql_user}"
+                        toml_block add store.dynamic ${store_name,,} pass quotes "${store_mysql_pass}"
+                        toml_block add store.dynamic ${store_name,,} disable "${store_mysql_disable,,}"
+
+                        toml_block add store.dynamic.timeout ${store_name,,} wait quotes "${store_mysql_timeout_wait}"
+
+                        toml_block add store.dynamic.pool ${store_name,,} max-connections "${store_mysql_pool_max_connections}"
+                        toml_block add store.dynamic.pool ${store_name,,} min-connections "${store_mysql_init_min_connections}"
+
+                        toml_block add store.dynamic.init ${store_name,,} execute quotes "${store_mysql_init_execute}"
+                        toml_block add store.dynamic.query ${store_name,,} name quotes "${store_mysql_query_name}"
+                        toml_block add store.dynamic.query ${store_name,,} recipients quotes "${store_mysql_query_recipients}"
+                        toml_block add store.dynamic.query ${store_name,,} emails quotes "${store_mysql_query_emails}"
+                        toml_block add store.dynamic.query ${store_name,,} verify quotes "${store_mysql_query_verify}"
+                        toml_block add store.dynamic.query ${store_name,,} expand quotes "${store_mysql_query_expand}"
+                        toml_block add store.dynamic.query ${store_name,,} domains quotes "${store_mysql_query_domains}"
+
+                        toml_block add store.dynamic.purge ${store_name,,} frequency quotes "${store_mysql_purge_frequency}"
+
+                        block_store_mysql="block_store_${store_name,,}"
+                        block_store_mysql_timeout="block_store_${store_name,,}_timeout"
+                        block_store_mysql_pool="block_store_${store_name,,}_pool"
+                        block_store_mysql_init="block_store_${store_name,,}_init"
+                        block_store_mysql_query="block_store_${store_name,,}_query"
+                        block_store_mysql_purge="block_store_${store_name,,}_purge"
+
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
+##########################################################
+# Store ${store_name} ${store_type^^} configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${!block_store_mysql}")
+
+$(toml_block show "${!block_store_mysql_timeout}")
+
+$(toml_block show "${!block_store_mysql_pool}")
+
+$(toml_block show "${!block_store_mysql_init}")
+
+$(toml_block show "${!block_store_mysql_query}")
+
+$(toml_block show "${!block_store_mysql_purge}")
+EOF
+
                     ;;
                     pgsql | postgres* )
                         store_type=postgres
+
+                        populate_variable pgsql_host
+                        populate_variable pgsql_port
+                        populate_variable pgsql_name
+                        populate_variable pgsql_user
+                        populate_variable pgsql_pass
+                        populate_variable pgsql_disable
+
+                        populate_variable pgsql_timeout_connect
+
+                        populate_variable pgsql_pool_max_connections
+
+                        populate_variable pgsql_tls_enable
+                        populate_variable pgsql_tls_allow_invalid_certs
+
+                        populate_variable pgsql_init_execute
+                        populate_variable pgsql_query_name
+                        populate_variable pgsql_query_members
+                        populate_variable pgsql_query_recipients
+                        populate_variable pgsql_query_emails
+                        populate_variable pgsql_query_verify
+                        populate_variable pgsql_query_domains
+
+                        populate_variable pgsql_purge_frequency
+
+                        toml_block add store.dynamic ${store_name,,} type quotes "postgresql"
+                        toml_block add store.dynamic ${store_name,,} host quotes "${store_pgsql_host}"
+                        toml_block add store.dynamic ${store_name,,} port "${store_pgsql_port}"
+                        toml_block add store.dynamic ${store_name,,} name quotes "${store_pgsql_name}"
+                        toml_block add store.dynamic ${store_name,,} user quotes "${store_pgsql_user}"
+                        toml_block add store.dynamic ${store_name,,} pass quotes "${store_pgsql_pass}"
+                        toml_block add store.dynamic ${store_name,,} disable "${store_pgsql_disable,,}"
+
+                        toml_block add store.dynamic.timeout ${store_name,,} connect quotes "${store_pgsql_timeout_connect}"
+
+                        toml_block add store.dynamic.pool ${store_name,,} max-connections "${store_pgsql_pool_max_connections}"
+
+                        toml_block add store.dynamic.tls ${store_name,,} enable "${store_pgsql_tls_enable,,}"
+                        toml_block add store.dynamic.tls ${store_name,,} allow-invalid-certs "${store_pgsql_tls_allow_invalid_certs,,}"
+
+                        toml_block add store.dynamic.init ${store_name,,} execute quotes "${store_pgsql_init_execute}"
+                        toml_block add store.dynamic.query ${store_name,,} name quotes "${store_pgsql_query_name}"
+                        toml_block add store.dynamic.query ${store_name,,} recipients quotes "${store_pgsql_query_recipients}"
+                        toml_block add store.dynamic.query ${store_name,,} emails quotes "${store_pgsql_query_emails}"
+                        toml_block add store.dynamic.query ${store_name,,} verify quotes "${store_pgsql_query_verify}"
+                        toml_block add store.dynamic.query ${store_name,,} expand quotes "${store_pgsql_query_expand}"
+                        toml_block add store.dynamic.query ${store_name,,} domains quotes "${store_pgsql_query_domains}"
+
+                        toml_block add store.dynamic.purge ${store_name,,} frequency quotes "${store_pgsql_purge_frequency}"
+
+                        block_store_mysql="block_store_${store_name,,}"
+                        block_store_pgsql_timeout="block_store_${store_name,,}_timeout"
+                        block_store_pgsql_pool="block_store_${store_name,,}_pool"
+                        block_store_pgsql_tls="block_store_${store_name,,}_tls"
+                        block_store_pgsql_init="block_store_${store_name,,}_init"
+                        block_store_pgsql_query="block_store_${store_name,,}_query"
+                        block_store_pgsql_purge="block_store_${store_name,,}_purge"
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
+##########################################################
+# Store ${store_name} ${store_type^^} configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${!block_store_pgsql}")
+
+$(toml_block show "${!block_store_pgsql_timeout}")
+
+$(toml_block show "${!block_store_pgsql_pool}")
+
+$(toml_block show "${!block_store_pgsql_tls}")
+
+$(toml_block show "${!block_store_pgsql_init}")
+
+$(toml_block show "${!block_store_pgsql_query}")
+
+$(toml_block show "${!block_store_pgsql_purge}")
+EOF
                     ;;
                     redis )
-                        :
+                        store_type=redis
+                        populate_variable redis_url
+                        populate_variable redis_user
+                        populate_variable redis_pass
+                        populate_variable redis_timeout
+                        populate_variable redis_retries
+                        populate_variable redis_max_retry_wait
+                        populate_variable redis_min_retry_wait
+                        populate_variable redis_read_from_replicas
+                        populate_variable redis_diable
+
+                        toml_block add store.dynamic ${store_name,,} type quotes "redis"
+                        toml_block add directory.dynamic.lookup ${directory_name,,} domains array "$(array_tools quote comma directory_imap_lookup_domains)"
+
+                        toml_block add store.dynamic ${store_name,,} urls array "$(array_tools quote comma store_redis_url)"
+                        toml_block add store.dynamic ${store_name,,} user quotes "${store_redis_user}"
+                        toml_block add store.dynamic ${store_name,,} pass quotes "${store_redis_pass}"
+                        toml_block add store.dynamic ${store_name,,} timeout quotes "${store_redis_timeout}"
+                        toml_block add store.dynamic ${store_name,,} retries "${store_redis_retries}"
+                        toml_block add store.dynamic ${store_name,,} max-retry-wait quotes "${store_redis_max_retry_wait}"
+                        toml_block add store.dynamic ${store_name,,} min-retry-wait quotes "${store_redis_min_retry_wait}"
+                        toml_block add store.dynamic ${store_name,,} read-from-replicas quotes "${store_redis_read_from_replicas,,}"
+                        toml_block add store.dynamic ${store_name,,} disable "${store_redis_disable,,}"
+
+                        block_store_redis="block_store_${store_name,,}"
+
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
+##########################################################
+# Store ${store_name} ${store_type^^} configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${!block_store_redis}")
+
+EOF
                     ;;
                     rocks* )
-                        ## TODO Another time
-                        :
+                        store_type=rocksdb
+                        populate_variable rocksdb_path
+                        populate_variable rocksdb_disable
+
+                        populate_variable rocksdb_settings_min_blob_size
+                        populate_variable rocksdb_settings_write_buffer_size
+
+                        populate_variable rocksdb_pool_workers
+
+                        populate_variable rocksdb_purge_frequency
+
+                        toml_block add store.dynamic ${store_name,,} type quotes "rocksdb"
+                        ## TODO Create the path
+                        toml_block add store.dynamic ${store_name,,} path quotes "${store_rocksdb_path}"
+                        toml_block add store.dynamic ${store_name,,} disable "${store_rocksdb_disable,,}"
+
+                        toml_block add store.dynamic.settings ${store_name,,} min-blob-size "${store_rocksdb_settings_min_blob_size}"
+                        toml_block add store.dynamic.settings ${store_name,,} write-buffer-size "${store_rocksdb_settings_write_buffer_size}"
+
+                        toml_block add store.dynamic.pool ${store_name,,} workers "${store_rocksdb_pool_workers}"
+
+                        toml_block add store.dynamic.purge ${store_name,,} frequency "${store_rocksdb_purge_frequency}"
+
+                        block_store_rocksdb="block_store_${store_name,,}"
+                        block_store_rocksdb_settings="block_store_${store_name,,}_settings"
+                        block_store_rocksdb_pool="block_store_${store_name,,}_pool"
+                        block_store_rocksdb_purge="block_store_${store_name,,}_purge"
+
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
+##########################################################
+# Store ${store_name} ${store_type^^} configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${!block_store_rocksdb}")
+
+$(toml_block show "${!block_store_rocksdb_settings}")
+
+$(toml_block show "${!block_store_rocksdb_pool}")
+
+$(toml_block show "${!block_store_rocksdb_purge}")
+
+EOF
                     ;;
                     s3 )
+                        store_type=s3
+                        populate_variable s3_bucket
+                        populate_variable s3_region
+                        populate_variable s3_access_key
+                        populate_variable s3_seccret_key
+                        populate_variable s3_endpoint
+                        populate_variable s3_security_token
+                        populate_variable s3_profile
+                        populate_variable s3_timeout
+                        populate_variable s3_disable
+                        populate_variable s3_purge_frequency
+
+                        toml_block add store.dynamic ${store_name,,} type quotes "s3"
+                        toml_block add store.dynamic ${store_name,,} bucket quotes "${store_s3_bucket}"
+                        toml_block add store.dynamic ${store_name,,} region quotes "${store_s3_region}"
+                        toml_block add store.dynamic ${store_name,,} access-key quotes "${store_s3_access_key}"
+                        toml_block add store.dynamic ${store_name,,} secret-key quotes "${store_s3_secret_key}"
+                        toml_block add store.dynamic ${store_name,,} endpoint quotes "${store_s3_endpoint}"
+                        toml_block add store.dynamic ${store_name,,} security-token quotes "${store_s3_security_token}"
+                        toml_block add store.dynamic ${store_name,,} profile quotes "${store_s3_profile}"
+                        toml_block add store.dynamic ${store_name,,} timeout quotes "${store_s3_timeout}"
+                        toml_block add store.dynamic ${store_name,,} disable "${store_s3_disable,,}"
+                        toml_block add store.dynamic.purge ${store_name,,} frequency quotes "${store_s3_purge_frequency}"
+
+                        block_store_s3="block_store_${store_name,,}"
+                        block_store_s3_purge="block_store_${store_name,,}_purge"
+
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
+##########################################################
+# Store ${store_name} ${store_type^^} configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${!block_store_s3}")
+
+$(toml_block show "${!block_store_s3_purge}")
+
+EOF
+
+##############################################
+## S3/MinIO Blob Store configuration
+##############################################
+#
+#[store."s3"]
+#type = "s3"
+#bucket = "stalwart"
+#region = "eu-central-1"
+#access-key = "minioadmin"
+#secret-key = "minioadmin"
+##endpoint = ""
+##security-token = ""
+##profile = ""
+#timeout = "30s"
+#disable = true
+#
+#[store."s3".purge]
+#frequency = "0 3 *"
                         :
+                    ;;
+                    sqlite*)
+                        store_type=sqlite
+                        populate_variable sqlite_path
+                        populate_variable sqlite_disable
+
+                        populate_variable sqlite_pool_max_connections
+                        populate_variable sqlite_pool_workers
+
+                        populate_variable sqlite_init
+
+                        populate_variable sqlite_query_domains
+                        populate_variable sqlite_query_emails
+                        populate_variable sqlite_query_expand
+                        populate_variable sqlite_query_members
+                        populate_variable sqlite_query_name
+                        populate_variable sqlite_query_recipients
+                        populate_variable sqlite_query_verify
+
+                        populate_variable sqlite_purge_frequency
+
+                        toml_block add store.dynamic ${store_name,,} type quotes "sqlite"
+                        toml_block add store.dynamic ${store_name,,} path quotes "${store_sqlite_path}"
+                        toml_block add store.dynamic ${store_name,,} disable "${store_sqlite_disable}"
+
+                        toml_block add store.dynamic.pool ${store_name,,} max_connections "${store_sqlite_pool_max_connections}"
+                        toml_block add store.dynamic.pool ${store_name,,} workers "${store_sqlite_pool_workers}"
+
+                        toml_block add store.dynamic.init ${store_name,,} execute quotes "${store_sqlite_pool_max_connections}"
+
+                        toml_block add store.dynamic.query ${store_name,,} name quotes "${store_sqlite_query_name}"
+                        toml_block add store.dynamic.query ${store_name,,} recipients quotes "${store_sqlite_query_recipients}"
+                        toml_block add store.dynamic.query ${store_name,,} members quotes "${store_sqlite_query_members}"
+                        toml_block add store.dynamic.query ${store_name,,} emails quotes "${store_sqlite_query_emails}"
+                        toml_block add store.dynamic.query ${store_name,,} verify quotes "${store_sqlite_query_verify}"
+                        toml_block add store.dynamic.query ${store_name,,} expand quotes "${store_sqlite_query_expand}"
+                        toml_block add store.dynamic.query ${store_name,,} domains quotes "${store_sqlite_query_domains}"
+
+                        toml_block add store.dynamic.purge ${store_name,,} frequency quotes "${store_sqlite_purge_frequency}"
+
+                        block_store_sqlite="block_store_${store_name,,}"
+                        block_store_sqlite_pool="block_store_${store_name,,}_pool"
+                        block_store_sqlite_init="block_store_${store_name,,}_init"
+                        block_store_sqlite_query="block_store_${store_name,,}_query"
+                        block_store_sqlite_purge="block_store_${store_name,,}_purge"
+
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
+##########################################################
+# Store ${store_name} ${store_type^^} configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${!block_store_sqlite}")
+
+$(toml_block show "${!block_store_sqlite_pool}")
+
+$(toml_block show "${!block_store_sqlite_init}")
+
+$(toml_block show "${!block_store_sqlite_query}")
+
+$(toml_block show "${!block_store_sqlite_purge}")
+EOF
                     ;;
                     * )
                         print_error "[configure_store] Don't know what to do with store type '${store_type,,}'"
@@ -2699,6 +3148,17 @@ configure_store() {
                 case "${foo}" in
                     imap )
                         populate_variable imap_address
+                        populate_variable imap_pool_max_connections
+
+
+                        toml_block add directory.dynamic ${directory_name,,} type quotes "imap"
+                        toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_imap_address}"
+                        toml_block add directory.dynamic.pool ${directory_name,,} max-connections "${directory_imap_pool_max_connections}"
+                        block_directory_imap="block_directory_${directory_name,,}"
+                        block_directory_imap_pool="block_directory_${directory_name,,}_pool"
+$(toml_block show "${!block_directory_imap}")
+
+$(toml_block show "${!block_directory_imap_pool}")
                         populate_variable imap_cache_entries
                         populate_variable imap_cache_ttl
                         populate_variable imap_lookup_domains
