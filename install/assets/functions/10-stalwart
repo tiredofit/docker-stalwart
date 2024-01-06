@@ -558,7 +558,7 @@ EOF
 
 $(toml_block show "${block_server_tls}")
 
-$(toml block show "${block_acme}")
+$(toml block show "${!block_acme}")
 
 EOF
 
@@ -685,7 +685,7 @@ configure_directory() {
 
                         cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
 ##########################################################
-# Directory ${directory_instance} ${directory_type^^} configuration ${config_file}
+# Directory ${directory_name,,} ${directory_type^^} configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
@@ -726,7 +726,7 @@ EOF
                         block_directory_internal_cache="block_directory_${directory_name,,}_cache"
                         cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
 ##########################################################
-# Directory ${directory_instance} ${directory_type^^} configuration ${config_file}
+# Directory ${directory_name,,} ${directory_type^^} configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
@@ -820,7 +820,7 @@ EOF
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
 ##########################################################
-# Directory ${directory_instance} ${directory_type^^} configuration ${config_file}
+# Directory${directory_name,,} ${directory_type^^} configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
@@ -892,7 +892,7 @@ EOF
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
 ##########################################################
-# Directory ${directory_instance} ${directory_type^^} configuration ${config_file}
+# Directory ${directory_name,,} ${directory_type^^} configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
@@ -996,7 +996,7 @@ EOF
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
 ##########################################################
-# Directory ${directory_instance} ${directory_type^^} configuration ${config_file}
+# Directory ${directory_name,,} ${directory_type^^} configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
@@ -1104,7 +1104,7 @@ EOF
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
 ##########################################################
-# Directory ${directory_instance} ${directory_type^^} configuration ${config_file}
+# Directory ${directory_name,,} ${directory_type^^} configuration ${config_file}
 # Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
 ##########################################################
 
@@ -2937,7 +2937,6 @@ $(toml_block show "${!block_store_mysql_query}")
 
 $(toml_block show "${!block_store_mysql_purge}")
 EOF
-
                     ;;
                     pgsql | postgres* )
                         store_type=postgres
@@ -3322,7 +3321,6 @@ setup_container_mode() {
                         if [[ "$(grep -cq 'create_log_stalwart=TRUE' /tmp/.container/stalwart/.mode-env)" -eq 0 ]] ; then
                             echo "create_log_stalwart=TRUE" >> /tmp/.container/stalwart/.mode-env
                         fi
-
                     ;;
                     "smtp" )
                         print_debug "[setup_container_mode] Enabling Container Mode for: SMTP"
