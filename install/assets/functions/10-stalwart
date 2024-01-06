@@ -2112,6 +2112,7 @@ EOF
             toml_block add session.auth directory array "$(array_tools noquote plus smtp_session_auth_directory)"
             toml_block add session.auth require array "$(array_tools noquote plus SMTP_SESSION_AUTH_REQUIRE)"
             toml_block add session.auth allow-plain-text "${SMTP_SESSION_AUTH_ALLOW_PLAIN_TEXT,,}"
+            toml_block add session.auth must-match-sender "${SMTP_SESSION_AUTH_MUST_MATCH_SENDER,,}"
 
             toml_block add session.auth.errors total "${SMTP_SESSION_AUTH_ERRORS_TOTAL}"
             toml_block add session.auth.errors wait quotes "${SMTP_SESSION_AUTH_ERRORS_WAIT}"
