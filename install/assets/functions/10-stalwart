@@ -703,8 +703,40 @@ EOF
 
                     ;;
                     internal )
-                            ## TODO CONFIGURE INTERNAL DIRECTORY
-                        :
+                        populate_variable internal_store
+                        populate_variable internal_disable
+
+                        populate_variable internal_options_catch_all
+                        populate_variable internal_options_subaddressing
+                        populate_variable internal_cache_entries
+                        populate_variable internal_cache_ttl
+
+                        toml_block add directory.dynamic ${directory_name,,} type quotes "internal"
+                        toml_block add directory.dynamic ${directory_name,,} store quotes "${directory_internal_store}"
+                        toml_block add directory.dynamic ${directory_name,,} disable "${directory_internal_disable,,}"
+
+                        toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_internal_options_catch_all}"
+                        toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_internal_options_subaddressing}"
+
+                        toml_block add directory.dynamic.cache ${directory_name,,} entries "${directory_internal_cache_entries}"
+                        toml_block add directory.dynamic.cache ${directory_name,,} ttl "${directory_internal_cache_ttl}"
+
+                        block_directory_internal="block_directory_${directory_name,,}"
+                        block_directory_internal_options="block_directory_${directory_name,,}_options"
+                        block_directory_internal_cache="block_directory_${directory_name,,}_cache"
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
+##########################################################
+# Directory ${directory_instance} ${directory_type^^} configuration ${config_file}
+# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+##########################################################
+
+$(toml_block show "${!block_directory_internal}")
+
+$(toml_block show "${!block_directory_internal_options}")
+
+$(toml_block show "${!block_directory_internal_cache}")
+
+EOF
                     ;;
                     ldap )
                         populate_variable ldap_address
