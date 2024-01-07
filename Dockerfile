@@ -42,6 +42,7 @@ RUN source /assets/functions/00-container && \
                             " && \
     \
     STALWART_RUN_DEPS=" \
+                            inotify-tools \
                             mariadb-client\
                             postgresql-client \
                             sqlite3 \
