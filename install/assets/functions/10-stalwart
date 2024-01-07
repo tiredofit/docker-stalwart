@@ -325,7 +325,7 @@ configure_common() {
             if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
 
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-
+            ## TODO Implement PROXY support https://stalw.art/docs/server/proxy/
             toml_block add server hostname quotes "${SERVER_NAME}"
 
             toml_block add server.run-as user ${SERVER_USER}
@@ -3260,7 +3260,7 @@ Add the following DNS records to your domain in order to enable DKIM, SPF and DM
 ${_dkim_selector}._domainkey.${_dkim_domain/./_}. IN TXT "v=DKIM1; k=${DKIM_TYPE,,}; p=$(cat "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".cert)"
 ${_dkim_domain/./_}. IN TXT "v=spf1 a:${SERVER_NAME}.${_dkim_domain/./_} mx -all ra=postmaster"
 ${SERVER_NAME}.${_dkim_domain/./_}. IN TXT "v=spf1 a -all ra=postmaster"
-_dmarc.${_dkim_domain/./_}. IN TXT "v=DMARC1; p=none; rua=mailto:postmaster@${_dkim_domain/./_}; ruf=mailto:postmaster@${_dkim_domain/./_}"
+_dmarc.${_dkim_domain/./_}. IN TXT "v=DMARC1; p=none; rua=mailto:postmaster@${_dkim_domain/_/.}; ruf=mailto:postmaster@${_dkim_domain/_/.}"
 EOF
         ;;
         parse_environment )
