@@ -325,22 +325,25 @@ configure_common() {
             if [ ! -d "${config_dir}" ]; then mkdir -p "${config_dir}" ; fi
 
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-            ## TODO Implement PROXY support https://stalw.art/docs/server/proxy/
+
             toml_block add server hostname quotes "${SERVER_NAME}"
+            ## TODO Implement PROXY support https://stalw.art/docs/server/proxy/
+            ## TODO Implement max-connections = 8192
 
-            toml_block add server.run-as user ${SERVER_USER}
-            toml_block add server.run-as group ${SERVER_GROUP}
+            toml_block add server.run-as user quotes "${SERVER_USER}"
+            toml_block add server.run-as group quotes "${SERVER_GROUP}"
 
-            toml_block add server.socket nodelay ${SERVER_SOCKET_NODELAY,,}
-            toml_block add server.socket reuse-addr ${SERVER_SOCKET_REUSE_ADDR,,}
-            toml_block add server.socket backlog ${SERVER_SOCKET_BACKLOG}
-            toml_block add global shared-map quotes "${GLOBAL_SHARED_MAP}"
+            toml_block add server.socket nodelay "${SERVER_SOCKET_NODELAY,,}"
+            toml_block add server.socket reuse-addr "${SERVER_SOCKET_REUSE_ADDR,,}"
+            toml_block add server.socket backlog "${SERVER_SOCKET_BACKLOG}"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Server configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            toml_block add global shared-map "${GLOBAL_SHARED_MAP}"
+
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Stalwart Mail Server configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_server}")
 
@@ -409,11 +412,11 @@ EOF
             toml_block add sieve.trusted.scripts ehlo triple "${SIEVE_TRUSTED_SCRIPTS_EHLO}"
             toml_block add sieve.trusted.scripts mail triple "${SIEVE_TRUSTED_SCRIPTS_MAIL}"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Sieve configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Stalwart Mail Sieve configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 #############################################
 # Sieve untrusted runtime configuration
@@ -446,7 +449,7 @@ EOF
     common_configure_tls() {
         if var_true "${ENABLE_TLS}" ; then
             if [ "${SETUP_TYPE,,}" = "auto" ]; then
-                tls_cert_instances=$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE([0-9]+)_.*_CERT_FILE=" | wc -l)
+                tls_cert_instances=$(set -o posix ; set | grep -P "^TLS_CERTIFICATE([0-9]+)_.*_CERT_FILE=" | sort -u | wc -l)
 
                 if [ "${tls_cert_instances}" -eq 0 ]; then
                     TLS_CERTIFICATE01_DEFAULT_CERT_FILE="${TLS_CERTIFICATE_DEFAULT_CERT_FILE}"
@@ -456,7 +459,7 @@ EOF
 
                 for (( tls_cert_instance = 01; tls_cert_instance <= tls_cert_instances; tls_cert_instance++ )); do
                     tls_cert_instance=$(printf "%02d" $tls_cert_instance)
-                    tls_cert_name=$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_.*_CERT_FILE=" | cut -d _ -f 3)
+                    tls_cert_name=$(set -o posix ; set | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_.*_CERT_FILE=" |  sort -u | cut -d _ -f 3)
 
                     config_file="tls_cert_${tls_cert_name,,}.toml"
                     config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
@@ -478,11 +481,11 @@ EOF
                     toml_block add certificate.dynamic "${tls_cert_name,,}" cert quotes "file://${tls_certificate_cert_file}"
                     toml_block add certificate.dynamic "${tls_cert_name,,}" private-key quotes "file://${tls_certificate_key_file}"
                     block_certificate="block_certificate_${tls_cert_name,,}"
-                    cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-################################################################################
-# Common TLS Certificate ${tls_cert_instance} ${tls_cert_name} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-################################################################################
+                    cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+################################################################################################
+# TLS Certificate name '${tls_cert_name}' configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+################################################################################################
 
 $(toml_block show "${!block_certificate}")
 
@@ -490,7 +493,7 @@ EOF
                 done
 
                 config_file="tls.toml"
-                config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+                config_files=$(echo "${config_files}" ; echo "${config_dir}/${config_file},")
 
                 toml_block add server.tls enable "${TLS_ENABLE,,}"
                 toml_block add server.tls implicit "${TLS_IMPLICIT,,}"
@@ -506,38 +509,38 @@ EOF
                     fi
                 fi
 
-                if [ "${acme_instances}" -ge 1 ]; then
-                    for acme_instance in $(set -o posix; set ; sort | uniq | grep -p "^TLS_ACME_([A-Z0-9]+)_DIRECTORY=") ; do
-                        acme_name="$(echo "${acme_instance}" | cut -d _ -f3)"
-                        acme_directory="$(echo "${acme_instance}" | cut -d = -f2)"
-
-                        populate_variable() {
-                            if [ -v "TLS_ACME_${acme_name^^}_${1^^}" ]; then
-                                export acme_${1,,}="$(set -o posix ; set | grep "^TLS_ACME_${acme_name^^}_${1^^}=" | cut -d = -f2-)"
-                            else
-                                export acme_${1,,}="$(set -o posix ; set | grep "^TLS_ACME_DEFAULT_${1^^}=" | cut -d = -f2-)"
-                            fi
-                        }
-
-                        ## TODO - 0.5.3 and up
-                        toml_block add server.tls acme quotes "${TLS_ACME}"
-
-                        populate_variable acme_directory
-                        populate_variable acme_contact
-                        populate_variable acme_cache
-                        populate_variable acme_port
-                        populate_variable acme_renew_before
-
-                        toml_block acme.dynamic "${acme_name,,}" directory quotes "${acme_directory}"
-                        toml_block acme.dynamic "${acme_name,,}" contact quotes "${acme_contact}"
-                        ## TODO Make sure path exists
-                        toml_block acme.dynamic "${acme_name,,}" cache quotes "${acme_cache}"
-                        toml_block acme.dynamic "${acme_name,,}" port "${acme_port}"
-                        toml_block acme.dynamic "${acme_name,,}" renew-before quotes "${acme_renew_before}"
-
-                        block_acme="block_acme_${acme_name,,}"
-                    done
-                fi
+                #if [ "${acme_instances}" -ge 1 ]; then
+                #    for acme_instance in $(set -o posix; set | sort -u | grep -P "^TLS_ACME_([A-Z0-9]+)_DIRECTORY=") ; do
+                #        acme_name="$(echo "${acme_instance}" | cut -d _ -f3)"
+                #        acme_directory="$(echo "${acme_instance}" | cut -d = -f2)"
+#
+                #        populate_variable() {
+                #            if [ -v "TLS_ACME_${acme_name^^}_${1^^}" ]; then
+                #                export acme_${1,,}="$(set -o posix ; set | grep "^TLS_ACME_${acme_name^^}_${1^^}=" | cut -d = -f2-)"
+                #            else
+                #                export acme_${1,,}="$(set -o posix ; set | grep "^TLS_ACME_DEFAULT_${1^^}=" | cut -d = -f2-)"
+                #            fi
+                #        }
+#
+                #        ## TODO - 0.5.3 and up
+                #        toml_block add server.tls acme quotes "${TLS_ACME}"
+#
+                #        populate_variable acme_directory
+                #        populate_variable acme_contact
+                #        populate_variable acme_cache
+                #        populate_variable acme_port
+                #        populate_variable acme_renew_before
+#
+                #        toml_block acme.dynamic "${acme_name,,}" directory quotes "${acme_directory}"
+                #        toml_block acme.dynamic "${acme_name,,}" contact quotes "${acme_contact}"
+                #        ## TODO Make sure path exists
+                #        toml_block acme.dynamic "${acme_name,,}" cache quotes "${acme_cache}"
+                #        toml_block acme.dynamic "${acme_name,,}" port "${acme_port}"
+                #        toml_block acme.dynamic "${acme_name,,}" renew-before quotes "${acme_renew_before}"
+#
+                #        block_acme="block_acme_${acme_name,,}"
+                #    done
+                #fi
 
                 if [ "${tls_cert_instances}" -eq 1 ]; then
                     TLS_CERTIFICATE=${TLS_CERTIFICATE:-"$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE([0-9]+)_.*_CERT_FILE=" | cut -d _ -f 3 | tr '[A-Z]' '[a-z]')"}
@@ -550,11 +553,11 @@ EOF
                 toml_block add server.tls certificate quotes "${TLS_CERTIFICATE}"
                 toml_block add server.tls ignore-client-order "${TLS_IGNORE_CLIENT_ORDER,,}"
 
-                cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# TLS configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+                cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# TLS configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_server_tls}")
 
@@ -587,11 +590,11 @@ EOF
                     toml_block add global.tracing ansi false
                 ;;
             esac
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Logging and Tracing configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Stalwart Mail Logging and Tracing configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_global_tracing}")
 
@@ -601,10 +604,11 @@ EOF
         fi
     }
 
-    if var_true "${ENABLE_SIEVE}" ; then common_configure_sieve; fi
     common_configure_server
     if var_true "${ENABLE_TLS}" ; then common_configure_tls; fi
     common_configure_tracing
+    if var_true "${ENABLE_SIEVE}" ; then common_configure_sieve; fi
+
 }
 
 configure_directory() {
@@ -617,7 +621,7 @@ configure_directory() {
 
     directory_configure_instances() {
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            directory_instances=$(set -o posix ; set | sort | grep -P "^DIRECTORY_([A-Z0-9]+)_TYPE=" | wc -l)
+            directory_instances=$(set -o posix ; set | grep -P "^DIRECTORY_([A-Z0-9]+)_TYPE=" |  sort -u | wc -l)
             if [ "${directory_instances}" -eq 1 ]; then
                 DEFAULT_DIRECTORY=${DEFAULT_DIRECTORY:-"$(set -o posix ; set | sort | grep -P "^DIRECTORY_([A-Z0-9]+)_TYPE=" | cut -d _ -f2 | tr '[A-Z]' '[a-z]')"}
             elif [ "${directory_instances}" -lt 1 ]; then
@@ -629,7 +633,7 @@ configure_directory() {
                     exit 9
                 fi
             fi
-            for directory_instance in $(set -o posix; set ; sort | uniq | grep -p "^DIRECTORY_([A-Z0-9]+)_TYPE=") ; do
+            for directory_instance in $(set -o posix; set | sort -u | grep -P "^DIRECTORY_([A-Z0-9]+)_TYPE=") ; do
                 directory_name="$(echo "${directory_instance}" | cut -d _ -f2)"
                 directory_type="$(echo "${directory_instance}" | cut -d = -f2)"
 
@@ -683,11 +687,11 @@ configure_directory() {
                         block_directory_imap_cache="block_directory_${directory_name,,}_cache"
                         block_directory_imap_lookup="block_directory_${directory_name,,}_lookup"
 
-                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Directory ${directory_name,,} ${directory_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Directory '${directory_name,,}' Type '${directory_type}' Configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_directory_imap}")
 
@@ -724,11 +728,11 @@ EOF
                         block_directory_internal="block_directory_${directory_name,,}"
                         block_directory_internal_options="block_directory_${directory_name,,}_options"
                         block_directory_internal_cache="block_directory_${directory_name,,}_cache"
-                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Directory ${directory_name,,} ${directory_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Directory '${directory_name,,}' Type '${directory_type}' Configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_directory_internal}")
 
@@ -819,10 +823,10 @@ EOF
                         block_directory_ldap_attributes="block_directory_${directory_name,,}_attributes"
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
-##########################################################
-# Directory${directory_name,,} ${directory_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+##########################################################################
+# Directory${directory_name,,} ${directory_type^^} configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_directory_ldap}")
 
@@ -891,10 +895,10 @@ EOF
                         block_directory_lmtp_lookup="block_directory_${directory_name,,}_lookup"
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
-##########################################################
-# Directory ${directory_name,,} ${directory_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+##########################################################################
+# Directory '${directory_name,,}' Type '${directory_type}' Configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_directory_lmtp}")
 
@@ -931,7 +935,7 @@ EOF
                         toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_memory_options_catch_all,,}"
                         toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_memory_options_subaddressing,,}"
 
-                        memory_user_instances=$(set -o posix ; set | sort | grep -P "^DIRECTORY_${directory_name,,}_MEMORY_USER([0-9]+)_.*=" | wc -l)
+                        memory_user_instances=$(set -o posix ; set | grep -P "^DIRECTORY_${directory_name,,}_MEMORY_USER([0-9]+)_.*=" | sort -u | wc -l)
                         for (( memory_user_instance = 01; memory_user_instance <= memory_user_instances; memory_user_instance++ )); do
                             memory_user_instance=$(printf "%02d" $memory_user_instance)
 
@@ -964,7 +968,7 @@ EOF
                             #toml_block add directory.dynamic.users ${directory_name,,} member-of quotes "${directory_memory_user_memberof}"
                         done
 
-                    memory_user_groups=$(set -o posix ; set | sort | grep -P "^DIRECTORY_${directory_name,,}_MEMORY_GROUP([0-9]+)_.*=" | wc -l)
+                    memory_user_groups=$(set -o posix ; set | grep -P "^DIRECTORY_${directory_name,,}_MEMORY_GROUP([0-9]+)_.*=" | sort -u | wc -l)
                         for (( memory_group_instance = 01; memory_group_instance <= memory_user_instances; memory_group_instance++ )); do
                             memory_group_instance=$(printf "%02d" $memory_group_instance)
 
@@ -995,10 +999,10 @@ EOF
                         block_directory_memory_lookup="block_directory_${directory_name,,}_lookup"
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
-##########################################################
-# Directory ${directory_name,,} ${directory_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+##########################################################################
+# Directory '${directory_name,,}' Type '${directory_type}' Configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_directory_memory}")
 
@@ -1103,10 +1107,10 @@ EOF
                         block_directory_sql_columns="block_directory_${directory_name,,}_columns"
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
-##########################################################
-# Directory ${directory_name,,} ${directory_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+##########################################################################
+# Directory '${directory_name,,}' Type '${directory_type}' Configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_directory_sql}")
 
@@ -1161,11 +1165,11 @@ configure_imap() {
                 toml_block add server.listener.dynamic sieve protocol quotes "managesieve"
             fi
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# IMAP listener configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# IMAP listener configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_server_listener_imap}")
 
@@ -1202,11 +1206,11 @@ EOF
             toml_block add imap.rate-limit concurrent "${IMAP_RATELIMIT_CONCURRENT}"
 
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# IMAP settingsconfiguration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# IMAP settingsconfiguration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_imap_request}")
 
@@ -1248,11 +1252,11 @@ configure_jmap() {
             toml_block add jmap.session.cache ttl quotes "${JMAP_SESSION_CACHE_TTL}"
             toml_block add jmap.session.cache size "${JMAP_SESSION_CACHE_SIZE}"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# JMAP authentication & session configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# JMAP authentication & session configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_jmap}")
 
@@ -1275,11 +1279,11 @@ EOF
             toml_block add server.listener.dynamic jmap url quotes "${JMAP_LISTENER_JMAP_URL}"
             toml_block add server.listener.dynamic jmap protocol quotes "jmap"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# JMAP configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# JMAP configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_server_listener_jmap}")
 
@@ -1313,11 +1317,11 @@ EOF
 
             toml_block add oauth.cache size "${JMAP_OAUTH_CACHE_SIZE}"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# JMAP configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# JMAP configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_oauth}")
 
@@ -1372,11 +1376,11 @@ EOF
             toml_block add jmap.http headers array "$(array_tools quote comma JMAP_HTTP_HEADERS)"
 
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# JMAP protocol configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# JMAP protocol configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_jmap_protocol_get}")
 
@@ -1428,11 +1432,11 @@ EOF
 
             toml_block add jmap.event-source throttle quotes "${JMAP_EVENT_SOURCE_THROTTLE}"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# JMAP push and event source configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# JMAP push and event source configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_jmap_push}")
 
@@ -1464,11 +1468,11 @@ EOF
 
             toml_block add jmap.rate-limit.cache "${JMAP_RATELIMIT_}"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# JMAP server rate limiter configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# JMAP server rate limiter configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_jmap_rate_limit}")
 
@@ -1524,11 +1528,11 @@ EOF
             toml_block add jmap.purge.sessions frequency quotes "${JMAP_PURGE_SESSIONS_FREQUENCY}"
 
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# JMAP server store configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# JMAP server store configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_store_db}")
 
@@ -1565,11 +1569,11 @@ EOF
             toml_block add jmap.web-sockets timeout quotes "${JMAP_WEBSOCKETS_TIMEOUT}"
             toml_block add jmap.web-sockets heartbeat quotes "${JMAP_WEBSOCKETS_HEARTBEAT}"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# JMAP websockets configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# JMAP websockets configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_jmap_web_sockets}")
 
@@ -1606,15 +1610,15 @@ configure_server() {
 
     if [ "${SETUP_TYPE,,}" = "auto" ]; then
         ## TODO Check to see if newer files override older files configuration
-        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
+        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##################################################
-# Stalwart configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
+# Stalwart Mail configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##################################################
 
 [include]
 files = [
-$(for config_file in $(echo ${config_files} | tr "," "\",\n") ; do echo "          \"${config_file}," ; done)
+$(for config_file in $(echo ${config_files} | tr "," "\",\n") ; do echo "          \"${config_file/\/\//\/}," ; done)
         ]
 
 EOF
@@ -1651,12 +1655,12 @@ configure_smtp() {
 
             toml_block add auth.dmarc verify array "$(array_tools noquote plus SMTP_AUTH_DMARC_VERIFY)"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# SMTP configuration ${config_file}
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# SMTP configuration '${config_file}'
 # DMARC, DKIM, SPF, ARC & IpRev
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_auth_iprev}")
 
@@ -1691,11 +1695,11 @@ EOF
                 dkim generate "${!dkim_selector}" "${!dkim_domain}" "${!dkim_type}" ${!dkim_keysize}
             done
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# SMTP configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# SMTP configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 EOF
         else
@@ -1746,11 +1750,11 @@ EOF
                 toml_block add management directory quotes "${smtp_management_directory}"
             fi
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# SMTP listener configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# SMTP listener configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_server_listener_smtp}")
 
@@ -1796,11 +1800,11 @@ EOF
                 toml_block add session.data.pipe.dynamic spam-assassin timeout quotes "${SMTP_SESSION_PIPE_SPAM_ASSASSIN_TIMEOUT}"
             fi
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# SMTP inbound milter configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# SMTP inbound milter configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_data_milter_rspamd}")
 
@@ -1876,11 +1880,11 @@ EOF
             toml_block add queue.throttle rate quotes "${SMTP_QUEUE_QUOTA_RATE}"
             toml_block add queue.throttle concurrency "${SMTP_QUEUE_QUOTA_CONCURRENCY}"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# SMTP server queue configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# SMTP server queue configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_queue}")
 
@@ -1970,11 +1974,11 @@ EOF
                     block_smtp_remote_tls="block_remote_${smtp_remote_name,,}_tls"
                     block_smtp_remote_auth="block_remote_${smtp_remote_name,,}_auth"
 
-                    cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
+                    cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 #########################################################
-# SMTP remote servers configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+# SMTP remote servers configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_smtp_remote}")
 
@@ -2048,11 +2052,11 @@ EOF
             toml_block add report.tls.aggregate max-size "${SMTP_REPORT_TLS_AGGREGATE_MAX_SIZE}"
             toml_block add report.tls.aggregate sign array "$(array_tools quote comma SMTP_REPORT_TLS_AGGREGATE_SIGN)"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# SMTP Reporting configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# SMTP Reporting configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_report}")
 
@@ -2097,11 +2101,11 @@ EOF
             toml_block add resolver.cache tlsa "${SMTP_RESOLVER_CACHE_TLSA}"
             toml_block add resolver.cache mta-sts "${SMTP_RESOLVER_CACHE_MTA_STS}"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# SMTP Resolver configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# SMTP Resolver configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_resolver}")
 
@@ -2185,11 +2189,11 @@ EOF
             #toml_block add session.throttle quotes "${SMTP_SESSION_THROTTLE_}"
 
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# SMTP configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# SMTP configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 #############################################
 # SMTP inbound session configuration
@@ -2291,11 +2295,11 @@ EOF
 
             block_smtp_signature="block_signature_${smtp_signature_name,,}"
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# SMTP DKIM & ARC signatures configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# SMTP DKIM & ARC signatures configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_smtp_signature}")
 
@@ -2418,11 +2422,11 @@ EOSQLITE
                 toml_block add sieve.trusted.scripts greylist array "$(array_tools quote comma SIEVE_TRUSTED_SCRIPTS_GREYLIST)"
             fi
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# SMTP configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# SMTP configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${block_directory_spamdb}")
 
@@ -2728,7 +2732,8 @@ configure_store() {
                     exit 9
                 fi
             fi
-            for store_instance in $(set -o posix; set ; sort | uniq | grep -p "^STORE_([A-Z0-9]+)_TYPE=") ; do
+
+            for store_instance in $(set -o posix; set | sort -u | grep -P "^STORE_([A-Z0-9]+)_TYPE=") ; do
                 store_name="$(echo "${store_instance}" | cut -d _ -f2)"
                 store_type="$(echo "${store_instance}" | cut -d = -f2)"
 
@@ -2736,7 +2741,7 @@ configure_store() {
                     if [ -v "STORE_${store_name^^}_${1^^}" ]; then
                         export store_${1,,}="$(set -o posix ; set | grep "^STORE_${store_name^^}_${1^^}=" | cut -d = -f2-)"
                     else
-                        export store_${1,,}="$(set -o posix ; set | grep "^STORE_DEFAULT_${store_type^^}_${1^^}=" | cut -d = -f2-)"
+                        export store_${1,,}="$(set -o posix ; set | grep "^STORE_DEFAULT_${1^^}=" | cut -d = -f2-)"
                     fi
                 }
 
@@ -2771,11 +2776,11 @@ configure_store() {
                         block_store_elasticsearch_tls="block_store_${store_name,,}_tls"
                         block_store_elasticsearch_index="block_store_${store_name,,}_index"
 
-                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Store ${store_name} ${store_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Store '${store_name}' Type: '${store_type}' configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_store_elasticsearch}")
 
@@ -2786,11 +2791,11 @@ $(toml_block show "${!block_store_elasticsearch_index}")
 EOF
                     ;;
                     filesystem* )
-                        store_type=fs
+                        store_type=Filesystem
 
                         populate_variable filesystem_path
-                        if [ ! -d "${filesystem_path}" ]; then mkdir -p "${filesystem_path}" ; fi
-                        if [ "$(stat -c %U "${filesystem_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${filesystem_path}" ; fi
+                        if [ ! -d "${store_filesystem_path}" ]; then mkdir -p "${store_filesystem_path}" ; fi
+                        if [ "$(stat -c %U "${store_filesystem_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${store_filesystem_path}" ; fi
 
                         populate_variable filesystem_depth
                         populate_variable filesystem_disable
@@ -2806,25 +2811,24 @@ EOF
                         block_store_filesystem="block_store_${store_name,,}"
                         block_store_filesystem_timeout="block_store_${store_name,,}_timeout"
 
-                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Store ${store_name} ${store_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Store '${store_name}' Type: '${store_type}' configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_store_filesystem}")
 
-$(toml_block show "${!block_store_filesystem_purge}")
-
+$(toml_block show "${!block_store_filesystem_timeout}")
 EOF
                     ;;
                     foundation* )
-                        store_type=foundationdb
+                        store_type=FoundationDB
 
                         populate_variable foundationdb_path
                         ## Is this already a full path+name - Should we dirname
-                        if [ ! -d "${foundationdb_path}" ]; then mkdir -p "${foundationdb_path}" ; fi
-                        if [ "$(stat -c %U "${foundationdb_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${foundationdb_path}" ; fi
+                        if [ ! -d "${store_foundationdb_path}" ]; then mkdir -p "${store_foundationdb_path}" ; fi
+                        if [ "$(stat -c %U "${store_foundationdb_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${store_foundationdb_path}" ; fi
 
                         populate_variable foundationdb_disable
                         populate_variable foundationdb_transaction_timeout
@@ -2850,22 +2854,21 @@ EOF
                         block_store_foundationdb_transaction="block_store_${store_name,,}_transaction"
                         block_store_foundationdb_purge="block_store_${store_name,,}_purge"
 
-                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Store ${store_name} ${store_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Store '${store_name}' Type: '${store_type}' configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_store_foundationdb}")
 
 $(toml_block show "${!block_store_foundationdb_transaction}")
 
 $(toml_block show "${!block_store_foundationdb_purge}")
-
 EOF
                     ;;
                     maria* | mysql )
-                        store_type=mysql
+                        store_type=MySQL
 
                         populate_variable mysql_host
                         populate_variable mysql_port
@@ -2919,11 +2922,11 @@ EOF
                         block_store_mysql_query="block_store_${store_name,,}_query"
                         block_store_mysql_purge="block_store_${store_name,,}_purge"
 
-                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Store ${store_name} ${store_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Store: '${store_name}' Type: '${store_type^}' configuration: '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_store_mysql}")
 
@@ -2939,7 +2942,7 @@ $(toml_block show "${!block_store_mysql_purge}")
 EOF
                     ;;
                     pgsql | postgres* )
-                        store_type=postgres
+                        store_type=Postgres
 
                         populate_variable pgsql_host
                         populate_variable pgsql_port
@@ -2997,11 +3000,11 @@ EOF
                         block_store_pgsql_init="block_store_${store_name,,}_init"
                         block_store_pgsql_query="block_store_${store_name,,}_query"
                         block_store_pgsql_purge="block_store_${store_name,,}_purge"
-                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Store ${store_name} ${store_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Store '${store_name}' Type: '${store_type}' configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_store_pgsql}")
 
@@ -3019,7 +3022,7 @@ $(toml_block show "${!block_store_pgsql_purge}")
 EOF
                     ;;
                     redis )
-                        store_type=redis
+                        store_type=Redis
                         populate_variable redis_url
                         populate_variable redis_user
                         populate_variable redis_pass
@@ -3045,22 +3048,22 @@ EOF
 
                         block_store_redis="block_store_${store_name,,}"
 
-                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Store ${store_name} ${store_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Store '${store_name}' Type: '${store_type}' configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_store_redis}")
 
 EOF
                     ;;
                     rocks* )
-                        store_type=rocksdb
+                        store_type=RocksDB
                         populate_variable rocksdb_path
                         ## Is this a full path and we need to dirname?
-                        if [ ! -d "${rocksdb_path}" ]; then mkdir -p "${rocksdb_path}" ; fi
-                        if [ "$(stat -c %U "${rocksdb_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${rocksdb_path}" ; fi
+                        if [ ! -d "${store_rocksdb_path}" ]; then mkdir -p "${store_rocksdb_path}" ; fi
+                        if [ "$(stat -c %U "${store_rocksdb_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${store_rocksdb_path}" ; fi
 
                         populate_variable rocksdb_disable
 
@@ -3087,11 +3090,11 @@ EOF
                         block_store_rocksdb_pool="block_store_${store_name,,}_pool"
                         block_store_rocksdb_purge="block_store_${store_name,,}_purge"
 
-                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Store ${store_name} ${store_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Store '${store_name}' Type: '${store_type}' configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_store_rocksdb}")
 
@@ -3104,7 +3107,7 @@ $(toml_block show "${!block_store_rocksdb_purge}")
 EOF
                     ;;
                     s3 )
-                        store_type=s3
+                        store_type=S3
                         populate_variable s3_bucket
                         populate_variable s3_region
                         populate_variable s3_access_key
@@ -3131,11 +3134,11 @@ EOF
                         block_store_s3="block_store_${store_name,,}"
                         block_store_s3_purge="block_store_${store_name,,}_purge"
 
-                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Store ${store_name} ${store_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Store '${store_name}' Type: '${store_type}' configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_store_s3}")
 
@@ -3144,10 +3147,10 @@ $(toml_block show "${!block_store_s3_purge}")
 EOF
                     ;;
                     sqlite*)
-                        store_type=sqlite
+                        store_type=SQLite
                         populate_variable sqlite_path
-                        if [ ! -d "${sqlite_path}" ]; then mkdir -p "${sqlite_path}" ; fi
-                        if [ "$(stat -c %U "${sqlite_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${sqlite_path}" ; fi
+                        if [ ! -d "${store_sqlite_path}" ]; then mkdir -p "${store_sqlite_path}" ; fi
+                        if [ "$(stat -c %U "${store_sqlite_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${store_sqlite_path}" ; fi
 
                         populate_variable sqlite_disable
 
@@ -3191,11 +3194,11 @@ EOF
                         block_store_sqlite_query="block_store_${store_name,,}_query"
                         block_store_sqlite_purge="block_store_${store_name,,}_purge"
 
-                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee -a "${config_dir}"/"${config_file}"
-##########################################################
-# Store ${store_name} ${store_type^^} configuration ${config_file}
-# Automatically Generated on  $(date +'%Y-%m-%d %H:%M:%S')
-##########################################################
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Store '${store_name}' Type: '${store_type}' configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
 
 $(toml_block show "${!block_store_sqlite}")
 
@@ -3274,6 +3277,12 @@ EOF
             done
         ;;
     esac
+}
+
+null_file() {
+    if [ -s "${1}" ]; then
+        sudo -u "${SERVER_USER}" truncate -s 0 "${1}"
+    fi
 }
 
 setup_container_mode() {
