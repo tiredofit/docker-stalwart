@@ -6,12 +6,12 @@ PROCESS_NAME="stalwart"
 
 bootstrap_filesystem
 setup_container_mode
-configure_common
 configure_store
 configure_directory
 if var_true "${ENABLE_IMAP}" ; then configure_imap; fi
 if var_true "${ENABLE_JMAP}" ; then configure_jmap; fi
 if var_true "${ENABLE_SMTP}" ; then configure_smtp; fi
+configure_common # This comes after the protocols as environment variables get populated
 configure_server
 if var_false "${RELOAD_ON_CERT_CHANGE}" ; then service_stop 11-stalwart-config-reload; fi
 

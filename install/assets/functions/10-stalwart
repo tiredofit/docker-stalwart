@@ -399,6 +399,7 @@ EOF
             toml_block add sieve.trusted return-path quotes "${SIEVE_TRUSTED_RETURN_PATH}"
             toml_block add sieve.trusted hostname quotes "${SIEVE_TRUSTED_HOSTNAME}"
             toml_block add sieve.trusted no-capability-check "${SIEVE_TRUSTED_NO_CAPABILITY_CHECK}"
+            SIEVE_TRUSTED_SIGN=$(echo "${SIEVE_TRUSTED_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
             toml_block add sieve.trusted sign array "$(array_tools quote comma SIEVE_TRUSTED_SIGN)"
 
             toml_block add sieve.trusted.limits redirects "${SIEVE_TRUSTED_LIMITS_REDIRECTS}"
@@ -1645,12 +1646,14 @@ configure_smtp() {
             toml_block add auth.iprev verify array "$(array_tools noquote plus SMTP_AUTH_IPREV_VERIFY)"
 
             toml_block add auth.dkim verify quotes "${SMTP_AUTH_DKIM_VERIFY}"
+            SMTP_AUTH_ARC_SIGN=$(echo "${SMTP_AUTH_ARC_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
             toml_block add auth.dkim sign array "$(array_tools noquote plus SMTP_AUTH_DKIM_SIGN)"
 
             toml_block add auth.spf.verify ehlo array "$(array_tools noquote plus SMTP_AUTH_SPF_VERIFY_EHLO)"
             toml_block add auth.spf.verify mail-from array "$(array_tools noquote plus SMTP_AUTH_SPF_VERIFY_MAIL_FROM)"
 
             toml_block add auth.arc verify quotes "${SMTP_AUTH_ARC_VERIFY}"
+            SMTP_AUTH_ARC_SEAL=$(echo "${SMTP_AUTH_ARC_SEAL/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
             toml_block add auth.arc seal array "$(array_tools quote comma SMTP_AUTH_ARC_SEAL)"
 
             toml_block add auth.dmarc verify array "$(array_tools noquote plus SMTP_AUTH_DMARC_VERIFY)"
@@ -2016,24 +2019,28 @@ EOF
 
             toml_block add report.dsn from-name quotes "${SMTP_REPORT_DSN_FROM_NAME}"
             toml_block add report.dsn from-address quotes "${SMTP_REPORT_DSN_FROM_ADDRESS}"
+            SMTP_REPORT_DSN_SIGN=$(echo "${SMTP_REPORT_DSN_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
             toml_block add report.dsn sign array "$(array_tools quote comma SMTP_REPORT_DSN_SIGN)"
 
             toml_block add report.dkim from-name quotes "${SMTP_REPORT_DKIM_FROM_NAME}"
             toml_block add report.dkim from-address quotes "${SMTP_REPORT_DKIM_FROM_ADDRESS}"
             toml_block add report.dkim subject quotes "${SMTP_REPORT_DKIM_SUBJECT}"
             toml_block add report.dkim send quotes "${SMTP_REPORT_DKIM_SEND}"
+            SMTP_REPORT_DKIM_SIGN=$(echo "${SMTP_REPORT_DKIM_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
             toml_block add report.dkim sign array "$(array_tools quote comma SMTP_REPORT_DKIM_SIGN)"
 
             toml_block add report.spf from-name quotes "${SMTP_REPORT_SPF_FROM_NAME}"
             toml_block add report.spf from-address quotes "${SMTP_REPORT_SPF_FROM_ADDRESS}"
             toml_block add report.spf subject quotes "${SMTP_REPORT_SPF_SUBJECT}"
             toml_block add report.spf send quotes "${SMTP_REPORT_SPF_SEND}"
+            SMTP_REPORT_SPF_SIGN=$(echo "${SMTP_REPORT_SPF_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
             toml_block add report.spf sign array "$(array_tools quote comma SMTP_REPORT_SPF_SIGN)"
 
             toml_block add report.dmarc from-name quotes "${SMTP_REPORT_DMARC_FROM_NAME}"
             toml_block add report.dmarc from-address quotes "${SMTP_REPORT_DMARC_FROM_ADDRESS}"
             toml_block add report.dmarc subject quotes "${SMTP_REPORT_DMARC_SUBJECT}"
             toml_block add report.dmarc send quotes "${SMTP_REPORT_DMARC_SEND}"
+            SMTP_REPORT_DMARC_SIGN=$(echo "${SMTP_REPORT_DMARC_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
             toml_block add report.dmarc sign array "$(array_tools quote comma SMTP_REPORT_DMARC_SIGN)"
 
             toml_block add report.dmarc.aggregate from-name quotes "${SMTP_REPORT_DMARC_AGGREGATE_FROM_NAME}"
@@ -2042,6 +2049,7 @@ EOF
             toml_block add report.dmarc.aggregate contact-info quotes "${SMTP_REPORT_DMARC_AGGREGATE_CONTACT_INFO}"
             toml_block add report.dmarc.aggregate send quotes "${SMTP_REPORT_DMARC_AGGREGATE_SEND}"
             toml_block add report.dmarc.aggregate max-size "${SMTP_REPORT_DMARC_AGGREGATE_MAX_SIZE}"
+            SMTP_REPORT_DMARC_AGGREGATE_SIGN=$(echo "${SMTP_REPORT_DMARC_AGGREGATE_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
             toml_block add report.dmarc.aggregate sign array "$(array_tools quote comma SMTP_REPORT_DMARC_AGGREGATE_SIGN)"
 
             toml_block add report.tls.aggregate from-name quotes "${SMTP_REPORT_TLS_AGGREGATE_FROM_NAME}"
@@ -2050,6 +2058,7 @@ EOF
             toml_block add report.tls.aggregate contact-info quotes "${SMTP_REPORT_TLS_AGGREGATE_CONTACT_INFO}"
             toml_block add report.tls.aggregate send quotes "${SMTP_REPORT_TLS_AGGREGATE_SEND}"
             toml_block add report.tls.aggregate max-size "${SMTP_REPORT_TLS_AGGREGATE_MAX_SIZE}"
+            SMTP_REPORT_TLS_AGGREGATE_SIGN=$(echo "${SMTP_REPORT_TLS_AGGREGATE_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
             toml_block add report.tls.aggregate sign array "$(array_tools quote comma SMTP_REPORT_TLS_AGGREGATE_SIGN)"
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
@@ -2241,69 +2250,88 @@ EOF
     }
 
     smtp_configure_signature() {
-        config_file="signature.toml"
-
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+            local smtp_configure_signature_default
 
-            smtp_signature_instances=$(set -o posix ; set | sort -u | grep -P "^SMTP_SIGNATURE_([A-Z0-9]+)_SELECTOR=" | wc -l)
+            smtp_signature_instances=$(set -o posix ; set | sort -u | grep -P "^SMTP_SIGNATURE_([A-Z0-9]+)_SELECTOR=" | grep -Pve "^SMTP_SIGNATURE_DEFAULT_SELECTOR="| wc -l)
             if [ "${smtp_signature_instances}" -eq 1 ]; then
-                smtp_signature_name=$(set -o posix ; set | sort | grep -P "^SMTP_SIGNATURE_.*_SELECTOR=" | cut -d _ -f 3)
+                smtp_signature_name=$(set -o posix ; set | sort | grep -P "^SMTP_SIGNATURE_.*_SELECTOR=" | grep -Pve "^SMTP_SIGNATURE_DEFAULT_SELECTOR=" | cut -d _ -f 3)
+                DEFAULT_SIGNATURE="${SMTP_SIGNATURE_NAME^^}"
+                smtp_configure_signature_default=false
             elif [ "${smtp_signature_instances}" -lt 1 ]; then
-                print_error "No SMTP Signature configuration found! - Setup some SMTP_SIGNATURE_ variables"
-                exit 9
+                DEFAULT_SIGNATURE="DEFAULT"
+                smtp_configure_signature_default=true
             else
-                smtp_signature_name=$(set -o posix ; set | sort -u | grep -P "^SMTP_SIGNATURE_.*_SELECTOR=" | grep -Pve "^SMTP_SIGNATURE_RSA_SELECTOR=" | cut -d _ -f 3)
-            fi
-            ## TODO SMTP_SIGNATURE_NAME
-            populate_variable() {
-                if [ -v "SMTP_SIGNATURE_${smtp_signature_name^^}_${1^^}" ]; then
-                    export smtp_signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_${smtp_signature_name^^}_${1^^}=" | cut -d = -f2-)"
-                else
-                    export smtp_signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_RSA_${1^^}=" | cut -d = -f2-)"
+                if [ -z "${DEFAULT_SIGNATURE}" ]; then
+                    print_error "[smtp_configure_signature] Multiple SMTP signatures detected - Set DEFAULT_SIGNATURE environment variable"
+                    exit 9
                 fi
-            }
-set +x
-            dkim create_default
-            populate_variable public_key
-            populate_variable private_key
-            populate_variable domain
-            populate_variable selector
-            populate_variable headers
-            populate_variable algorithm
-            populate_variable canonicalization
-            populate_variable expire
-            populate_variable third_party
-            populate_variable third_party_algo
-            populate_variable auid
-            populate_variable set_body_length
-            populate_variable report
+                DEFAULT_SIGNATURE="${DEFAULT_SIGNATURE^^}"
+                smtp_configure_signature_default=false
+            fi
 
-            toml_block add signature.dynamic ${smtp_signature_name,,} public-key quotes "${smtp_signature_public_key:-${DEFAULT_DKIM_CERT_FILE}}"  ## TODO This is weird. Need to deal with DKIM dynamics
-            toml_block add signature.dynamic ${smtp_signature_name,,} private-key quotes "${smtp_signature_private_key:-${DEFAULT_DKIM_KEY_FILE}}"
-            toml_block add signature.dynamic ${smtp_signature_name,,} domain quotes "${smtp_signature_domain:-${default_domain}}"
-            toml_block add signature.dynamic ${smtp_signature_name,,} selector quotes "${smtp_signature_selector:-${default_dkim_selector}}"
-            toml_block add signature.dynamic ${smtp_signature_name,,} headers array "$(array_tools quote comma smtp_signature_headers)"
-            toml_block add signature.dynamic ${smtp_signature_name,,} algorithm quotes "${smtp_signature_algorithm}"
-            toml_block add signature.dynamic ${smtp_signature_name,,} canonicalization quotes "${smtp_signature_canonicalization}"
-            toml_block add signature.dynamic ${smtp_signature_name,,} expire quotes "${smtp_signature_expire}"
-            toml_block add signature.dynamic ${smtp_signature_name,,} third-party quotes "${third_party}"
-            toml_block add signature.dynamic ${smtp_signature_name,,} third-party-algo quotes "${smtp_signature_third_party_algo}"
-            toml_block add signature.dynamic ${smtp_signature_name,,} auid quotes "${smtp_signature_auid}"
-            toml_block add signature.dynamic ${smtp_signature_name,,} set-body-length "${smtp_signature_set_body_length,,}"
-            toml_block add signature.dynamic ${smtp_signature_name,,} report "${smtp_signature_report,,}"
+            for signature_instance in $(set -o posix; set | sort -u | grep -P "^SMTP_SIGNATURE_([A-Z0-9]+)_SELECTOR=") ; do
+                signature_name="$(echo "${signature_instance}" | cut -d _ -f3)"
 
-            block_smtp_signature="block_signature_${smtp_signature_name,,}"
+                populate_variable() {
+                    if [ -v "SMTP_SIGNATURE_${signature_name^^}_${1^^}" ]; then
+                        export signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_${signature_name^^}_${1^^}=" | cut -d = -f2-)"
+                    else
+                        export signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_DEFAULT_${1^^}=" | cut -d = -f2-)"
+                    fi
+                }
 
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+                if var_false "${smtp_configure_signature_default}" && [ "${signature_name^^}" = "DEFAULT" ] ; then
+                    print_debug "[smtp_configure_signature] Skipping building default signature configuration"
+                else
+                    config_file="signature_${signature_name,,}.toml"
+                    config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+                    populate_variable public_key
+                    populate_variable private_key
+                    populate_variable domain
+                    populate_variable selector
+                    populate_variable headers
+                    populate_variable key_type
+                    populate_variable key_size
+                    populate_variable algorithm
+                    populate_variable canonicalization
+                    populate_variable expire
+                    populate_variable third_party
+                    populate_variable third_party_algo
+                    populate_variable auid
+                    populate_variable set_body_length
+                    populate_variable report
+
+                    dkim generate "${smtp_signature_selector}" "${smtp_signature_domain}" "${smtp_signature_key_type}" "${smtp_signature_key_size}"
+
+                    toml_block add signature.dynamic ${smtp_signature_name,,} public-key quotes "${smtp_signature_public_key}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} private-key quotes "${smtp_signature_private_key}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} domain quotes "${smtp_signature_domain}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} selector quotes "${smtp_signature_selector}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} headers array "$(array_tools quote comma smtp_signature_headers)"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} algorithm quotes "${smtp_signature_algorithm}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} canonicalization quotes "${smtp_signature_canonicalization}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} expire quotes "${smtp_signature_expire}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} third-party quotes "${third_party}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} third-party-algo quotes "${smtp_signature_third_party_algo}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} auid quotes "${smtp_signature_auid}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} set-body-length "${smtp_signature_set_body_length,,}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} report "${smtp_signature_report,,}"
+
+                    block_smtp_signature="block_signature_${smtp_signature_name,,}"
+
+                    cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# Stalwart Mail SMTP DKIM & ARC signatures configuration '${config_file}'
+# Stalwart Mail DKIM & ARC signature '${signature_name}' configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
 $(toml_block show "${!block_smtp_signature}")
 
 EOF
+                fi
+            done
         else
             :
         fi
@@ -2697,17 +2725,16 @@ EOF
     }
 
     # This should stay in this order
-    if var_true ${SMTP_ENABLE_LISTENER} ; then smtp_configure_listener; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_REMOTE} ; then smtp_configure_remote; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_DKIM} ; then smtp_configure_dkim; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_AUTH} ; then smtp_configure_auth; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_MILTER} ; then smtp_configure_milter; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_REPORT} ; then smtp_configure_report; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_RESOLVER} ; then smtp_configure_resolver; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_SIGNATURE} ; then smtp_configure_signature; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_SPAMFILTER} ; then smtp_configure_spamfilter; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_SESSION} ; then smtp_configure_session; fi ## Define what this is for
-    if var_true ${SMTP_ENABLE_QUEUE} ; then smtp_configure_queue; fi ## Define what this is for
+    if var_true ${SMTP_ENABLE_LISTENER} ; then smtp_configure_listener; fi      ## Enable SMTP daemon services
+    if var_true ${SMTP_ENABLE_REMOTE} ; then smtp_configure_remote; fi          ## Enable remote message processing
+    if var_true ${SMTP_ENABLE_SIGNATURE} ; then smtp_configure_signature; fi    ## Enable DKIM, ARC Signing of messages
+    if var_true ${SMTP_ENABLE_AUTH} ; then smtp_configure_auth; fi              ## Define what this is for
+    if var_true ${SMTP_ENABLE_MILTER} ; then smtp_configure_milter; fi          ## Enable Mail Filtering through external means
+    if var_true ${SMTP_ENABLE_REPORT} ; then smtp_configure_report; fi          ## Enable Reports for offending messages
+    if var_true ${SMTP_ENABLE_RESOLVER} ; then smtp_configure_resolver; fi      ## Define what this is for
+    if var_true ${SMTP_ENABLE_SPAMFILTER} ; then smtp_configure_spamfilter; fi  ## Enable Spam filter
+    if var_true ${SMTP_ENABLE_SESSION} ; then smtp_configure_session; fi        ## Define what this is for
+    if var_true ${SMTP_ENABLE_QUEUE} ; then smtp_configure_queue; fi            ## Define what this is for
 }
 
 configure_store() {
@@ -2826,7 +2853,7 @@ EOF
                         store_type=FoundationDB
 
                         populate_variable foundationdb_path
-                        ## Is this already a full path+name - Should we dirname
+                        ## TODO Is this already a full path+name - Should we dirname
                         if [ ! -d "${store_foundationdb_path}" ]; then mkdir -p "${store_foundationdb_path}" ; fi
                         if [ "$(stat -c %U "${store_foundationdb_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${store_foundationdb_path}" ; fi
 
@@ -3224,9 +3251,6 @@ EOF
 
 dkim() {
     case "${1,,}" in
-        "create_default" )
-            dkim generate "${DEFAULT_DKIM_SELECTOR}" "${DEFAULT_DOMAIN}" "${DEFAULT_DKIM_TYPE}" "${DEFAULT_DKIM_RSA_KEY_SIZE}"
-        ;;
         "generate" )
             ## Usage generate <selector> <domainname> <type> <rsa_keysize>
             if [ -z "${4}" ] ; then return 3; fi
@@ -3235,32 +3259,32 @@ dkim() {
 
             local _dkim_selector=${2}
             local _dkim_domain=${3}
-            local _dkim_type=${4:-"${DEFAULT_DKIM_TYPE}"}
-            local _dkim_key_size=${5:-"${DEFAULT_DKIM_RSA_KEY_SIZE}"}
+            local _dkim_type=${4:-"${SMTP_SIGNATURE_DEFAULT_KEY_TYPE}"}
+            local _dkim_key_size=${5:-"${SMTP_SIGNATURE_DEFAULT_KEY_SIZE}"}
 
-            if [ -f "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".key ] || [ -f "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".cert ] || [ -f "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".readme ] ; then
+            if [ -f "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key ] || [ -f "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert ] || [ -f "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".readme ] ; then
                 return 99
             fi
 
             case "${_dkim_type,,}" in
                 ed25519 )
-                    sudo -u "${SERVER_USER}" openssl genpkey -algorithm ed25519 -out "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".key
-                    sudo -u "${SERVER_USER}" openssl pkey -in "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".key -pubout -outform der | tail -c +13 | openssl base64 -A > "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".cert
+                    sudo -u "${SERVER_USER}" openssl genpkey -algorithm ed25519 -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key
+                    sudo -u "${SERVER_USER}" openssl pkey -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der | tail -c +13 | openssl base64 -A > "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert
                 ;;
-                rsa )
-                    sudo -u "${SERVER_USER}" openssl genrsa -out "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".key ${_dkim_key_size}
-                    sudo -u "${SERVER_USER}" openssl rsa -in "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".key -pubout -outform der | openssl base64 -A > "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".cert
+                rsa* )
+                    sudo -u "${SERVER_USER}" openssl genrsa -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key ${_dkim_key_size}
+                    sudo -u "${SERVER_USER}" openssl rsa -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der | openssl base64 -A > "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert
                 ;;
             esac
 
-            cat <<EOF > "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".readme
+            cat <<EOF > "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".readme
 DKIM Selector: ${_dkim_selector}
 Domain: ${_dkim_domain/./_}
 
 This record was generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S %Z')
 Add the following DNS records to your domain in order to enable DKIM, SPF and DMARC:
 
-${_dkim_selector}._domainkey.${_dkim_domain/./_}. IN TXT "v=DKIM1; k=${DKIM_TYPE,,}; p=$(cat "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".cert)"
+${_dkim_selector}._domainkey.${_dkim_domain/./_}. IN TXT "v=DKIM1; k=${_dkim_type,,}; p=$(cat "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".cert)"
 ${_dkim_domain/./_}. IN TXT "v=spf1 a:${SERVER_NAME}.${_dkim_domain/./_} mx -all ra=postmaster"
 ${SERVER_NAME}.${_dkim_domain/./_}. IN TXT "v=spf1 a -all ra=postmaster"
 _dmarc.${_dkim_domain/./_}. IN TXT "v=DMARC1; p=none; rua=mailto:postmaster@${_dkim_domain/_/.}; ruf=mailto:postmaster@${_dkim_domain/_/.}"
