@@ -1657,7 +1657,7 @@ configure_smtp() {
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# SMTP configuration '${config_file}'
+# Stalwart Mail SMTP configuration '${config_file}'
 # DMARC, DKIM, SPF, ARC & IpRev
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
@@ -1697,7 +1697,7 @@ EOF
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# SMTP configuration '${config_file}'
+# Stalwart Mail SMTP configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
@@ -1752,7 +1752,7 @@ EOF
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# SMTP listener configuration '${config_file}'
+# Stalwart Mail SMTP listener configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
@@ -1802,7 +1802,7 @@ EOF
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# SMTP inbound milter configuration '${config_file}'
+# Stalwart Mail SMTP inbound milter configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
@@ -1882,7 +1882,7 @@ EOF
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# SMTP server queue configuration '${config_file}'
+# Stalwart Mail SMTP server queue configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
@@ -1976,7 +1976,7 @@ EOF
 
                     cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 #########################################################
-# SMTP remote servers configuration '${config_file}'
+# Stalwart Mail SMTP remote servers configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
@@ -2054,7 +2054,7 @@ EOF
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# SMTP Reporting configuration '${config_file}'
+# Stalwart Mail SMTP Reporting configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
@@ -2103,7 +2103,7 @@ EOF
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# SMTP Resolver configuration '${config_file}'
+# Stalwart Mail SMTP Resolver configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
@@ -2191,12 +2191,12 @@ EOF
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# SMTP configuration '${config_file}'
+# Stalwart Mail SMTP configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
 #############################################
-# SMTP inbound session configuration
+# Stalwart Mail SMTP inbound session configuration
 #############################################
 
 $(toml_block show "${block_session}")
@@ -2246,14 +2246,14 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            smtp_signature_instances=$(set -o posix ; set | sort | grep -P "^SMTP_SIGNATURE_.*_SELECTOR=" | wc -l)
+            smtp_signature_instances=$(set -o posix ; set | sort -u | grep -P "^SMTP_SIGNATURE_([A-Z0-9]+)_SELECTOR=" | wc -l)
             if [ "${smtp_signature_instances}" -eq 1 ]; then
                 smtp_signature_name=$(set -o posix ; set | sort | grep -P "^SMTP_SIGNATURE_.*_SELECTOR=" | cut -d _ -f 3)
             elif [ "${smtp_signature_instances}" -lt 1 ]; then
                 print_error "No SMTP Signature configuration found! - Setup some SMTP_SIGNATURE_ variables"
                 exit 9
             else
-                smtp_signature_name=$(set -o posix ; set | sort | grep -P "^SMTP_SIGNATURE_.*_SELECTOR=" | grep -Pve "^SMTP_SIGNATURE_RSA_SELECTOR=" | cut -d _ -f 3)
+                smtp_signature_name=$(set -o posix ; set | sort -u | grep -P "^SMTP_SIGNATURE_.*_SELECTOR=" | grep -Pve "^SMTP_SIGNATURE_RSA_SELECTOR=" | cut -d _ -f 3)
             fi
             ## TODO SMTP_SIGNATURE_NAME
             populate_variable() {
@@ -2263,7 +2263,7 @@ EOF
                     export smtp_signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_RSA_${1^^}=" | cut -d = -f2-)"
                 fi
             }
-
+set +x
             dkim create_default
             populate_variable public_key
             populate_variable private_key
@@ -2297,7 +2297,7 @@ EOF
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# SMTP DKIM & ARC signatures configuration '${config_file}'
+# Stalwart Mail SMTP DKIM & ARC signatures configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
@@ -2424,7 +2424,7 @@ EOSQLITE
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# SMTP configuration '${config_file}'
+# Stalwart Mail SMTP configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
