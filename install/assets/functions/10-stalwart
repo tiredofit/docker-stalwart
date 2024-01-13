@@ -327,17 +327,25 @@ configure_common() {
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             toml_block add server hostname quotes "${SERVER_NAME}"
-            ## TODO Implement PROXY support https://stalw.art/docs/server/proxy/
-            ## TODO Implement max-connections = 8192
+            toml_block add server proxy-trusted-networks array "$(array_tools quote comma SERVER_PROXY_TRUSTED_NETWORKS)"
+            toml_block add server max-connections "${SERVER_MAX_CONNECTIONS}"
 
             toml_block add server.run-as user quotes "${SERVER_USER}"
             toml_block add server.run-as group quotes "${SERVER_GROUP}"
 
             toml_block add server.socket nodelay "${SERVER_SOCKET_NODELAY,,}"
             toml_block add server.socket reuse-addr "${SERVER_SOCKET_REUSE_ADDR,,}"
-            toml_block add server.socket backlog "${SERVER_SOCKET_BACKLOG}"
+            toml_block add server.socket reuse-port "${SERVER_SOCKET_REUSE_PORT,,}"
 
-            toml_block add global shared-map "${GLOBAL_SHARED_MAP}"
+            toml_block add server.socket backlog "${SERVER_SOCKET_BACKLOG}"
+            toml_block add server.socket ttl "${SERVER_SOCKET_TTL}"
+            toml_block add server.socket send-buffer-size "${SERVER_SOCKET_SEND_BUFFER_SIZE}"
+            toml_block add server.socket recv-buffer-size "${SERVER_SOCKET_RECV_BUFFER_SIZE}"
+            toml_block add server.socket linger "${SERVER_SOCKET_LINGER}"
+            toml_block add server.socket tos "${SERVER_SOCKET_TOS}"
+
+            toml_block add global shared-map "${SERVER_GLOBAL_SHARED_MAP}"
+            toml_block add global thread-pool "${SERVER_GLOBAL_THREAD_POOL}"
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
