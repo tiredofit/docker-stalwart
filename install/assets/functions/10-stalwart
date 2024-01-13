@@ -2461,7 +2461,8 @@ EOF
             update_spam_config SCORE_SPAM_THRESHOLD "${SPAMFILTER_THRESHOLD_SPAM}" "${spamfilter_config_file}"
             update_spam_config SCORE_DISCARD_THRESHOLD "${SPAMFILTER_THRESHOLD_DISCARD}" "${spamfilter_config_file}"
             update_spam_config SCORE_REJECT_THRESHOLD "${SPAMFILTER_THRESHOLD_REJECT}" "${spamfilter_config_file}"
-            update_spam_config DOMAIN_DIRECTORY "${DEFAULT_DIRECTORY}" "${spamfilter_config_file}"
+            update_spam_config DOMAIN_DIRECTORY "${SPAMFILTER_DIRECTORY}" "${spamfilter_config_file}"
+            update_spam_config SPAM_DB "${SPAMFILTER_STORE_BAYESIAN}" "${spamfilter_config_file}"
             if var_true "${SPAMFILTER_ENABLE_GREYLISTING}" ; then SMTP_SESSION_RCPT_SCRIPT="greylist" ; fi
 
             ## AllowDMARC domains
