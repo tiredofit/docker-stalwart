@@ -2343,103 +2343,64 @@ EOF
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
             chown "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/spamfilter
 
-            ## TODO Support MYSQL and Postgresql alongside SQLite
-            case "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_SQL_TYPE,,}" in
-                sqlite* )
-                    sudo -u "${SERVER_USER}" sqlite3 "$(echo "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_ADDRESS}" | sed -e "s|sqlite://||g" -e "s|\?.*$||g")" << EOSQLITE
-                        CREATE TABLE IF NOT EXISTS bayes_tokens (
-                            h1 INTEGER NOT NULL,
-                            h2 INTEGER NOT NULL,
-                            ws INTEGER,
-                            wh INTEGER,
-                            PRIMARY KEY (h1, h2)
-                        );
+    smtp_configure_spamfilter() {
+        config_file="spamfilter.toml"
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+            chown "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/spamfilter
 
-                        CREATE TABLE IF NOT EXISTS seen_ids (
-                            id STRING NOT NULL PRIMARY KEY,
-                            ttl DATETIME NOT NULL
-                        );
+            toml_block add store.dynamic spam/free-domains type quotes "${SPAMFILTER_STORE_FREEDOMAINS_TYPE}"
+            toml_block add store.dynamic spam/free-domains format quotes "${SPAMFILTER_STORE_FREEDOMAINS_FORMAT}"
+            toml_block add store.dynamic spam/free-domains comment quotes "${SPAMFILTER_STORE_FREEDOMAINS_COMMENT}"
+            array_tools verify transform SPAMFILTER_STORE_FREEDOMAINS_VALUES /assets/stalwart/config/spamfilter/maps/
+            toml_block add store.dynamic spam/free-domains values array "$(array_tools quote comma SPAMFILTER_STORE_FREEDOMAINS_VALUES)"
 
-                        CREATE TABLE IF NOT EXISTS reputation (
-                            token STRING NOT NULL PRIMARY KEY,
-                            score FLOAT NOT NULL DEFAULT '0',
-                            count INT(11) NOT NULL DEFAULT '0',
-                            ttl DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-                        );
-EOSQLITE
-                    smtp_spamfilter_directory_spamdb_lookup_token_insert=${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_TOKEN_INSERT:-"INSERT INTO bayes_tokens (h1, h2, ws, wh) VALUES (?, ?, ?, ?) ON CONFLICT(h1, h2) DO UPDATE SET ws = ws + excluded.ws, wh = wh + excluded.wh"}
-                    smtp_spamfilter_directory_spamdb_lookup_token_lookup=${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_TOKEN_LOOKUP:-"SELECT ws, wh FROM bayes_tokens WHERE h1 = ? AND h2 = ?"}
-                    smtp_spamfilter_directory_spamdb_lookup_id_insert=${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_ID_INSERT:-"INSERT INTO seen_ids (id, ttl) VALUES (?, datetime('now', ? || ' seconds'))"}
-                    smtp_spamfilter_directory_spamdb_lookup_id_lookup=${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_ID_LOOKUP:-"SELECT 1 FROM seen_ids WHERE id = ? AND ttl > CURRENT_TIMESTAMP"}
-                    smtp_spamfilter_directory_spamdb_lookup_reputation_insert=${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_REPUTATION_INSERT:-"INSERT INTO reputation (token, score, count, ttl) VALUES (?, ?, 1, datetime('now','30 days')) ON CONFLICT(token) DO UPDATE SET score = (count + 1) * (excluded.score + 0.98 * score) / (0.98 * count + 1), count = count + 1, ttl = excluded.ttl"}
-                    smtp_spamfilter_directory_spamdb_lookup_reputation_lookup=${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_LOOKUP_REPUTATION_LOOKUP:-"SELECT score, count FROM reputation WHERE token = ?"}
+            toml_block add store.dynamic spam/disposable-domains type quotes "${SPAMFILTER_STORE_DISPOSABLEDOMAINS_TYPE}"
+            toml_block add store.dynamic spam/disposable-domains format quotes "${SPAMFILTER_STORE_DISPOSABLEDOMAINS_FORMAT}"
+            toml_block add store.dynamic spam/disposable-domains comment quotes "${SPAMFILTER_STORE_DISPOSABLEDOMAINS_COMMENT}"
+            array_tools verify transform SPAMFILTER_STORE_DISPOSABLEDOMAINS_VALUES /assets/stalwart/config/spamfilter/maps/
+            toml_block add store.dynamic spam/disposable-domains values array "$(array_tools quote comma SPAMFILTER_STORE_DISPOSABLEDOMAINS_VALUES)"
 
-                    smtp_spamfilter_directory_spamdb_schedule_query=${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_SCHEDULE_QUERY:-"DELETE FROM seen_ids WHERE ttl < CURRENT_TIMESTAMP,DELETE FROM reputation WHERE ttl < CURRENT_TIMESTAMP"}
-                ;;
-            esac
+            toml_block add store.dynamic spam/redirectors type quotes "${SPAMFILTER_STORE_REDIRECTORS_TYPE}"
+            toml_block add store.dynamic spam/redirectors format quotes "${SPAMFILTER_STORE_REDIRECTORS_FORMAT}"
+            toml_block add store.dynamic spam/redirectors comment quotes "${SPAMFILTER_STORE_REDIRECTORS_COMMENT}"
+            array_tools verify transform SPAMFILTER_STORE_REDIRECTORS_VALUES /assets/stalwart/config/spamfilter/maps/
+            toml_block add store.dynamic spam/redirectors values array "$(array_tools quote comma SPAMFILTER_STORE_REDIRECTORS_VALUES)"
 
-            toml_block add directory.dynamic spamdb type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_TYPE}"
-            toml_block add directory.dynamic spamdb address quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_ADDRESS}"
+            toml_block add store.dynamic spam/domains-allow type quotes "${SPAMFILTER_STORE_DOMAINSALLOW_TYPE}"
+            toml_block add store.dynamic spam/domains-allow format quotes "${SPAMFILTER_STORE_DOMAINSALLOW_FORMAT}"
+            toml_block add store.dynamic spam/domains-allow comment quotes "${SPAMFILTER_STORE_DOMAINSALLOW_COMMENT}"
+            array_tools verify transform SPAMFILTER_STORE_DOMAINSALLOW_VALUES /assets/stalwart/config/spamfilter/maps/
+            toml_block add store.dynamic spam/domains-allow values array "$(array_tools quote comma SPAMFILTER_STORE_DOMAINSALLOW_VALUES)"
 
-            toml_block add directory.dynamic.pool spamdb max-connections "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_POOL_MAX_CONNECTIONS}"
-            toml_block add directory.dynamic.pool spamdb min-connections "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_POOL_MIN_CONNECTIONS}"
-            toml_block add directory.dynamic.pool spamdb idle-timeout quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_POOL_IDLE_TIMEOUT}"
+            toml_block add store.dynamic spam/dmarc-allow type quotes "${SPAMFILTER_STORE_DMARCALLOW_TYPE}"
+            toml_block add store.dynamic spam/dmarc-allow format quotes "${SPAMFILTER_STORE_DMARCALLOW_FORMAT}"
+            toml_block add store.dynamic spam/dmarc-allow comment quotes "${SPAMFILTER_STORE_DMARCALLOW_COMMENT}"
+            array_tools verify transform SPAMFILTER_STORE_DMARCALLOW_VALUES /assets/stalwart/config/spamfilter/maps/
+            toml_block add store.dynamic spam/dmarc-allow values array "$(array_tools quote comma SPAMFILTER_STORE_DMARCALLOW_VALUES)"
 
-            toml_block add directory.dynamic.lookup spamdb token-insert quotes "${smtp_spamfilter_directory_spamdb_lookup_token_insert}"
-            toml_block add directory.dynamic.lookup spamdb token-lookup quotes "${smtp_spamfilter_directory_spamdb_lookup_token_lookup}"
-            toml_block add directory.dynamic.lookup spamdb id-insert quotes "${smtp_spamfilter_directory_spamdb_lookup_id_insert}"
-            toml_block add directory.dynamic.lookup spamdb id-lookup quotes "${smtp_spamfilter_directory_spamdb_lookup_id_lookup}"
-            toml_block add directory.dynamic.lookup spamdb reputation-insert quotes "${smtp_spamfilter_directory_spamdb_lookup_reputation_insert}"
-            toml_block add directory.dynamic.lookup spamdb reputation-lookup quotes "${smtp_spamfilter_directory_spamdb_lookup_reputation_lookup}"
+            toml_block add store.dynamic spam/spf-dkim-allow type quotes "${SPAMFILTER_STORE_SPFDKIMALLOW_TYPE}"
+            toml_block add store.dynamic spam/spf-dkim-allow format quotes "${SPAMFILTER_STORE_SPFDKIMALLOW_FORMAT}"
+            toml_block add store.dynamic spam/spf-dkim-allow comment quotes "${SPAMFILTER_STORE_SPFDKIMALLOW_COMMENT}"
+            array_tools verify transform SPAMFILTER_STORE_SPFDKIMALLOW_VALUES /assets/stalwart/config/spamfilter/maps/
+            toml_block add store.dynamic spam/spf-dkim-allow values array "$(array_tools quote comma SPAMFILTER_STORE_SPFDKIMALLOW_VALUES)"
 
-            toml_block add directory.dynamic.schedule spamdb query array "$(array_tools quote plus smtp_spamfilter_directory_spamdb_schedule_query)"
-            toml_block add directory.dynamic.schedule spamdb frequency quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAMDB_SCHEDULE_FREQUENCY}"
+            toml_block add store.dynamic spam/mime-types type quotes "${SPAMFILTER_STORE_MIMETYPES_TYPE}"
+            toml_block add store.dynamic spam/mime-types format quotes "${SPAMFILTER_STORE_MIMETYPES_FORMAT}"
+            toml_block add store.dynamic spam/mime-types comment quotes "${SPAMFILTER_STORE_MIMETYPES_COMMENT}"
+            array_tools verify transform SPAMFILTER_STORE_MIMETYPES_VALUES /assets/stalwart/config/spamfilter/maps/
+            toml_block add store.dynamic spam/mime-types values array "$(array_tools quote comma SPAMFILTER_STORE_MIMETYPES_VALUES)"
 
-            toml_block add directory.dynamic spam type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_TYPE}"
+            toml_block add store.dynamic spam/trap-address type quotes "${SPAMFILTER_STORE_TRAPADDRESS_TYPE}"
+            toml_block add store.dynamic spam/trap-address format quotes "${SPAMFILTER_STORE_TRAPADDRESS_FORMAT}"
+            toml_block add store.dynamic spam/trap-address comment quotes "${SPAMFILTER_STORE_TRAPADDRESS_COMMENT}"
+            array_tools verify transform SPAMFILTER_STORE_TRAPADDRESS_VALUES /assets/stalwart/config/spamfilter/maps/
+            toml_block add store.dynamic spam/trap-address values array "$(array_tools quote comma SPAMFILTER_STORE_TRAPADDRESS_VALUES)"
 
-            toml_block add directory.dynamic.lookup.dynamic2 spam free-domains type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_TYPE}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam free-domains comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_COMMENT}"
-            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_VALUES /assets/stalwart/config/spamfilter/maps/
-            toml_block add directory.dynamic.lookup.dynamic2 spam free-domains values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_FREEDOMAINS_VALUES)"
-
-            toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEDOMAINS_TYPE}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEDOMAINS_COMMENT}"
-            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEDOMAINS_VALUES /assets/stalwart/config/spamfilter/maps/
-            toml_block add directory.dynamic.lookup.dynamic2 spam disposable-domains values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DISPOSABLEDOMAINS_VALUES)"
-
-            toml_block add directory.dynamic.lookup.dynamic2 spam redirectors type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_TYPE}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam redirectors comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_COMMENT}"
-            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_VALUES /assets/stalwart/config/spamfilter/maps/
-            toml_block add directory.dynamic.lookup.dynamic2 spam redirectors values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_REDIRECTORS_VALUES)"
-
-            toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_TYPE}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_COMMENT}"
-            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_VALUES /assets/stalwart/config/spamfilter/maps/
-            toml_block add directory.dynamic.lookup.dynamic2 spam domains-allow values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DOMAINSALLOW_VALUES)"
-
-            toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_TYPE}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_COMMENT}"
-            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_VALUES /assets/stalwart/config/spamfilter/maps/
-            toml_block add directory.dynamic.lookup.dynamic2 spam dmarc-allow values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_DMARCALLOW_VALUES)"
-
-            toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_TYPE}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_COMMENT}"
-            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_VALUES /assets/stalwart/config/spamfilter/maps/
-            toml_block add directory.dynamic.lookup.dynamic2 spam spf-dkim-allow values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SPFDKIMALLOW_VALUES)"
-
-            toml_block add directory.dynamic.lookup.dynamic2 spam mime-types type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_TYPE}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam mime-types comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_COMMENT}"
-            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_VALUES /assets/stalwart/config/spamfilter/maps/
-            toml_block add directory.dynamic.lookup.dynamic2 spam mime-types values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_MIMETYPES_VALUES)"
-
-            toml_block add directory.dynamic.lookup.dynamic2 spam trap-address type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_TYPE}"
-            toml_block add directory.dynamic.lookup.dynamic2 spam trap-address comment quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_COMMENT}"
-            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_VALUES /assets/stalwart/config/spamfilter/maps/
-            toml_block add directory.dynamic.lookup.dynamic2 spam trap-address values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_TRAPADDRESS_VALUES)"
-
-            toml_block add directory.dynamic.lookup.dynamic2 spam scores type quotes "${SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_TYPE}"
-            array_tools verify transform SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_VALUES /assets/stalwart/config/spamfilter/maps/
-            toml_block add directory.dynamic.lookup.dynamic2 spam scores values array "$(array_tools quote comma SMTP_SPAMFILTER_DIRECTORY_SPAM_LOOKUP_SCORES_VALUES)"
+            toml_block add store.dynamic spam/scores type quotes "${SPAMFILTER_STORE_SCORES_TYPE}"
+            toml_block add store.dynamic spam/scores format quotes "${SPAMFILTER_STORE_SCORES_FORMAT}"
+            array_tools verify transform SPAMFILTER_STORE_SCORES_VALUES /assets/stalwart/config/spamfilter/maps/
+            toml_block add store.dynamic spam/scores values array "$(array_tools quote comma SPAMFILTER_STORE_SCORES_VALUES)"
 
             if var_true "${ENABLE_SIEVE}" ; then
                 array_tools verify transform SIEVE_TRUSTED_SCRIPTS_SPAMFILTER /assets/stalwart/config/spamfilter/scripts/
@@ -2452,40 +2413,29 @@ EOSQLITE
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# Stalwart Mail SMTP configuration '${config_file}'
+# Stalwart Mail Spam and Phishing configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
-$(toml_block show "${block_directory_spamdb}")
+$(toml_block show "${block_store_free_domains}")
 
-$(toml_block show "${block_directory_spamdb_pool}")
+$(toml_block show "${block_store_disposable_domains}")
 
-$(toml_block show "${block_directory_spamdb_lookup}")
+$(toml_block show "${block_store_redirectors}")
 
-$(toml_block show "${block_directory_spamdb_schedule}")
+$(toml_block show "${block_store_domains_allow}")
 
-$(toml_block show "${block_directory_spam}")
+$(toml_block show "${block_store_dmarc_allow}")
 
-$(toml_block show "${block_directory_spam_lookup_free_domains}")
+$(toml_block show "${block_store_spf_dkim_allow}")
 
-$(toml_block show "${block_directory_spam_lookup_disposable_domains}")
+$(toml_block show "${block_store_mime_types}")
 
-$(toml_block show "${block_directory_spam_lookup_redirectors}")
+$(toml_block show "${block_store_trap_address}")
 
-$(toml_block show "${block_directory_spam_lookup_domains_allow}")
-
-$(toml_block show "${block_directory_spam_lookup_dmarc_allow}")
-
-$(toml_block show "${block_directory_spam_lookup_spf_dkim_allow}")
-
-$(toml_block show "${block_directory_spam_lookup_mime_types}")
-
-$(toml_block show "${block_directory_spam_lookup_trap_address}")
-
-$(toml_block show "${block_directory_spam_lookup_scores}")
+$(toml_block show "${block_store_scores}")
 
 $(toml_block show "${block_sieve_trusted_scripts}")
-## TODO TRUSTED SCRIPTS MIGHT BE CARRYING FORWARD FROM ANOTHER FUNCTION!
 
 EOF
 
@@ -2511,7 +2461,7 @@ EOF
             update_spam_config SCORE_SPAM_THRESHOLD "${SPAMFILTER_THRESHOLD_SPAM}" "${spamfilter_config_file}"
             update_spam_config SCORE_DISCARD_THRESHOLD "${SPAMFILTER_THRESHOLD_DISCARD}" "${spamfilter_config_file}"
             update_spam_config SCORE_REJECT_THRESHOLD "${SPAMFILTER_THRESHOLD_REJECT}" "${spamfilter_config_file}"
-            update_spam_config DOMAIN_DIRECTORY "'${DEFAULT_DIRECTORY}'" "${spamfilter_config_file}"
+            update_spam_config DOMAIN_DIRECTORY "${DEFAULT_DIRECTORY}" "${spamfilter_config_file}"
             if var_true "${SPAMFILTER_ENABLE_GREYLISTING}" ; then SMTP_SESSION_RCPT_SCRIPT="greylist" ; fi
 
             ## AllowDMARC domains
@@ -2724,7 +2674,7 @@ EOF
         fi
     }
 
-    # This should stay in this order
+    ## WARN Keep in this order
     if var_true ${SMTP_ENABLE_LISTENER} ; then smtp_configure_listener; fi      ## Enable SMTP daemon services
     if var_true ${SMTP_ENABLE_REMOTE} ; then smtp_configure_remote; fi          ## Enable remote message processing
     if var_true ${SMTP_ENABLE_SIGNATURE} ; then smtp_configure_signature; fi    ## Enable DKIM, ARC Signing of messages
