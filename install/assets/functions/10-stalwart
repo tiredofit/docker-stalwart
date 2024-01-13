@@ -406,7 +406,7 @@ EOF
             toml_block add sieve.trusted from-addr quotes "${SIEVE_TRUSTED_FROM_ADDR}"
             toml_block add sieve.trusted return-path quotes "${SIEVE_TRUSTED_RETURN_PATH}"
             toml_block add sieve.trusted hostname quotes "${SIEVE_TRUSTED_HOSTNAME}"
-            toml_block add sieve.trusted no-capability-check "${SIEVE_TRUSTED_NO_CAPABILITY_CHECK}"
+            toml_block add sieve.trusted no-capability-check "${SIEVE_TRUSTED_NO_CAPABILITY_CHECK,,}"
             SIEVE_TRUSTED_SIGN=$(echo "${SIEVE_TRUSTED_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
             toml_block add sieve.trusted sign array "$(array_tools quote comma SIEVE_TRUSTED_SIGN)"
 
@@ -2351,12 +2351,6 @@ EOF
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
             chown "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/spamfilter
 
-    smtp_configure_spamfilter() {
-        config_file="spamfilter.toml"
-        if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-            chown "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/spamfilter
-
             toml_block add store.dynamic spam/free-domains type quotes "${SPAMFILTER_STORE_FREEDOMAINS_TYPE}"
             toml_block add store.dynamic spam/free-domains format quotes "${SPAMFILTER_STORE_FREEDOMAINS_FORMAT}"
             toml_block add store.dynamic spam/free-domains comment quotes "${SPAMFILTER_STORE_FREEDOMAINS_COMMENT}"
@@ -2411,12 +2405,13 @@ EOF
             toml_block add store.dynamic spam/scores values array "$(array_tools quote comma SPAMFILTER_STORE_SCORES_VALUES)"
 
             if var_true "${ENABLE_SIEVE}" ; then
-                array_tools verify transform SIEVE_TRUSTED_SCRIPTS_SPAMFILTER /assets/stalwart/config/spamfilter/scripts/
-                toml_block add sieve.trusted.scripts spam-filter array "$(array_tools quote comma SIEVE_TRUSTED_SCRIPTS_SPAMFILTER)"
-                array_tools verify transform SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES /assets/stalwart/config/spamfilter/scripts/
-                toml_block add sieve.trusted.scripts track-replies array "$(array_tools quote comma SIEVE_TRUSTED_SCRIPTS_TRACK_REPLIES)"
-                array_tools verify transform SIEVE_TRUSTED_SCRIPTS_GREYLIST /assets/stalwart/config/spamfilter/scripts/
-                toml_block add sieve.trusted.scripts greylist array "$(array_tools quote comma SIEVE_TRUSTED_SCRIPTS_GREYLIST)"
+                local block_sieve_trusted_scripts
+                array_tools verify transform SPAMFILTER_SCRIPTS_FILTER /assets/stalwart/config/spamfilter/scripts/
+                toml_block add sieve.trusted.scripts spam-filter array "$(array_tools quote comma SPAMFILTER_SCRIPTS_FILTER)"
+                array_tools verify transform SPAMFILTER_SCRIPTS_TRACK_REPLIES /assets/stalwart/config/spamfilter/scripts/
+                toml_block add sieve.trusted.scripts track-replies array "$(array_tools quote comma SPAMFILTER_SCRIPTS_TRACK_REPLIES)"
+                array_tools verify transform SPAMFILTER_SCRIPTS_GREYLIST /assets/stalwart/config/spamfilter/scripts/
+                toml_block add sieve.trusted.scripts greylist array "$(array_tools quote comma SPAMFILTER_SCRIPTS_GREYLIST)"
             fi
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
@@ -2446,6 +2441,8 @@ $(toml_block show "${block_store_scores}")
 $(toml_block show "${block_sieve_trusted_scripts}")
 
 EOF
+
+            unset block_sieve_trusted_scripts
 
             update_spam_config() {
                 sudo -u "${SERVER_USER}" sed -i "s|\"$1\" \".*\"|\"$1\" \"$2\"|g" $3
