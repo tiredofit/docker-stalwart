@@ -1342,6 +1342,8 @@ EOF
             toml_block add server.listener.dynamic jmap url quotes "${JMAP_LISTENER_JMAP_URL}"
             toml_block add server.listener.dynamic jmap protocol quotes "jmap"
 
+            toml_block add server.listener.dynamic.tls implicit "${JMAP_LISTENER_TLS_IMPLICIT,,}"
+
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
 # JMAP configuration '${config_file}'
@@ -1350,6 +1352,7 @@ EOF
 
 $(toml_block show "${block_server_listener_jmap}")
 
+$(toml_block show "${block_server_listener_jmap_tls}")
 EOF
 
         else
