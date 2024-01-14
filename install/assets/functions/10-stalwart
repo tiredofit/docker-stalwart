@@ -491,7 +491,7 @@ EOF
     }
 
     common_configure_store() {
-        config_file="sieve.toml"
+        config_file="storage.toml"
 
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
