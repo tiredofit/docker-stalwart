@@ -362,7 +362,7 @@ configure_common() {
             toml_block add server.run-as user quotes "${SERVER_USER}"
             toml_block add server.run-as group quotes "${SERVER_GROUP}"
 
-            toml_block add server.security blocked-networks "$(array_tools doublequote comma SERVER_SECURITY_BLOCKED_NETWORKS)"}
+            toml_block add server.security blocked-networks {"$(array_tools doublequote comma SERVER_SECURITY_BLOCKED_NETWORKS)"}
             toml_block add server.security fail2ban quotes "${SERVER_SECURITY_FAIL2BAN}"
 
             toml_block add server.socket nodelay "${SERVER_SOCKET_NODELAY,,}"
