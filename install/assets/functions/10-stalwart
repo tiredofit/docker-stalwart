@@ -3045,7 +3045,6 @@ EOF
                     rocks* )
                         store_type=RocksDB
                         populate_variable rocksdb_path
-                        ## Is this a full path and we need to dirname?
                         if [ ! -d "${store_rocksdb_path}" ]; then mkdir -p "${store_rocksdb_path}" ; fi
                         if [ "$(stat -c %U "${store_rocksdb_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${store_rocksdb_path}" ; fi
 
