@@ -2419,23 +2419,23 @@ EOF
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
-$(toml_block show "${block_store_free_domains}")
+$(toml_block show "${block_store_spam__slash__free_domains}")
 
-$(toml_block show "${block_store_disposable_domains}")
+$(toml_block show "${block_store_spam__slash__disposable_domains}")
 
-$(toml_block show "${block_store_redirectors}")
+$(toml_block show "${block_store_spam__slash__redirectors}")
 
-$(toml_block show "${block_store_domains_allow}")
+$(toml_block show "${block_store_spam__slash__domains_allow}")
 
-$(toml_block show "${block_store_dmarc_allow}")
+$(toml_block show "${block_store_spam__slash__dmarc_allow}")
 
-$(toml_block show "${block_store_spf_dkim_allow}")
+$(toml_block show "${block_store_spam__slash__spf_dkim_allow}")
 
-$(toml_block show "${block_store_mime_types}")
+$(toml_block show "${block_store_spam__slash__mime_types}")
 
-$(toml_block show "${block_store_trap_address}")
+$(toml_block show "${block_store_spam__slash__trap_address}")
 
-$(toml_block show "${block_store_scores}")
+$(toml_block show "${block_store_spam__slash__scores}")
 
 $(toml_block show "${block_sieve_trusted_scripts}")
 
@@ -3393,7 +3393,7 @@ toml_block() {
             fi
 
             if [[ "${block_name}" =~ \.dynamic ]]; then
-                block_name="$(echo ${block_name} | sed "s|.dynamic|.\"$2\"|g")"
+                block_name="$(echo ${block_name} | sed "s|.dynamic|.\"${2/\//__slash__}\"|g")"
                 if [ "${shift_val}" -eq 3 ]; then
                     shift_val=3
                 elif [ "${shift_val}" -eq 2 ]; then
@@ -3459,7 +3459,7 @@ toml_block() {
                 esac
 
                 if ! [ -v block_$block_name_sanitized ]; then
-                    block_data="[$(echo $block_name)]\n"
+                    block_data="[$(echo $block_name | sed "s|__slash__|/|g")]\n"
                 fi
 
                 if [ -n "${block_value}" ]; then
