@@ -2348,7 +2348,8 @@ EOF
         config_file="spamfilter.toml"
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-            chown "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/spamfilter
+            if [ ! -d "${DATA_PATH}"/spamfilter ]; then mkdir -p "${DATA_PATH}"/spamfilter ; fi
+            if [ "$(stat -c %U "${DATA_PATH}"/spamfilter)" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${DATA_PATH}"/spamfilter ; fi
 
             toml_block add store.dynamic spam/free-domains type quotes "${SPAMFILTER_STORE_FREEDOMAINS_TYPE}"
             toml_block add store.dynamic spam/free-domains format quotes "${SPAMFILTER_STORE_FREEDOMAINS_FORMAT}"
