@@ -443,7 +443,7 @@ EOF
             toml_block add sieve.trusted hostname quotes "${SIEVE_TRUSTED_HOSTNAME}"
             toml_block add sieve.trusted no-capability-check "${SIEVE_TRUSTED_NO_CAPABILITY_CHECK,,}"
             SIEVE_TRUSTED_SIGN=$(echo "${SIEVE_TRUSTED_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
-            toml_block add sieve.trusted sign array "$(array_tools quote comma SIEVE_TRUSTED_SIGN)"
+            toml_block add sieve.trusted sign array "$(array_tools doublequote comma SIEVE_TRUSTED_SIGN)"
 
             toml_block add sieve.trusted.limits redirects "${SIEVE_TRUSTED_LIMITS_REDIRECTS}"
             toml_block add sieve.trusted.limits out-messages "${SIEVE_TRUSTED_LIMITS_OUT_MESSAGES}"
@@ -1673,7 +1673,7 @@ configure_smtp() {
 
             toml_block add auth.arc verify quotes "${SMTP_AUTH_ARC_VERIFY}"
             SMTP_AUTH_ARC_SEAL=$(echo "${SMTP_AUTH_ARC_SEAL/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
-            toml_block add auth.arc seal array "$(array_tools quote comma SMTP_AUTH_ARC_SEAL)"
+            toml_block add auth.arc seal array "$(array_tools doublequote comma SMTP_AUTH_ARC_SEAL)"
 
             toml_block add auth.dmarc verify array "$(array_tools noquote plus SMTP_AUTH_DMARC_VERIFY)"
 
@@ -2027,28 +2027,28 @@ EOF
             toml_block add report.dsn from-name quotes "${SMTP_REPORT_DSN_FROM_NAME}"
             toml_block add report.dsn from-address quotes "${SMTP_REPORT_DSN_FROM_ADDRESS}"
             SMTP_REPORT_DSN_SIGN=$(echo "${SMTP_REPORT_DSN_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
-            toml_block add report.dsn sign array "$(array_tools quote comma SMTP_REPORT_DSN_SIGN)"
+            toml_block add report.dsn sign array "$(array_tools doublequote comma SMTP_REPORT_DSN_SIGN)"
 
             toml_block add report.dkim from-name quotes "${SMTP_REPORT_DKIM_FROM_NAME}"
             toml_block add report.dkim from-address quotes "${SMTP_REPORT_DKIM_FROM_ADDRESS}"
             toml_block add report.dkim subject quotes "${SMTP_REPORT_DKIM_SUBJECT}"
             toml_block add report.dkim send quotes "${SMTP_REPORT_DKIM_SEND}"
             SMTP_REPORT_DKIM_SIGN=$(echo "${SMTP_REPORT_DKIM_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
-            toml_block add report.dkim sign array "$(array_tools quote comma SMTP_REPORT_DKIM_SIGN)"
+            toml_block add report.dkim sign array "$(array_tools doublequote comma SMTP_REPORT_DKIM_SIGN)"
 
             toml_block add report.spf from-name quotes "${SMTP_REPORT_SPF_FROM_NAME}"
             toml_block add report.spf from-address quotes "${SMTP_REPORT_SPF_FROM_ADDRESS}"
             toml_block add report.spf subject quotes "${SMTP_REPORT_SPF_SUBJECT}"
             toml_block add report.spf send quotes "${SMTP_REPORT_SPF_SEND}"
             SMTP_REPORT_SPF_SIGN=$(echo "${SMTP_REPORT_SPF_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
-            toml_block add report.spf sign array "$(array_tools quote comma SMTP_REPORT_SPF_SIGN)"
+            toml_block add report.spf sign array "$(array_tools doublequote comma SMTP_REPORT_SPF_SIGN)"
 
             toml_block add report.dmarc from-name quotes "${SMTP_REPORT_DMARC_FROM_NAME}"
             toml_block add report.dmarc from-address quotes "${SMTP_REPORT_DMARC_FROM_ADDRESS}"
             toml_block add report.dmarc subject quotes "${SMTP_REPORT_DMARC_SUBJECT}"
             toml_block add report.dmarc send quotes "${SMTP_REPORT_DMARC_SEND}"
             SMTP_REPORT_DMARC_SIGN=$(echo "${SMTP_REPORT_DMARC_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
-            toml_block add report.dmarc sign array "$(array_tools quote comma SMTP_REPORT_DMARC_SIGN)"
+            toml_block add report.dmarc sign array "$(array_tools doublequote comma SMTP_REPORT_DMARC_SIGN)"
 
             toml_block add report.dmarc.aggregate from-name quotes "${SMTP_REPORT_DMARC_AGGREGATE_FROM_NAME}"
             toml_block add report.dmarc.aggregate from-address quotes "${SMTP_REPORT_DMARC_AGGREGATE_FROM_ADDRESS}"
@@ -2057,7 +2057,7 @@ EOF
             toml_block add report.dmarc.aggregate send quotes "${SMTP_REPORT_DMARC_AGGREGATE_SEND}"
             toml_block add report.dmarc.aggregate max-size "${SMTP_REPORT_DMARC_AGGREGATE_MAX_SIZE}"
             SMTP_REPORT_DMARC_AGGREGATE_SIGN=$(echo "${SMTP_REPORT_DMARC_AGGREGATE_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
-            toml_block add report.dmarc.aggregate sign array "$(array_tools quote comma SMTP_REPORT_DMARC_AGGREGATE_SIGN)"
+            toml_block add report.dmarc.aggregate sign array "$(array_tools doublequote comma SMTP_REPORT_DMARC_AGGREGATE_SIGN)"
 
             toml_block add report.tls.aggregate from-name quotes "${SMTP_REPORT_TLS_AGGREGATE_FROM_NAME}"
             toml_block add report.tls.aggregate from-address quotes "${SMTP_REPORT_TLS_AGGREGATE_FROM_ADDRESS}"
@@ -2066,7 +2066,7 @@ EOF
             toml_block add report.tls.aggregate send quotes "${SMTP_REPORT_TLS_AGGREGATE_SEND}"
             toml_block add report.tls.aggregate max-size "${SMTP_REPORT_TLS_AGGREGATE_MAX_SIZE}"
             SMTP_REPORT_TLS_AGGREGATE_SIGN=$(echo "${SMTP_REPORT_TLS_AGGREGATE_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
-            toml_block add report.tls.aggregate sign array "$(array_tools quote comma SMTP_REPORT_TLS_AGGREGATE_SIGN)"
+            toml_block add report.tls.aggregate sign array "$(array_tools doublequote comma SMTP_REPORT_TLS_AGGREGATE_SIGN)"
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
@@ -2282,9 +2282,9 @@ EOF
 
                 populate_variable() {
                     if [ -v "SMTP_SIGNATURE_${signature_name^^}_${1^^}" ]; then
-                        export signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_${signature_name^^}_${1^^}=" | cut -d = -f2-)"
+                        export smtp_signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_${signature_name^^}_${1^^}=" | cut -d = -f2-)"
                     else
-                        export signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_DEFAULT_${1^^}=" | cut -d = -f2-)"
+                        export smtp_signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_DEFAULT_${1^^}=" | cut -d = -f2-)"
                     fi
                 }
 
@@ -3225,12 +3225,12 @@ dkim() {
 
             case "${_dkim_type,,}" in
                 ed25519 )
-                    sudo -u "${SERVER_USER}" openssl genpkey -algorithm ed25519 -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key
+                    silent sudo -u "${SERVER_USER}" openssl genpkey -algorithm ed25519 -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key
                     sudo -u "${SERVER_USER}" openssl pkey -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der | tail -c +13 | openssl base64 -A > "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert
                 ;;
                 rsa* )
-                    sudo -u "${SERVER_USER}" openssl genrsa -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key ${_dkim_key_size}
-                    sudo -u "${SERVER_USER}" openssl rsa -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der | openssl base64 -A > "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert
+                    silent sudo -u "${SERVER_USER}" openssl genrsa -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key ${_dkim_key_size}
+                    sudo -u "${SERVER_USER}" openssl rsa -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der | silent openssl base64 -A > "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert
                 ;;
             esac
 
@@ -3241,7 +3241,7 @@ Domain: ${_dkim_domain/./_}
 This record was generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S %Z')
 Add the following DNS records to your domain in order to enable DKIM, SPF and DMARC:
 
-${_dkim_selector}._domainkey.${_dkim_domain/./_}. IN TXT "v=DKIM1; k=${_dkim_type,,}; p=$(cat "${DKIM_PATH}"/"${_dkim_selector}"_"${_dkim_domain/./_}".cert)"
+${_dkim_selector}._domainkey.${_dkim_domain/./_}. IN TXT "v=DKIM1; k=${_dkim_type,,}; p=$(cat "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert)"
 ${_dkim_domain/./_}. IN TXT "v=spf1 a:${SERVER_NAME}.${_dkim_domain/./_} mx -all ra=postmaster"
 ${SERVER_NAME}.${_dkim_domain/./_}. IN TXT "v=spf1 a -all ra=postmaster"
 _dmarc.${_dkim_domain/./_}. IN TXT "v=DMARC1; p=none; rua=mailto:postmaster@${_dkim_domain/_/.}; ruf=mailto:postmaster@${_dkim_domain/_/.}"
