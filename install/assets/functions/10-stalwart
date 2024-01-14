@@ -414,11 +414,6 @@ EOF
             SIEVE_TRUSTED_SIGN=$(echo "${SIEVE_TRUSTED_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
             toml_block add sieve.trusted sign array "$(array_tools quote comma SIEVE_TRUSTED_SIGN)"
 
-            SIEVE_TRUSTED_DEFAULT_DIRECTORY=${SIEVE_TRUSTED_DEFAULT_DIRECTORY:-"${DEFAULT_DIRECTORY}"}
-            toml_block add sieve.trusted.default directory quotes "${}"
-            SIEVE_TRUSTED_DEFAULT_STORE=${SIEVE_TRUSTED_DEFAULT_STORE:-"${DEFAULT_STORE}"}
-            toml_block add sieve.trusted.default store quotes "${}"
-
             toml_block add sieve.trusted.limits redirects "${SIEVE_TRUSTED_LIMITS_REDIRECTS}"
             toml_block add sieve.trusted.limits out-messages "${SIEVE_TRUSTED_LIMITS_OUT_MESSAGES}"
             toml_block add sieve.trusted.limits received-headers "${SIEVE_TRUSTED_LIMITS_RECEIVED_HEADERS}"
@@ -453,8 +448,6 @@ $(toml_block show "${block_sieve_untrusted_default_expiry}")
 #############################################
 
 $(toml_block show "${block_sieve_trusted}")
-
-$(toml_block show "${block_sieve_trusted_default}")
 
 $(toml_block show "${block_sieve_trusted_limits}")
 
