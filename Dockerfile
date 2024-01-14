@@ -7,7 +7,7 @@ LABEL maintainer="Dave Conroy (github.com/tiredofit)"
 ARG STALWART_VERSION
 ARG STALWART_REPO_URL
 
-ENV STALWART_VERSION=${STALWART_VERSION:-"v0.5.2"} \
+ENV STALWART_VERSION=${STALWART_VERSION:-"v0.5.3"} \
     STALWART_REPO_URL=${STALWART_REPO_URL:-"https://github.com/stalwartlabs/mail-server"} \
     CONTAINER_ENABLE_MESSAGING=FALSE \
     IMAGE_NAME="tiredofit/stalwart" \
