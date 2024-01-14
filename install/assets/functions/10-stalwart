@@ -333,10 +333,12 @@ configure_common() {
             toml_block add server.run-as user quotes "${SERVER_USER}"
             toml_block add server.run-as group quotes "${SERVER_GROUP}"
 
+            toml_block add server.security blocked-networks array "$(array_tools quote comma SERVER_SECURITY_BLOCKED_NETWORKS)"
+            toml_block add server.security fail2ban quotes "${SERVER_SECURITY_FAIL2BAN}"
+
             toml_block add server.socket nodelay "${SERVER_SOCKET_NODELAY,,}"
             toml_block add server.socket reuse-addr "${SERVER_SOCKET_REUSE_ADDR,,}"
             toml_block add server.socket reuse-port "${SERVER_SOCKET_REUSE_PORT,,}"
-
             toml_block add server.socket backlog "${SERVER_SOCKET_BACKLOG}"
             toml_block add server.socket ttl "${SERVER_SOCKET_TTL}"
             toml_block add server.socket send-buffer-size "${SERVER_SOCKET_SEND_BUFFER_SIZE}"
@@ -356,6 +358,8 @@ configure_common() {
 $(toml_block show "${block_server}")
 
 $(toml_block show "${block_server_run_as}")
+
+$(toml_block show "${block_server_security}")
 
 $(toml_block show "${block_server_socket}")
 
@@ -462,6 +466,48 @@ EOF
         fi
     }
 
+    common_configure_store() {
+        config_file="sieve.toml"
+
+        if [ "${SETUP_TYPE,,}" = "auto" ]; then
+            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+            toml_block add storage data quotes "${STORAGE_DATA}"
+            toml_block add storage fts quotes "${STORAGE_FTS}"
+            toml_block add storage blob quotes "${STORAGE_BLOB}"
+            toml_block add storage lookup quotes "${STORAGE_LOOKUP}"
+            toml_block add storage directory quotes "${STORAGE_DIRECTORY}"
+
+            toml_block add storage.encryption enable "${STORAGE_ENCRYPTION_ENABLE,,}"
+            toml_block add storage.encryption append "${STORAGE_ENCRYPTION_APPEND,,}"
+
+            toml_block add storage.spam header quotes "${STORAGE_SPAM_HEADER}"
+
+            toml_block add storage.fts default-language quotes "${STORAGE_FTS_DEFAULT_LANGUAGE}"
+
+            toml_block add storage.cluster node-id "${STORAGE_CLUSTER_NODE_ID}"
+
+            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+##########################################################################
+# Stalwart Mail Store configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+##########################################################################
+
+$(toml_block show "${block_storage}")
+
+$(toml_block show "${block_storage_encryption}")
+
+$(toml_block show "${block_storage_spam}")
+
+$(toml_block show "${block_storage_fts}")
+
+$(toml_block show "${block_storage_cluster}")
+
+EOF
+
+        else
+            :
+        fi
+    }
     common_configure_tls() {
         if var_true "${ENABLE_TLS}" ; then
             if [ "${SETUP_TYPE,,}" = "auto" ]; then
@@ -624,6 +670,7 @@ EOF
     if var_true "${ENABLE_TLS}" ; then common_configure_tls; fi
     common_configure_tracing
     if var_true "${ENABLE_SIEVE}" ; then common_configure_sieve; fi
+    common_configure_store
 
 }
 
