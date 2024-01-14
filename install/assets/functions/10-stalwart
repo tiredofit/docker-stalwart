@@ -2278,7 +2278,7 @@ EOF
             fi
 
             for signature_instance in $(set -o posix; set | sort -u | grep -P "^SMTP_SIGNATURE_([A-Z0-9]+)_SELECTOR=") ; do
-                signature_name="$(echo "${signature_instance}" | cut -d _ -f3)"
+                smtp_signature_name="$(echo "${signature_instance}" | cut -d _ -f3)"
 
                 populate_variable() {
                     if [ -v "SMTP_SIGNATURE_${signature_name^^}_${1^^}" ]; then
@@ -2291,7 +2291,7 @@ EOF
                 if var_false "${smtp_configure_signature_default}" && [ "${signature_name^^}" = "DEFAULT" ] ; then
                     print_debug "[smtp_configure_signature] Skipping building default signature configuration"
                 else
-                    config_file="signature_${signature_name,,}.toml"
+                    config_file="signature_${smtp_signature_name,,}.toml"
                     config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
                     populate_variable public_key
@@ -2300,7 +2300,7 @@ EOF
                     populate_variable selector
                     populate_variable headers
                     populate_variable key_type
-                    populate_variable key_size
+                    populate_variable rsa_key_size
                     populate_variable algorithm
                     populate_variable canonicalization
                     populate_variable expire
@@ -2310,7 +2310,7 @@ EOF
                     populate_variable set_body_length
                     populate_variable report
 
-                    dkim generate "${smtp_signature_selector}" "${smtp_signature_domain}" "${smtp_signature_key_type}" "${smtp_signature_key_size}"
+                    dkim generate "${smtp_signature_selector}" "${smtp_signature_domain}" "${smtp_signature_key_type}" "${smtp_signature_rsa_key_size}"
 
                     toml_block add signature.dynamic ${smtp_signature_name,,} public-key quotes "${smtp_signature_public_key}"
                     toml_block add signature.dynamic ${smtp_signature_name,,} private-key quotes "${smtp_signature_private_key}"
@@ -2330,7 +2330,7 @@ EOF
 
                     cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
-# Stalwart Mail DKIM & ARC signature '${signature_name}' configuration '${config_file}'
+# Stalwart Mail DKIM & ARC signature '${smtp_signature_name}' configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
@@ -3218,6 +3218,7 @@ dkim() {
             local _dkim_domain=${3}
             local _dkim_type=${4:-"${SMTP_SIGNATURE_DEFAULT_KEY_TYPE}"}
             local _dkim_key_size=${5:-"${SMTP_SIGNATURE_DEFAULT_KEY_SIZE}"}
+            local _dkim_dns_pubkey
 
             if [ -f "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key ] || [ -f "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert ] || [ -f "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".readme ] ; then
                 return 99
@@ -3225,12 +3226,14 @@ dkim() {
 
             case "${_dkim_type,,}" in
                 ed25519 )
-                    silent sudo -u "${SERVER_USER}" openssl genpkey -algorithm ed25519 -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key
-                    sudo -u "${SERVER_USER}" openssl pkey -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der | tail -c +13 | openssl base64 -A > "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert
+                    sudo -u "${SERVER_USER}" openssl genpkey -algorithm ed25519 -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key
+                    sudo -u "${SERVER_USER}" openssl pkey -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert
+                    _dkim_dns_pubkey=$(sudo -u "${SERVER_USER}" openssl pkey -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der | tail -c +13 | openssl base64 -A)
                 ;;
                 rsa* )
-                    silent sudo -u "${SERVER_USER}" openssl genrsa -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key ${_dkim_key_size}
-                    sudo -u "${SERVER_USER}" openssl rsa -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der | silent openssl base64 -A > "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert
+                    sudo -u "${SERVER_USER}" openssl genrsa -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key ${_dkim_key_size}
+                    sudo -u "${SERVER_USER}" openssl rsa -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert
+                    _dkim_dns_pubkey=$(sudo -u "${SERVER_USER}" openssl rsa -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der | openssl base64 -A)
                 ;;
             esac
 
@@ -3241,7 +3244,7 @@ Domain: ${_dkim_domain/./_}
 This record was generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S %Z')
 Add the following DNS records to your domain in order to enable DKIM, SPF and DMARC:
 
-${_dkim_selector}._domainkey.${_dkim_domain/./_}. IN TXT "v=DKIM1; k=${_dkim_type,,}; p=$(cat "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert)"
+${_dkim_selector}._domainkey.${_dkim_domain/./_}. IN TXT "v=DKIM1; k=${_dkim_type,,}; p=$(echo "${_dkim_dns_pubkey}")"
 ${_dkim_domain/./_}. IN TXT "v=spf1 a:${SERVER_NAME}.${_dkim_domain/./_} mx -all ra=postmaster"
 ${SERVER_NAME}.${_dkim_domain/./_}. IN TXT "v=spf1 a -all ra=postmaster"
 _dmarc.${_dkim_domain/./_}. IN TXT "v=DMARC1; p=none; rua=mailto:postmaster@${_dkim_domain/_/.}; ruf=mailto:postmaster@${_dkim_domain/_/.}"
