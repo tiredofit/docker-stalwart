@@ -1551,80 +1551,6 @@ EOF
         fi
     }
 
-    jmap_configure_store() {
-        config_file="store.toml"
-
-        if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-
-            if [ ! -d "$(dirname "${JMAP_STORE_DB_PATH}")" ]; then mkdir -p "$(dirname "${JMAP_STORE_DB_PATH}")" ; fi
-            if [ "$(stat -c %U "$(dirname "${JMAP_STORE_DB_PATH}")")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "$(dirname "${JMAP_STORE_DB_PATH}")" ; fi
-            toml_block add store.db path quotes "${JMAP_STORE_DB_PATH}"
-
-            toml_block add store.db.pool max-connections "${JMAP_STORE_DB_POOL_MAX_CONNECTIONS}"
-            toml_block add store.db.pool workers "${JMAP_STORE_DB_POOL_WORKERS}"
-
-            toml_block add store.db.cache size "${JMAP_STORE_DB_CACHE_SIZE}"
-
-            case "${JMAP_STORE_BLOB_TYPE,,}" in
-                local )
-                    if [ ! -d "${JMAP_STORE_BLOB_LOCAL_PATH}" ]; then mkdir -p "${JMAP_STORE_BLOB_LOCAL_PATH}" ; fi
-                    if [ "$(stat -c %U "${JMAP_STORE_BLOB_LOCAL_PATH}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${JMAP_STORE_BLOB_LOCAL_PATH}" ; fi
-                ;;
-            esac
-
-            toml_block add store.blob type quotes "${JMAP_STORE_BLOB_TYPE}"
-
-            toml_block add store.blob.local path quotes "${JMAP_STORE_BLOB_LOCAL_PATH}"
-
-            toml_block add store.blob.s3 bucket quotes "${JMAP_STORE_BLOB_S3_BUCKET}"
-            toml_block add store.blob.s3 region quotes "${JMAP_STORE_BLOB_S3_REGION}"
-            toml_block add store.blob.s3 access-key quotes "${JMAP_STORE_BLOB_S3_ACCESS_KEY}"
-            toml_block add store.blob.s3 secret-key quotes "${JMAP_STORE_BLOB_S3_SECRET_KEY}"
-            toml_block add store.blob.s3 endpoint quotes "${JMAP_STORE_BLOB_S3_ENDPOINT}"
-            toml_block add store.blob.s3 security-token quotes "${JMAP_STORE_BLOB_S3_SECURITY_TOKEN}"
-            toml_block add store.blob.s3 profile quotes "${JMAP_STORE_BLOB_S3_PROFILE}"
-            toml_block add store.blob.s3 timeout quotes "${JMAP_STORE_BLOB_S3_TIMEOUT}"
-
-            toml_block add jmap.encryption enable "${JMAP_ENCRYPTION_ENABLE,,}"
-            toml_block add jmap.encryption append"${JMAP_ENCRYPTION_APPEND,,}"
-
-            toml_block add jmap.fts default-language quotes "${JMAP_FTS_DEFAULT_LANGUAGE}"
-
-            toml_block add jmap.purge.sessions frequency quotes "${JMAP_PURGE_SESSIONS_FREQUENCY}"
-
-
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
-##########################################################################
-# JMAP server store configuration '${config_file}'
-# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
-##########################################################################
-
-$(toml_block show "${block_store_db}")
-
-$(toml_block show "${block_store_db_pool}")
-
-$(toml_block show "${block_store_db_cache}")
-
-$(toml_block show "${block_store_blob}")
-
-$(toml_block show "${block_store_blob_local}")
-
-$(toml_block show "${block_store_blob_s3}")
-
-$(toml_block show "${block_jmap_encryption}")
-
-$(toml_block show "${block_jmap_fts}")
-
-$(toml_block show "${block_jmap_purge_sessions}")
-
-EOF
-
-        else
-            :
-        fi
-    }
-
     jmap_configure_websockets() {
         config_file="websockets.toml"
 
@@ -1656,7 +1582,6 @@ EOF
     if var_true "${JMAP_ENABLE_PROTOCOL}" ; then jmap_configure_protocol ; fi
     if var_true "${JMAP_ENABLE_PUSH}" ; then jmap_configure_push ; fi
     if var_true "${JMAP_ENABLE_RATELIMIT}" ; then jmap_configure_ratelimit ; fi
-    if var_true "${JMAP_ENABLE_STORE}" ; then jmap_configure_store ; fi
     if var_true "${JMAP_ENABLE_WEBSOCKETS}" ; then jmap_configure_websockets ; fi
 }
 
@@ -1807,17 +1732,6 @@ EOF
                 toml_block add server.listener.dynamic management bind array "$(array_tools quote comma SMTP_LISTENER_MANAGEMENT_BIND)"
                 toml_block add server.listener.dynamic management protocol quotes "${SMTP_LISTENER_MANAGEMENT_PROTOCOL,,}"
 
-                if [ -n "${SMTP_MANAGEMENT_DIRECTORY}" ]; then
-                    smtp_management_directory="${SMTP_MANAGEMENT_DIRECTORY}"
-                elif [ -z "${SMTP_MANAGEMENT_DIRECTORY}" ] && [ -n "${DEFAULT_DIRECTORY}" ]; then
-                    smtp_management_directory="${DEFAULT_DIRECTORY}"
-                else
-                    sanity_var SMTP_MANAGEMENT_DIRECTORY "directory to manage"
-                fi
-
-                toml_block add management directory quotes "${smtp_management_directory}"
-            fi
-
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
 # Stalwart Mail SMTP listener configuration '${config_file}'
@@ -1831,8 +1745,6 @@ $(toml_block show "${block_server_listener_submission}")
 $(toml_block show "${block_server_listener_submissions}")
 
 $(toml_block show "${block_server_listener_management}")
-
-$(toml_block show "${block_managemnet}")
 
 EOF
         else
@@ -3363,7 +3275,6 @@ setup_container_mode() {
                         JMAP_ENABLE_PROTOCOL=TRUE
                         JMAP_ENABLE_PUSH=TRUE
                         JMAP_ENABLE_RATELIMIT=TRUE
-                        JMAP_ENABLE_STORE=TRUE
                         JMAP_ENABLE_WEBSOCKETS=TRUE
 
                         if [[ "$(grep -cq 'create_log_stalwart=TRUE' /tmp/.container/stalwart/.mode-env)" -eq 0 ]] ; then
@@ -3380,7 +3291,6 @@ setup_container_mode() {
 
                         if [ "${SMTP_MODE,,}" = "forward" ]; then
                             JMAP_ENABLE_AUTH=TRUE
-                            JMAP_ENABLE_STORE=TRUE
                         fi
                     ;;
                     *)
