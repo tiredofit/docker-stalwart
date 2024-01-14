@@ -2867,6 +2867,7 @@ EOF
                         populate_variable mysql_pass
                         populate_variable mysql_disable
 
+                        populate_variable mysql_max_allowed_packet
                         populate_variable mysql_timeout_wait
 
                         populate_variable mysql_pool_max_connections
@@ -2889,6 +2890,7 @@ EOF
                         toml_block add store.dynamic ${store_name,,} user quotes "${store_mysql_user}"
                         toml_block add store.dynamic ${store_name,,} pass quotes "${store_mysql_pass}"
                         toml_block add store.dynamic ${store_name,,} disable "${store_mysql_disable,,}"
+                        toml_block add store.dynamic ${store_name,,} max-allowed-packet "${store_mysql_max_allowed_packet}"
 
                         toml_block add store.dynamic.timeout ${store_name,,} wait quotes "${store_mysql_timeout_wait}"
 
