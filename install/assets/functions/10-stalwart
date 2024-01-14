@@ -1310,10 +1310,10 @@ configure_jmap() {
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            jmap_directory=${JMAP_DIRECTORY:-"${DEFAULT_DIRECTORY,,}"}
-            toml_block add jmap directory quotes "${jmap_directory}"
             toml_block add jmap.session.cache ttl quotes "${JMAP_SESSION_CACHE_TTL}"
             toml_block add jmap.session.cache size "${JMAP_SESSION_CACHE_SIZE}"
+
+            toml_block add jmap.session.purge frequency quotes "${JMAP_SESSION_PURGE_FREQUENCY}"
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
@@ -1321,9 +1321,9 @@ configure_jmap() {
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
 ##########################################################################
 
-$(toml_block show "${block_jmap}")
-
 $(toml_block show "${block_jmap_session_cache}")
+
+$(toml_block show "${block_jmap_session_purge}")
 
 EOF
 
