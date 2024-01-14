@@ -1665,7 +1665,7 @@ configure_smtp() {
             toml_block add auth.iprev verify array "$(array_tools noquote plus SMTP_AUTH_IPREV_VERIFY)"
 
             toml_block add auth.dkim verify quotes "${SMTP_AUTH_DKIM_VERIFY}"
-            SMTP_AUTH_ARC_SIGN=$(echo "${SMTP_AUTH_ARC_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
+            SMTP_AUTH_DKIM_SIGN=$(echo "${SMTP_AUTH_DKIM_SIGN/DEFAULT_SMTP_SIGNATURE/${DEFAULT_SIGNATURE,,}}")
             toml_block add auth.dkim sign array "$(array_tools noquote plus SMTP_AUTH_DKIM_SIGN)"
 
             toml_block add auth.spf.verify ehlo array "$(array_tools noquote plus SMTP_AUTH_SPF_VERIFY_EHLO)"
