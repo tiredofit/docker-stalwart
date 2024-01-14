@@ -1727,6 +1727,7 @@ EOF
             if var_true "${SMTP_ENABLE_MANAGEMENT}" ; then
                 toml_block add server.listener.dynamic management bind array "$(array_tools quote comma SMTP_LISTENER_MANAGEMENT_BIND)"
                 toml_block add server.listener.dynamic management protocol quotes "${SMTP_LISTENER_MANAGEMENT_PROTOCOL,,}"
+            fi
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
