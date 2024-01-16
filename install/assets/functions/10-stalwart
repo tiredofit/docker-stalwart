@@ -537,42 +537,145 @@ EOF
             :
         fi
     }
+
     common_configure_tls() {
         if var_true "${ENABLE_TLS}" ; then
             if [ "${SETUP_TYPE,,}" = "auto" ]; then
-                tls_cert_instances=$(set -o posix ; set | grep -P "^TLS_CERTIFICATE([0-9]+)_.*_CERT_FILE=" | sort -u | wc -l)
-
-                if [ "${tls_cert_instances}" -eq 0 ]; then
-                    TLS_CERTIFICATE01_DEFAULT_CERT_FILE="${TLS_CERTIFICATE_DEFAULT_CERT_FILE}"
-                    TLS_CERTIFICATE01_DEFAULT_KEY_FILE="${TLS_CERTIFICATE_DEFAULT_KEY_FILE}"
-                    tls_cert_instances=1
+            ## TLS ACME Configuration - This happens first as it defines the certificate generation component
+                acme_instances=$(set -o posix ; set | sort | grep -P "^TLS_ACME_([A-Z0-9]+)_DIRECTORY=" | grep -Pve "^TLS_ACME_DEFAULT_DIRECTORY=" | wc -l)
+                if [ "${acme_instances}" -eq 1 ]; then
+                    TLS_ACME=${TLS_ACME:-"$(set -o posix ; set | sort | grep -P "^TLS_ACME_([A-Z0-9]+)_DIRECTORY=" | grep -Pve "^TLS_ACME_DEFAULT_DIRECTORY=" | cut -d _ -f3 | tr '[A-Z]' '[a-z]')"}
+                else
+                    if [ -z "${TLS_ACME}" ] && [ "${acme_instances}" -ge 2 ]; then
+                        print_error "Multiple ACME configurations detected - Set TLS_ACME environment variable"
+                        exit 9
+                    fi
                 fi
 
-                for (( tls_cert_instance = 01; tls_cert_instance <= tls_cert_instances; tls_cert_instance++ )); do
-                    tls_cert_instance=$(printf "%02d" $tls_cert_instance)
-                    tls_cert_name=$(set -o posix ; set | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_.*_CERT_FILE=" |  sort -u | cut -d _ -f 3)
+                if [ "${acme_instances}" -ge 1 ]; then
+                    for acme_instance in $(set -o posix; set | sort -u | grep -P "^TLS_ACME_([A-Z0-9]+)_DIRECTORY=") ; do
+                        acme_name="$(echo "${acme_instance}" | cut -d _ -f3)"
+                        acme_directory="$(echo "${acme_instance}" | cut -d = -f2)"
 
-                    config_file="tls_cert_${tls_cert_name,,}.toml"
-                    config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+                        populate_variable() {
+                            if [ -v "TLS_ACME_${acme_name^^}_${1^^}" ]; then
+                                export acme_${1,,}="$(set -o posix ; set | grep "^TLS_ACME_${acme_name^^}_${1^^}=" | cut -d = -f2-)"
+                            else
+                                export acme_${1,,}="$(set -o posix ; set | grep "^TLS_ACME_DEFAULT_${1^^}=" | cut -d = -f2-)"
+                            fi
+                        }
+
+                        config_file="tls_acme-${acme_name,,}.toml"
+                        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+
+                        populate_variable directory
+                        populate_variable contact
+                        populate_variable cache
+                        populate_variable port
+                        populate_variable renew_before
+
+                        toml_block acme.dynamic "${acme_name,,}" directory quotes "${acme_directory}"
+                        toml_block acme.dynamic "${acme_name,,}" contact quotes "${acme_contact}"
+                        if [ ! -d "${acme_cache}" ]; then mkdir -p "${acme_cache}" ; fi
+                        if [ "$(stat -c %U "${acme_cache}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${acme_cache}" ; fi
+                        toml_block acme.dynamic "${acme_name,,}" cache quotes "${acme_cache}"
+                        toml_block acme.dynamic "${acme_name,,}" port "${acme_port}"
+                        toml_block acme.dynamic "${acme_name,,}" renew-before quotes "${acme_renew_before}"
+
+                        block_acme="block_acme_${acme_name,,}"
+
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+################################################################################################
+# TLS ACME Configuration name '${acme_name}' configuration '${config_file}'
+# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
+################################################################################################
+
+$(toml_block show "${!block_acme}")
+
+EOF
+                    done
+                fi
+
+                ## TLS Certificate Setup
+                local tls_configure_certificate_default
+
+                tls_cert_instances=$(set -o posix ; set | sort -u | grep -P "^TLS_CERTIFICATE_([A-Z0-9]+)_CERT_FILE=" | grep -Pve "^TLS_CERTIFICATE_DEFAULT_CERT_FILE="| wc -l)
+
+                if [ "${tls_cert_instances}" -eq 1 ]; then
+                    tls_cert_name=$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE_.*_CERT_FILE=" | grep -Pve "^TLS_CERTIFICATE_DEFAULT_CERT_FILE=" | cut -d _ -f 3)
+                    DEFAULT_CERTIFICATE="${tls_cert_name^^}"
+                    tls_configure_certificate_default=false
+                elif [ "${tls_cert_instances}" -lt 1 ]; then
+                    DEFAULT_CERTIFICATE="DEFAULT"
+                    tls_configure_certificate_default=true
+                else
+                    if [ -z "${DEFAULT_CERTIFICATE}" ]; then
+                        print_error "[common_configure_tls] Multiple TLS Certificates detected - Set DEFAULT_CERTIFICATE environment variable"
+                        exit 9
+                    fi
+                    DEFAULT_CERTIFICATE="${DEFAULT_CERTIFICATE^^}"
+                    tls_configure_certificate_default=false
+                fi
+
+                for certificate_instance in $(set -o posix; set | sort -u | grep -P "^TLS_CERTIFICATE_([A-Z0-9]+)_CERT_FILE=") ; do
+                    tls_certificate_name="$(echo "${certificate_instance}" | cut -d _ -f3)"
 
                     populate_variable() {
-                        if [ -v "TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name}_${1^^}" ]; then
-                            export tls_certificate_${1,,}="$(set -o posix ; set | grep "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_${1^^}=" | cut -d = -f2-)"
+                        if [ -v "TLS_CERTIFICATE_${tls_certificate_name^^}_${1^^}" ]; then
+                            export tls_certificate_${1,,}="$(printenv | grep "^TLS_CERTIFICATE_${tls_certificate_name^^}_${1^^}=" | cut -d = -f2-)"
+                        else
+                            export tls_certificate_${1,,}="$(printenv | grep "^TLS_CERTIFICATE_DEFAULT_${1^^}=" | cut -d = -f2-)"
                         fi
                     }
-                    if [ ! -f "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)" ] || [ ! -f "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_KEY_FILE=" | cut -d = -f 2)" ]; then
-                        certificates "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)"
-                        chown "${SERVER_USER}":"${SERVER_GROUP}" "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)"
-                        chown "${SERVER_USER}":"${SERVER_GROUP}" "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_KEY_FILE=" | cut -d = -f 2)"
-                    fi
 
-                    populate_variable cert_file
-                    populate_variable key_file
+                    if var_false "${tls_configure_certificate_default}" && [ "${tls_certificate_name^^}" = "DEFAULT" ] ; then
+                        print_debug "[common_configure_tls] Skipping building default certificate configuration"
+                    else
+                        config_file="tls-${tls_certificate_name,,}.toml"
+                        config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-                    toml_block add certificate.dynamic "${tls_cert_name,,}" cert quotes "file://${tls_certificate_cert_file}"
-                    toml_block add certificate.dynamic "${tls_cert_name,,}" private-key quotes "file://${tls_certificate_key_file}"
-                    block_certificate="block_certificate_${tls_cert_name,,}"
-                    cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
+                #tls_cert_instances=$(set -o posix ; set | grep -P "^TLS_CERTIFICATE([0-9]+)_.*_CERT_FILE=" | sort -u | wc -l)
+                ### TODO We should dump the instance number variable check and just stick to names
+                #if [ "${tls_cert_instances}" -eq 0 ]; then
+                #    TLS_CERTIFICATE01_DEFAULT_CERT_FILE="${TLS_CERTIFICATE_DEFAULT_CERT_FILE}"
+                #    TLS_CERTIFICATE01_DEFAULT_KEY_FILE="${TLS_CERTIFICATE_DEFAULT_KEY_FILE}"
+                #    tls_cert_instances=1
+                #fi
+
+                ##for (( tls_cert_instance = 01; tls_cert_instance <= tls_cert_instances; tls_cert_instance++ )); do
+                ##    tls_cert_instance=$(printf "%02d" $tls_cert_instance)
+                ##    tls_cert_name=$(set -o posix ; set | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_.*_CERT_FILE=" |  sort -u | cut -d _ -f 3)
+                ##
+                ##    config_file="tls_cert_${tls_cert_name,,}.toml"
+                ##    config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
+                ##
+                ##    populate_variable() {
+                ##        if [ -v "TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name}_${1^^}" ]; then
+                ##            export tls_certificate_${1,,}="$(set -o posix ; set | grep "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_${1^^}=" | cut -d = -f2-)"
+                ##        fi
+                ##    }
+                ##    if [ ! -f "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)" ] || [ ! -f "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_KEY_FILE=" | cut -d = -f 2)" ]; then
+                ##        certificates "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)"
+                ##        chown "${SERVER_USER}":"${SERVER_GROUP}" "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_CERT_FILE=" | cut -d = -f 2)"
+                ##        chown "${SERVER_USER}":"${SERVER_GROUP}" "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE${tls_cert_instance,,}_${tls_cert_name^^}_KEY_FILE=" | cut -d = -f 2)"
+                ##    fi
+
+                        populate_variable cert_file
+                        populate_variable key_file
+                        populate_variable self_sign
+
+                        if [ ! -f "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE_${tls_certificate_name^^}_CERT_FILE=" | cut -d = -f 2)" ] || [ ! -f "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE_${tls_certificate_name^^}_KEY_FILE=" | cut -d = -f 2)" ]; then
+                            if var_true "${tls_certificate_self_sign}"; then
+                                certificates "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE_${tls_certificate_name^^}_CERT_FILE=" | cut -d = -f 2)"
+                                chown "${SERVER_USER}":"${SERVER_GROUP}" "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE_${tls_certificate_name^^}_CERT_FILE=" | cut -d = -f 2)"
+                                chown "${SERVER_USER}":"${SERVER_GROUP}" "$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE_${tls_certificate_name^^}_KEY_FILE=" | cut -d = -f 2)"
+                            fi
+                        fi
+
+                        toml_block add certificate.dynamic "${tls_certificate_name,,}" cert quotes "file://${tls_certificate_cert_file}"
+                        toml_block add certificate.dynamic "${tls_certificate_name,,}" private-key quotes "file://${tls_certificate_key_file}"
+                        block_certificate="block_certificate_${tls_certificate_name,,}"
+                        cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ################################################################################################
 # TLS Certificate name '${tls_cert_name}' configuration '${config_file}'
 # Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
@@ -581,68 +684,19 @@ EOF
 $(toml_block show "${!block_certificate}")
 
 EOF
+                    fi
                 done
 
+                ## TLS Configuration
                 config_file="tls.toml"
                 config_files=$(echo "${config_files}" ; echo "${config_dir}/${config_file},")
 
                 toml_block add server.tls enable "${TLS_ENABLE,,}"
                 toml_block add server.tls implicit "${TLS_IMPLICIT,,}"
                 toml_block add server.tls timeout quotes "${TLS_TIMEOUT}"
-
-                acme_instances=$(set -o posix ; set | sort | grep -P "^TLS_ACME_([A-Z0-9]+)_DIRECTORY=" | wc -l)
-                if [ "${acme_instances}" -eq 1 ]; then
-                    TLS_ACME=${TLS_ACME:-"$(set -o posix ; set | sort | grep -P "^TLS_ACME_([A-Z0-9]+)_DIRECTORY=" | cut -d _ -f3 | tr '[A-Z]' '[a-z]')"}
-                else
-                    if [ -z "${TLS_ACME}" ] && [ "${acme_instances}" -ge 2 ]; then
-                        print_error "Multiple ACME configurations detected - Set TLS_ACME environment variable"
-                        exit 9
-                    fi
-                fi
-
-                #if [ "${acme_instances}" -ge 1 ]; then
-                #    for acme_instance in $(set -o posix; set | sort -u | grep -P "^TLS_ACME_([A-Z0-9]+)_DIRECTORY=") ; do
-                #        acme_name="$(echo "${acme_instance}" | cut -d _ -f3)"
-                #        acme_directory="$(echo "${acme_instance}" | cut -d = -f2)"
-#
-                #        populate_variable() {
-                #            if [ -v "TLS_ACME_${acme_name^^}_${1^^}" ]; then
-                #                export acme_${1,,}="$(set -o posix ; set | grep "^TLS_ACME_${acme_name^^}_${1^^}=" | cut -d = -f2-)"
-                #            else
-                #                export acme_${1,,}="$(set -o posix ; set | grep "^TLS_ACME_DEFAULT_${1^^}=" | cut -d = -f2-)"
-                #            fi
-                #        }
-#
-                #        ## TODO - 0.5.3 and up
-                #        toml_block add server.tls acme quotes "${TLS_ACME}"
-#
-                #        populate_variable acme_directory
-                #        populate_variable acme_contact
-                #        populate_variable acme_cache
-                #        populate_variable acme_port
-                #        populate_variable acme_renew_before
-#
-                #        toml_block acme.dynamic "${acme_name,,}" directory quotes "${acme_directory}"
-                #        toml_block acme.dynamic "${acme_name,,}" contact quotes "${acme_contact}"
-                #        ## TODO Make sure path exists
-                #        toml_block acme.dynamic "${acme_name,,}" cache quotes "${acme_cache}"
-                #        toml_block acme.dynamic "${acme_name,,}" port "${acme_port}"
-                #        toml_block acme.dynamic "${acme_name,,}" renew-before quotes "${acme_renew_before}"
-#
-                #        block_acme="block_acme_${acme_name,,}"
-                #    done
-                #fi
-
-                if [ "${tls_cert_instances}" -eq 1 ]; then
-                    TLS_CERTIFICATE=${TLS_CERTIFICATE:-"$(set -o posix ; set | sort | grep -P "^TLS_CERTIFICATE([0-9]+)_.*_CERT_FILE=" | cut -d _ -f 3 | tr '[A-Z]' '[a-z]')"}
-                else
-                    if [ -z "${TLS_CERTIFICATE}" ]; then
-                        sanity_var TLS_CERTIFICATE "need to select certificate to use"
-                    fi
-                fi
-
-                toml_block add server.tls certificate quotes "${TLS_CERTIFICATE}"
+                toml_block add server.tls certificate quotes "${DEFAULT_CERTIFICATE,,}"
                 toml_block add server.tls ignore-client-order "${TLS_IGNORE_CLIENT_ORDER,,}"
+                toml_block add server.tls acme quotes "${TLS_ACME}"
 
                 cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
 ##########################################################################
@@ -652,10 +706,8 @@ EOF
 
 $(toml_block show "${block_server_tls}")
 
-$(toml block show "${!block_acme}")
-
 EOF
-
+                set +x
             else
                 :
             fi
@@ -700,7 +752,6 @@ EOF
     common_configure_tracing
     if var_true "${ENABLE_SIEVE}" ; then common_configure_sieve; fi
     common_configure_store
-
 }
 
 configure_directory() {
@@ -1050,17 +1101,9 @@ $(if [ -n "${directory_memory_user_memberof}" ]; then echo "member-of = $(array_
 EOF
                                                                                         )"
                             ## TODO Cleanup blank lines
-
-                            #toml_block add directory.dynamic.users ${directory_name,,} name quotes "${directory_memory_user_name}"
-                            #toml_block add directory.dynamic.users ${directory_name,,} description quotes "${directory_memory_user_description}"
-                            #toml_block add directory.dynamic.users ${directory_name,,} secret quotes "${directory_memory_user_pass}"
-                            #toml_block add directory.dynamic.users ${directory_name,,} email quotes "${directory_memory_user_email}"
-                            #toml_block add directory.dynamic.users ${directory_name,,} email-list quotes "${directory_memory_user_email_list}"
-                            #toml_block add directory.dynamic.users ${directory_name,,} quota quotes "${directory_memory_user_quota}"
-                            #toml_block add directory.dynamic.users ${directory_name,,} member-of quotes "${directory_memory_user_memberof}"
                         done
 
-                    memory_user_groups=$(set -o posix ; set | grep -P "^DIRECTORY_${directory_name,,}_MEMORY_GROUP([0-9]+)_.*=" | sort -u | wc -l)
+                        memory_user_groups=$(set -o posix ; set | grep -P "^DIRECTORY_${directory_name,,}_MEMORY_GROUP([0-9]+)_.*=" | sort -u | wc -l)
                         for (( memory_group_instance = 01; memory_group_instance <= memory_user_instances; memory_group_instance++ )); do
                             memory_group_instance=$(printf "%02d" $memory_group_instance)
 
@@ -1075,19 +1118,13 @@ EOF
 $(if [ -n "${directory_memory_group_name}" ]; then echo "name = \"${directory_memory_group_name}\""; fi)
 $(if [ -n "${directory_memory_group_description}" ]; then echo "description = \"${directory_memory_ugroup_description}\""; fi)
 EOF
-
+                                                                                        )"
                             ## TODO Cleanup blank lines
-                                                                                            )"
-                            #toml_block add directory.dynamic.groups ${directory_name,,} name quotes "${directory_memory_group_name}"
-                            #toml_block add directory.dynamic.groups ${directory_name,,} description quotes "${directory_memory_group_description}"
-
                         done
 
                         toml_block add directory.dynamic.lookup ${directory_name,,} domains array "$(array_tools quote comma directory_memory_lookup_domains)"
 
                         block_directory_memory="block_directory_${directory_name,,}"
-                        #block_directory_memory_users="block_directory_${directory_name,,}_users"
-                        #block_directory_memory_groups="block_directory_${directory_name,,}_groups"
                         block_directory_memory_lookup="block_directory_${directory_name,,}_lookup"
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
@@ -1099,10 +1136,8 @@ EOF
 $(toml_block show "${!block_directory_memory}")
 
 $(for block_user in $(set -o posix ; set | sort | grep -P "^block_directory_memory_user_.*="); do echo "${block_user}" ; done)
-\#$(toml_block show "${!block_directory_memory_users}")
 
 $(for block_group in $(set -o posix ; set | sort | grep -P "^block_directory_memory_group_.*="); do echo "${block_group}" ; done)
-\#$(toml_block show "${!block_directory_memory_groups}")
 
 $(toml_block show "${!block_directory_memory_lookup}")
 
@@ -1155,6 +1190,7 @@ EOF
                             fi
                         }
 
+                        ### TODO Questioning the validity of this now that its in stores
                         populate_variable_sql query_domains
                         populate_variable_sql query_emails
                         populate_variable_sql query_expand
@@ -1747,6 +1783,7 @@ EOF
                 SMTP_LISTENER_SUBMISSION_GREETING=${SMTP_LISTENER_SUBMISSION_GREETING:-"${SMTP_LISTENER_GREETING}"}
                 toml_block add server.listener.dynamic submission greeting quotes "${SMTP_LISTENER_SUBMISSION_GREETING}"
                 toml_block add server.listener.dynamic submission protocol quotes "${SMTP_LISTENER_SUBMISSION_PROTOCOL}"
+                toml_block add server.listener.dynamic submission tls.implicit "${SMTP_LISTENER_SUBMISSION_TLS_IMPLICIT,,}"
             fi
 
             if var_true "${SMTP_ENABLE_SUBMISSIONS}" ; then
@@ -2263,7 +2300,7 @@ EOF
             smtp_signature_instances=$(set -o posix ; set | sort -u | grep -P "^SMTP_SIGNATURE_([A-Z0-9]+)_SELECTOR=" | grep -Pve "^SMTP_SIGNATURE_DEFAULT_SELECTOR="| wc -l)
             if [ "${smtp_signature_instances}" -eq 1 ]; then
                 smtp_signature_name=$(set -o posix ; set | sort | grep -P "^SMTP_SIGNATURE_.*_SELECTOR=" | grep -Pve "^SMTP_SIGNATURE_DEFAULT_SELECTOR=" | cut -d _ -f 3)
-                DEFAULT_SIGNATURE="${SMTP_SIGNATURE_NAME^^}"
+                DEFAULT_SIGNATURE="${smtp_signature_name^^}"
                 smtp_configure_signature_default=false
             elif [ "${smtp_signature_instances}" -lt 1 ]; then
                 DEFAULT_SIGNATURE="DEFAULT"
@@ -2809,7 +2846,6 @@ EOF
                         store_type=FoundationDB
 
                         populate_variable foundationdb_path
-                        ## TODO Is this already a full path+name - Should we dirname
                         if [ ! -d "${store_foundationdb_path}" ]; then mkdir -p "${store_foundationdb_path}" ; fi
                         if [ "$(stat -c %U "${store_foundationdb_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${store_foundationdb_path}" ; fi
 
@@ -3226,14 +3262,14 @@ dkim() {
 
             case "${_dkim_type,,}" in
                 ed25519 )
-                    sudo -u "${SERVER_USER}" openssl genpkey -algorithm ed25519 -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key
-                    sudo -u "${SERVER_USER}" openssl pkey -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert
-                    _dkim_dns_pubkey=$(sudo -u "${SERVER_USER}" openssl pkey -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der | tail -c +13 | openssl base64 -A)
+                    sudo -u "${SERVER_USER}" openssl genpkey -algorithm ed25519 -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key 2>/dev/null
+                    sudo -u "${SERVER_USER}" openssl pkey -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert 2>/dev/null
+                    _dkim_dns_pubkey=$(sudo -u "${SERVER_USER}" openssl pkey -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der 2>/dev/null | tail -c +13 | openssl base64 -A)
                 ;;
                 rsa* )
                     sudo -u "${SERVER_USER}" openssl genrsa -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key ${_dkim_key_size}
-                    sudo -u "${SERVER_USER}" openssl rsa -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert
-                    _dkim_dns_pubkey=$(sudo -u "${SERVER_USER}" openssl rsa -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der | openssl base64 -A)
+                    sudo -u "${SERVER_USER}" openssl rsa -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -out "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".cert 2>/dev/null
+                    _dkim_dns_pubkey=$(sudo -u "${SERVER_USER}" openssl rsa -in "${DKIM_PATH}"/"${_dkim_selector}"-"${_dkim_domain/./_}".key -pubout -outform der 2>/dev/null | openssl base64 -A) 2>/dev/null
                 ;;
             esac
 
