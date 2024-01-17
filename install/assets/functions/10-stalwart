@@ -849,7 +849,6 @@ EOF
                     ;;
                     internal )
                         populate_variable internal_store
-                        populate_variable internal_disable
 
                         populate_variable internal_options_catch_all
                         populate_variable internal_options_subaddressing
@@ -858,7 +857,6 @@ EOF
 
                         toml_block add directory.dynamic ${directory_name,,} type quotes "internal"
                         toml_block add directory.dynamic ${directory_name,,} store quotes "${directory_internal_store}"
-                        toml_block add directory.dynamic ${directory_name,,} disable "${directory_internal_disable,,}"
 
                         toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_internal_options_catch_all}"
                         toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_internal_options_subaddressing}"
@@ -1176,62 +1174,22 @@ EOF
                     ;;
                     sql )
                         populate_variable sql_address
-                        populate_variable sql_cache_entries
-                        populate_variable sql_cache_ttl
-                        populate_variable sql_columns_description
-                        populate_variable sql_columns_email
-                        populate_variable sql_columns_name
-                        populate_variable sql_columns_quota
-                        populate_variable sql_columns_pass
-                        populate_variable sql_columns_type
+                        populate_variable sql_store
+
                         populate_variable sql_options_catch_all
                         populate_variable sql_options_subaddressing
-                        populate_variable sql_pool_max_connections
-                        populate_variable sql_pool_min_connections
+                        populate_variable sql_cache_entries
+                        populate_variable sql_cache_ttl
 
-                        ## TODO this actually needs to be in stores
-                        populate_variable sql_type
-
-                        if [ -z "${directory_sql_type}" ]; then
-                            print_error "You need to set SQL Type for the directory!"
-                            exit 9
-                        fi
-
-                        case "${directory_sql_type,,}" in
-                            maria | mysql )
-                                directory_sql_type=mysql
-                            ;;
-                            pgsql | postgres* )
-                                directory_sql_type=postgres
-                            ;;
-                            sqlite* )
-                                directory_sql_type=sqlite
-                            ;;
-                            * )
-                                print_error "[configure_directory] [sql] I don't know SQL type '${directory_sql_type,,}'"
-                                exit 9
-                            ;;
-                        esac
-
-                        populate_variable_sql() {
-                            if [ -v "^DIRECTORY_${directory_name^^}_SQL_${1^^}" ]; then
-                                export directory_sql_${1,,}="$(set -o posix ; set | grep -P "^DIRECTORY_${directory_name^^}_SQL_${1^^}=" | cut -d = -f2-)"
-                            else
-                                export directory_sql_${1,,}="$(set -o posix; set | grep -P "^DIRECTORY_DEFAULT_SQL_${directory_sql_type^^}_${1^^}=" | cut -d = -f2-)"
-                            fi
-                        }
-
-                        ### TODO Questioning the validity of this now that its in stores
-                        populate_variable_sql query_domains
-                        populate_variable_sql query_emails
-                        populate_variable_sql query_expand
-                        populate_variable_sql query_members
-                        populate_variable_sql query_name
-                        populate_variable_sql query_recipients
-                        populate_variable_sql query_verify
+                        populate_variable sql_columns_type
+                        populate_variable sql_columns_pass
+                        populate_variable sql_columns_description
+                        populate_variable sql_columns_quota
 
                         toml_block add directory.dynamic ${directory_name,,} type quotes "sql"
                         toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_sql_address}"
+                        sanity_var directory_sql_store "no store selected for SQL directory"
+                        toml_block add directory.dynamic ${directory_name,,} store quotes "${directory_sql_store}"
 
                         toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_sql_options_catch_all,,}"
                         toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_sql_options_subaddressing,,}"
@@ -1243,26 +1201,15 @@ EOF
                         toml_block add directory.dynamic.cache ${directory_name,,} entries "${directory_sql_cache_entries}"
                         toml_block add directory.dynamic.cache ${directory_name,,} ttl "${directory_sql_cache_ttl}"
 
-                        toml_block add directory.dynamic.query ${directory_name,,} name "${directory_sql_query_name}"
-                        toml_block add directory.dynamic.query ${directory_name,,} members "${directory_sql_query_members}"
-                        toml_block add directory.dynamic.query ${directory_name,,} recipients "${directory_sql_query_recipients}"
-                        toml_block add directory.dynamic.query ${directory_name,,} emails "${directory_sql_query_emails}"
-                        toml_block add directory.dynamic.query ${directory_name,,} verify "${directory_sql_query_verify}"
-                        toml_block add directory.dynamic.query ${directory_name,,} expand "${directory_sql_query_expand}"
-                        toml_block add directory.dynamic.query ${directory_name,,} domains "${directory_sql_query_domains}"
-
-                        toml_block add directory.dynamic.columns ${directory_name,,} name "${directory_sql_columns_name}"
-                        toml_block add directory.dynamic.columns ${directory_name,,} description "${directory_sql_columns_description}"
-                        toml_block add directory.dynamic.columns ${directory_name,,} secret "${directory_sql_columns_pass}"
-                        toml_block add directory.dynamic.columns ${directory_name,,} email "${directory_sql_columns_email}"
-                        toml_block add directory.dynamic.columns ${directory_name,,} quota "${directory_sql_columns_quota}"
                         toml_block add directory.dynamic.columns ${directory_name,,} type "${directory_sql_columns_type}"
+
+                        toml_block add directory.dynamic.columns ${directory_name,,} secret "${directory_sql_columns_pass}"
+                        toml_block add directory.dynamic.columns ${directory_name,,} quota "${directory_sql_columns_quota}"
+                        toml_block add directory.dynamic.columns ${directory_name,,} description "${directory_sql_columns_description}"
 
                         block_directory_sql="block_directory_${directory_name,,}"
                         block_directory_sql_options="block_directory_${directory_name,,}_options"
-                        block_directory_sql_pool="block_directory_${directory_name,,}_pool"
                         block_directory_sql_cache="block_directory_${directory_name,,}_cache"
-                        block_directory_sql_query="block_directory_${directory_name,,}_query"
                         block_directory_sql_columns="block_directory_${directory_name,,}_columns"
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
@@ -1275,11 +1222,7 @@ $(toml_block show "${!block_directory_sql}")
 
 $(toml_block show "${!block_directory_sql_options}")
 
-$(toml_block show "${!block_directory_sql_pool}")
-
 $(toml_block show "${!block_directory_sql_cache}")
-
-$(toml_block show "${!block_directory_sql_query}")
 
 $(toml_block show "${!block_directory_sql_columns}")
 
@@ -2784,7 +2727,6 @@ configure_store() {
                         populate_variable elasticsearch_user
                         populate_variable elasticsearch_pass
                         populate_variable elasticsearch_cloudid
-                        populate_variable elasticsearch_disable
 
                         populate_variable elasticsearch_tls_allow_invaid_certs
                         populate_variable elasticsearch_index_shards
@@ -2795,7 +2737,6 @@ configure_store() {
                         toml_block add store.dynamic ${store_name,,} user quotes "${store_elasticsearch_user}"
                         toml_block add store.dynamic ${store_name,,} password quotes "${store_elasticsearch_pass}"
                         toml_block add store.dynamic ${store_name,,} cloud-id quotes "${store_elasticsearch_cloudid}"
-                        toml_block add store.dynamic ${store_name,,} disable "${store_elasticsearch_disable,,}"
 
                         toml_block add store.dynamic.tls ${store_name,,} allow-invalid-certs "${store_elasticsearch_tls_allow_invalid_certs,,}"
 
