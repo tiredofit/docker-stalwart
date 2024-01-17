@@ -9,11 +9,22 @@ check_service_initialized 10-stalwart init
 
 liftoff
 
-while inotifywait -q -e create,delete,modify,attrib "$(set -o posix ; set | grep -P "^TLS_.*_FILE" | sort -u | cut -d = -f2 | tr '\n' ' ')" ; do
-    if pidof 2&>1 stalwart-mail ; then
-        print_info "Reloading Stalwart Mail configuration do to a detected certificate change"
-        sudo -u "${SERER_USER}" stalwart-mail -u ${JMAP_LISTENER_JMAP_URL} server reload-certificates
-        exit 0
+for certificate in $(set -o posix ; set | grep -P "^TLS_CERTIFICATE_.*_FILE" | sort -u | cut -d = -f2) ; do
+    if [ -f "${certificate}" ]; then
+        certificates="$(echo "${certificates} ${certificate}")"
     fi
-    sleep 5
 done
+
+if [ -z "${certificates// }" ] ; then
+    print_warn "No certificates to watch - disabling functionality"
+    s6-svc -d /var/run/s6/legacy-services/11/stalwart-config-reload
+else
+    while inotifywait -q -e create,delete,modify,attrib ${certificates} ; do
+        if pidof 2&>1 stalwart-mail ; then
+            print_info "Reloading Stalwart Mail configuration do to a detected certificate change"
+            sudo -u "${SERER_USER}" stalwart-mail -u ${JMAP_LISTENER_JMAP_URL} server reload-certificates
+            exit 0
+        fi
+        sleep 5
+    done
+fi
