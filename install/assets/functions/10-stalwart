@@ -1010,19 +1010,19 @@ EOF
                     ;;
                     lmtp )
                         populate_variable lmtp_address
-                        populate_variable lmtp_cache_entries
-                        populate_variable lmtp_cache_ttl
+                        populate_variable lmtp_port
                         populate_variable lmtp_limits_auth_errors
                         populate_variable lmtp_limits_rcpt
-                        populate_variable lmtp_lookup_domains
-                        populate_variable lmtp_pool_connect_timeout
-                        populate_variable lmtp_pool_idle_timeout
                         populate_variable lmtp_pool_max_connections
-                        populate_variable lmtp_pool_max_lifetime
-                        populate_variable lmtp_pool_min_connections
-                        populate_variable lmtp_port
+                        populate_variable lmtp_pool_max_connections
+                        populate_variable lmtp_pool_timeout_create
+                        populate_variable lmtp_pool_timeout_wait
+                        populate_variable lmtp_pool_timeout_recycle
                         populate_variable lmtp_tls_allow_invalid_certs
                         populate_variable lmtp_tls_implicit
+                        populate_variable lmtp_cache_entries
+                        populate_variable lmtp_cache_ttl
+                        populate_variable lmtp_lookup_domains
 
                         toml_block add directory.dynamic ${directory_name,,} type quotes "lmtp"
                         toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_lmtp_address}"
@@ -1032,10 +1032,9 @@ EOF
                         toml_block add directory.dynamic.limits ${directory_name,,} rcpt "${directory_lmtp_limits_rcpt}"
 
                         toml_block add directory.dynamic.pool ${directory_name,,} max-connections "${directory_lmtp_pool_max_connections}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} min-connections "${directory_lmtp_pool_min_connections}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} max-lifetime quotes "${directory_lmtp_pool_max_lifetime}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} idle-timeout quotes "${directory_lmtp_pool_idle_timeout}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} connect-timeout quotes "${directory_lmtp_pool_connect_timeout}"
+                        toml_block add directory.dynamic.pool.timeout ${directory_name,,} create quotes "${directory_lmtp_pool_timeout_create}"
+                        toml_block add directory.dynamic.pool.timeout ${directory_name,,} wait quotes "${directory_lmtp_pool_timeout_wait}"
+                        toml_block add directory.dynamic.pool.timeout ${directory_name,,} recycle quotes "${directory_lmtp_pool_timeout_recycle}"
 
                         toml_block add directory.dynamic.tls ${directory_name,,} implicit "${directory_lmtp_tls_implicit,,}"
                         toml_block add directory.dynamic.tls ${directory_name,,} allow-invalid-certs "${directory_lmtp_tls_allow_invalid_certs,,}"
@@ -1043,17 +1042,14 @@ EOF
                         toml_block add directory.dynamic.cache ${directory_name,,} entries "${directory_lmtp_cache_entries}"
                         toml_block add directory.dynamic.cache ${directory_name,,} ttl "${directory_lmtp_cache_ttl}"
 
-                        toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_lmtp_options_catch_all,,}"
-                        toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_lmtp_options_subaddressing,,}"
-
                         toml_block add directory.dynamic.lookup ${directory_name,,} domains array "$(array_tools quote comma directory_lmtp_lookup_domains)"
 
                         block_directory_lmtp="block_directory_${directory_name,,}"
                         block_directory_lmtp_limits="block_directory_${directory_name,,}_limits"
                         block_directory_lmtp_pool="block_directory_${directory_name,,}_pool"
+                        block_directory_lmtp_pool_timeout="block_directory_${directory_name,,}_pool_timeout"
                         block_directory_lmtp_tls="block_directory_${directory_name,,}_tls"
                         block_directory_lmtp_cache="block_directory_${directory_name,,}_cache"
-                        block_directory_lmtp_options="block_directory_${directory_name,,}_options"
                         block_directory_lmtp_lookup="block_directory_${directory_name,,}_lookup"
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
@@ -1068,11 +1064,11 @@ $(toml_block show "${!block_directory_lmtp_limits}")
 
 $(toml_block show "${!block_directory_lmtp_pool}")
 
+$(toml_block show "${!block_directory_lmtp_pool_options}")
+
 $(toml_block show "${!block_directory_lmtp_tls}")
 
 $(toml_block show "${!block_directory_lmtp_cache}")
-
-$(toml_block show "${!block_directory_lmtp_options}")
 
 $(toml_block show "${!block_directory_lmtp_lookup}")
 EOF
