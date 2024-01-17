@@ -2318,23 +2318,31 @@ EOF
                 smtp_signature_name="$(echo "${signature_instance}" | cut -d _ -f3)"
 
                 populate_variable() {
-                    if [ -v "SMTP_SIGNATURE_${signature_name^^}_${1^^}" ]; then
-                        export smtp_signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_${signature_name^^}_${1^^}=" | cut -d = -f2-)"
+                    if [ -v "SMTP_SIGNATURE_${smtp_signature_name^^}_${1^^}" ]; then
+                        export smtp_signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_${smtp_signature_name^^}_${1^^}=" | cut -d = -f2-)"
                     else
                         export smtp_signature_${1,,}="$(printenv | grep "^SMTP_SIGNATURE_DEFAULT_${1^^}=" | cut -d = -f2-)"
                     fi
                 }
 
-                if var_false "${smtp_configure_signature_default}" && [ "${signature_name^^}" = "DEFAULT" ] ; then
+                if var_false "${smtp_configure_signature_default}" && [ "${smtp_signature_name^^}" = "DEFAULT" ] ; then
                     print_debug "[smtp_configure_signature] Skipping building default signature configuration"
                 else
                     config_file="signature-${smtp_signature_name,,}.toml"
                     config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-                    populate_variable public_key
-                    populate_variable private_key
                     populate_variable domain
                     populate_variable selector
+                    if [ -v "SMTP_SIGNATURE_${smtp_signature_name^^}_PUBLIC_KEY" ]; then
+                        export smtp_signature_public_key="$(printenv | grep "^SMTP_SIGNATURE_${smtp_signature_name^^}_PUBLIC_KEY=" | cut -d = -f2-)"
+                    else
+                        export smtp_signature_public_key="${smtp_signature_selector}-${smtp_signature_domain/./_}.cert"
+                    fi
+                    if [ -v "SMTP_SIGNATURE_${smtp_signature_name^^}_PRIVATE_KEY" ]; then
+                        export smtp_signature_private_key="$(printenv | grep "^SMTP_SIGNATURE_${smtp_signature_name^^}_PRIVATE_KEY=" | cut -d = -f2-)"
+                    else
+                        export smtp_signature_private_key="${smtp_signature_selector}-${smtp_signature_domain/./_}.key"
+                    fi
                     populate_variable headers
                     populate_variable key_type
                     populate_variable rsa_key_size
@@ -2349,8 +2357,8 @@ EOF
 
                     dkim generate "${smtp_signature_selector}" "${smtp_signature_domain}" "${smtp_signature_key_type}" "${smtp_signature_rsa_key_size}"
 
-                    toml_block add signature.dynamic ${smtp_signature_name,,} public-key quotes "${smtp_signature_public_key}"
-                    toml_block add signature.dynamic ${smtp_signature_name,,} private-key quotes "${smtp_signature_private_key}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} public-key quotes file://"${DKIM_PATH}"/"${smtp_signature_public_key}"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} private-key quotes file://"${DKIM_PATH}"/"${smtp_signature_private_key}"
                     toml_block add signature.dynamic ${smtp_signature_name,,} domain quotes "${smtp_signature_domain}"
                     toml_block add signature.dynamic ${smtp_signature_name,,} selector quotes "${smtp_signature_selector}"
                     toml_block add signature.dynamic ${smtp_signature_name,,} headers array "$(array_tools quote comma smtp_signature_headers)"
@@ -3285,16 +3293,6 @@ ${_dkim_domain/./_}. IN TXT "v=spf1 a:${SERVER_NAME}.${_dkim_domain/./_} mx -all
 ${SERVER_NAME}.${_dkim_domain/./_}. IN TXT "v=spf1 a -all ra=postmaster"
 _dmarc.${_dkim_domain/./_}. IN TXT "v=DMARC1; p=none; rua=mailto:postmaster@${_dkim_domain/_/.}; ruf=mailto:postmaster@${_dkim_domain/_/.}"
 EOF
-        ;;
-        parse_environment )
-            dkim_domains=$(set -o posix ; set | sort | grep -c "^DKIM.*_DOMAIN=")
-            for (( dkim_pair = 01; dkim_pair <= dkim_domains; dkim_pair++ )); do
-                dkim_domain=DKIM${dkim_pair}_DOMAIN
-                dkim_selector=DKIM${dkim_pair}_SELECTOR
-                dkim_type=DKIM${dkim_pair}_TYPE
-                dkim_keysize=DKIM${dkim_pair}_KEY_SIZE
-                dkim generate "${!dkim_selector}" "${!dkim_domain}" "${!dkim_type}" ${!dkim_keysize}
-            done
         ;;
     esac
 }
