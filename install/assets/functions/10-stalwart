@@ -2000,7 +2000,7 @@ EOF
             toml_block add report hash ${REPORTS_HASH}
             toml_block add report submitter "${REPORTS_SUBMITTER}"
 
-            toml_block add report.analysis addresses array "$(array_tools quote comma SMTP_REPORT_ANALYSIS_ADDRESSES)"
+            toml_block add report.analysis addresses array "$(array_tools doublequote comma SMTP_REPORT_ANALYSIS_ADDRESSES)"
             toml_block add report.analysis forward "${SMTP_REPORT_ANALYSIS_FORWARD,,}"
             if [ ! -d "${SMTP_REPORT_ANALYSIS_STORE}" ]; then mkdir -p "${SMTP_REPORT_ANALYSIS_STORE}" ; fi
             if [ "$(stat -c %U "${SMTP_REPORT_ANALYSIS_STORE}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${SMTP_REPORT_ANALYSIS_STORE}" ; fi
