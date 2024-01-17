@@ -2306,7 +2306,7 @@ EOF
                     toml_block add signature.dynamic ${smtp_signature_name,,} private-key quotes file://"${DKIM_PATH}"/"${smtp_signature_private_key}"
                     toml_block add signature.dynamic ${smtp_signature_name,,} domain quotes "${smtp_signature_domain}"
                     toml_block add signature.dynamic ${smtp_signature_name,,} selector quotes "${smtp_signature_selector}"
-                    toml_block add signature.dynamic ${smtp_signature_name,,} headers array "$(array_tools quote comma smtp_signature_headers)"
+                    toml_block add signature.dynamic ${smtp_signature_name,,} headers array "$(array_tools doublequote comma smtp_signature_headers)"
                     toml_block add signature.dynamic ${smtp_signature_name,,} algorithm quotes "${smtp_signature_algorithm}"
                     toml_block add signature.dynamic ${smtp_signature_name,,} canonicalization quotes "${smtp_signature_canonicalization}"
                     toml_block add signature.dynamic ${smtp_signature_name,,} expire quotes "${smtp_signature_expire}"
