@@ -1,11 +1,11 @@
 #!/command/with-contenv bash
 
 source /assets/functions/00-container
-prepare_service defaults10-stalwart
+prepare_service defaults 10-stalwart
 PROCESS_NAME="stalwart-config-reload"
 
 check_container_initialized
-check_service_initialized init
+check_service_initialized 10-stalwart init
 
 liftoff
 

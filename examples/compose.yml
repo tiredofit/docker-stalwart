@@ -10,7 +10,6 @@ services:
       - CONTAINER_NAME=stalwart-app
 
       - MODE=SMTP
-
     networks:
       - services
     restart: always
