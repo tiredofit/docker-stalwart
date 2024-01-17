@@ -2328,7 +2328,7 @@ EOF
                 if var_false "${smtp_configure_signature_default}" && [ "${signature_name^^}" = "DEFAULT" ] ; then
                     print_debug "[smtp_configure_signature] Skipping building default signature configuration"
                 else
-                    config_file="signature_${smtp_signature_name,,}.toml"
+                    config_file="signature-${smtp_signature_name,,}.toml"
                     config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
                     populate_variable public_key
