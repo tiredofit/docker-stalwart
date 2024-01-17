@@ -794,27 +794,24 @@ configure_directory() {
                 case "${directory_type,,}" in
                     imap )
                         populate_variable imap_address
+                        populate_variable imap_port
+                        populate_variable imap_pool_max_connections
+                        populate_variable imap_pool_max_lifetime
+                        populate_variable imap_tls_allow_invalid_certs
+                        populate_variable imap_tls_implicit
                         populate_variable imap_cache_entries
                         populate_variable imap_cache_ttl
                         populate_variable imap_lookup_domains
-                        populate_variable imap_pool_connect_timeout
-                        populate_variable imap_pool_idle_timeout
-                        populate_variable imap_pool_max_connections
-                        populate_variable imap_pool_max_lifetime
-                        populate_variable imap_pool_min_connections
-                        populate_variable imap_port
-                        populate_variable imap_tls_allow_invalid_certs
-                        populate_variable imap_tls_implicit
+
 
                         toml_block add directory.dynamic ${directory_name,,} type quotes "imap"
                         toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_imap_address}"
                         toml_block add directory.dynamic ${directory_name,,} port "${directory_imap_port}"
 
                         toml_block add directory.dynamic.pool ${directory_name,,} max-connections "${directory_imap_pool_max_connections}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} min-connections "${directory_imap_pool_min_connections}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} max-lifetime quotes "${directory_imap_pool_max_lifetime}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} idle-timeout quotes "${directory_imap_pool_idle_timeout}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} connect-timeout quotes "${directory_imap_pool_connect_timeout}"
+                        toml_block add directory.dynamic.pool.timeout ${directory_name,,} create quotes "${directory_imap_pool_timeout_create}"
+                        toml_block add directory.dynamic.pool.timeout ${directory_name,,} wait quotes "${directory_imap_pool_timeout_wait}"
+                        toml_block add directory.dynamic.pool.timeout ${directory_name,,} recycle quotes "${directory_imap_pool_timeout_recycle}"
 
                         toml_block add directory.dynamic.tls ${directory_name,,} implicit "${directory_imap_tls_implicit,,}"
                         toml_block add directory.dynamic.tls ${directory_name,,} allow-invalid-certs "${directory_imap_tls_allow_invalid_certs,,}"
@@ -826,6 +823,7 @@ configure_directory() {
 
                         block_directory_imap="block_directory_${directory_name,,}"
                         block_directory_imap_pool="block_directory_${directory_name,,}_pool"
+                        block_directory_imap_pool_timeout="block_directory_${directory_name,,}_pool_timeout"
                         block_directory_imap_tls="block_directory_${directory_name,,}_tls"
                         block_directory_imap_cache="block_directory_${directory_name,,}_cache"
                         block_directory_imap_lookup="block_directory_${directory_name,,}_lookup"
@@ -839,6 +837,8 @@ configure_directory() {
 $(toml_block show "${!block_directory_imap}")
 
 $(toml_block show "${!block_directory_imap_pool}")
+
+$(toml_block show "${!block_directory_imap_pool_timeout}")
 
 $(toml_block show "${!block_directory_imap_tls}")
 
