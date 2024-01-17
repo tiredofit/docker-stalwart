@@ -1736,35 +1736,6 @@ EOF
         fi
     }
 
-    smtp_configure_dkim() {
-        config_file="dkim.toml"
-
-        if [ "${SETUP_TYPE,,}" = "auto" ]; then
-            config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-
-            print_debug "Configuring DKIM"
-
-            dkim_domains=$(set -o posix ; set | sort | grep -c "^DKIM.*_DOMAIN=")
-            for (( dkim_pair = 01; dkim_pair <= dkim_domains; dkim_pair++ )); do
-                dkim_domain=DKIM${dkim_pair}_DOMAIN
-                dkim_selector=DKIM${dkim_pair}_SELECTOR
-                dkim_type=DKIM${dkim_pair}_TYPE
-                dkim_keysize=DKIM${dkim_pair}_KEY_SIZE
-                dkim generate "${!dkim_selector}" "${!dkim_domain}" "${!dkim_type}" ${!dkim_keysize}
-            done
-
-            cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
-##########################################################################
-# Stalwart Mail SMTP configuration '${config_file}'
-# Automatically Generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S')
-##########################################################################
-
-EOF
-        else
-            :
-        fi
-    }
-
     smtp_configure_listener() {
         config_file="listener.toml"
 
