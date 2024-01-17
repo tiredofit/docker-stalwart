@@ -1825,8 +1825,8 @@ EOF
             toml_block add queue path quotes "${SMTP_QUEUE_PATH}"
             toml_block add queue hash "${SMTP_QUEUE_HASH}"
 
-            toml_block add queue.schedule retry array "$(array_tools quote comma SMTP_QUEUE_SCHEDULE_RETRY)"
-            toml_block add queue.schedule notify array "$(array_tools quote comma SMTP_QUEUE_SCHEDULE_NOTIFY)"
+            toml_block add queue.schedule retry array "$(array_tools doublequote comma SMTP_QUEUE_SCHEDULE_RETRY)"
+            toml_block add queue.schedule notify array "$(array_tools doublequote comma SMTP_QUEUE_SCHEDULE_NOTIFY)"
             toml_block add queue.schedule expire quotes "${SMTP_QUEUE_SCHEDULE_EXPIRE}"
 
             toml_block add queue.outbound hostname quotes "${SMTP_QUEUE_OUTBOUND_HOSTNAME}"
@@ -1905,7 +1905,7 @@ messages = 100000
 size = 10737418240 # 10gb
 
 [[queue.throttle]]
-#key = ["rcpt-domain"]
+key = ["rcpt-domain"]
 #rate = "100/1h"
 concurrency = 5
 
