@@ -940,7 +940,7 @@ EOF
                         toml_block add directory.dynamic.bind.auth ${directory_name,,} enable "${directory_ldap_auth_enable,,}"
                         toml_block add directory.dynamic.bind.auth ${directory_name,,} dn quotes "${directory_ldap_auth_dn}"
 
-                        toml_block add directory.dynamic.tls ${directory_name,,} enable "${directory_ldap_tls_enable..}"
+                        toml_block add directory.dynamic.tls ${directory_name,,} enable "${directory_ldap_tls_enable,,}"
                         toml_block add directory.dynamic.tls ${directory_name,,} allow-invalid-certs "${directory_ldap_tls_allow_invalid_certs}"
 
                         toml_block add directory.dynamic.cache ${directory_name,,} entries "${directory_ldap_cache_entries}"
