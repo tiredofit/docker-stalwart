@@ -803,7 +803,6 @@ configure_directory() {
                         populate_variable imap_cache_ttl
                         populate_variable imap_lookup_domains
 
-
                         toml_block add directory.dynamic ${directory_name,,} type quotes "imap"
                         toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_imap_address}"
                         toml_block add directory.dynamic ${directory_name,,} port "${directory_imap_port}"
@@ -847,7 +846,6 @@ $(toml_block show "${!block_directory_imap_cache}")
 $(toml_block show "${!block_directory_imap_lookup}")
 
 EOF
-
                     ;;
                     internal )
                         populate_variable internal_store
@@ -1074,25 +1072,39 @@ $(toml_block show "${!block_directory_lmtp_lookup}")
 EOF
                     ;;
                     memory )
-                        populate_variable memory_groups_description
-                        populate_variable memory_groups_name
-                        populate_variable memory_lookup_domains
                         populate_variable memory_options_catch_all
                         populate_variable memory_options_subaddressing
-                        populate_variable memory_users_description
-                        populate_variable memory_users_email
-                        populate_variable memory_users_email_list
-                        populate_variable memory_users_memberof
-                        populate_variable memory_users_name
-                        populate_variable memory_users_quota
-                        populate_variable memory_users_pass
-                        populate_variable memory_users_type
+                        populate_variable memory_lookup_domains
 
                         toml_block add directory.dynamic ${directory_name,,} type "memory"
 
                         toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_memory_options_catch_all,,}"
                         toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_memory_options_subaddressing,,}"
 
+                        ## TODO Evaluate if this should be [XX] numerical or just rely on _NAME for seperation
+                        memory_admin_instances=$(set -o posix ; set | grep -P "^DIRECTORY_${directory_name,,}_ADMIN_USER([0-9]+)_.*=" | sort -u | wc -l)
+                        for (( memory_admin_instance = 01; memory_admin_instance <= memory_admin_instances; memory_admin_instance++ )); do
+                            memory_admin_instance=$(printf "%02d" $memory_admin_instance)
+
+                            populate_variable() {
+                                if [ -v "^DIRECTORY_${directory_name^^}_MEMORY_ADMIN([0-9]+)_${1^^}" ]; then
+                                    export directory_memory_admin_${1,,}="$(printenv | grep "^DIRECTORY_${directory_name,,}_MEMORY_ADMIN([0-9]+)_${1^^}=" | cut -d = -f2-)"
+                                fi
+                            }
+
+                            export block_directory_memory_admin_${memory_admin_instance}="$(cat <<EOF
+[[directory."${directory_name,,}".principals]]
+$(if [ -n "${directory_memory_admin_name}" ]; then echo "name = \"${directory_memory_admin_name}\""; fi)
+$(if [ -n "${directory_memory_admin_name}" ]; then echo "type = \"admin\""; fi)
+$(if [ -n "${directory_memory_admin_description}" ]; then echo "description = \"${directory_memory_admin_description}\""; fi)
+$(if [ -n "${directory_memory_admin_pass}" ]; then echo "secret = \"${directory_memory_admin_pass}\""; fi)
+$(if [ -n "${directory_memory_user_email}" ]; then echo "email = $(array_tools quote comma directory_memory_admin_email)"; fi)
+EOF
+                                                                                        )"
+                            ## TODO Cleanup blank lines
+                        done
+
+                        ## TODO Evaluate if this should be [XX] numerical or just rely on _NAME for seperation
                         memory_user_instances=$(set -o posix ; set | grep -P "^DIRECTORY_${directory_name,,}_MEMORY_USER([0-9]+)_.*=" | sort -u | wc -l)
                         for (( memory_user_instance = 01; memory_user_instance <= memory_user_instances; memory_user_instance++ )); do
                             memory_user_instance=$(printf "%02d" $memory_user_instance)
@@ -1104,8 +1116,9 @@ EOF
                             }
 
                             export block_directory_memory_user_${memory_user_instance}="$(cat <<EOF
-[[directory."${directory_name,,}".users]]
+[[directory."${directory_name,,}".principals]]
 $(if [ -n "${directory_memory_user_name}" ]; then echo "name = \"${directory_memory_user_name}\""; fi)
+$(if [ -n "${directory_memory_user_name}" ]; then echo "type = \"individual\""; fi)
 $(if [ -n "${directory_memory_user_description}" ]; then echo "description = \"${directory_memory_user_description}\""; fi)
 $(if [ -n "${directory_memory_user_type}" ]; then echo "type = \"${directory_memory_user_type}\""; fi)
 $(if [ -n "${directory_memory_user_pass}" ]; then echo "secret = \"${directory_memory_user_pass}\""; fi)
@@ -1129,9 +1142,10 @@ EOF
                             }
 
                             export block_directory_memory_group_${memory_group_instance}="$(cat <<EOF
-[[directory."${directory_name,,}".users]]
+[[directory."${directory_name,,}".principals]]
 $(if [ -n "${directory_memory_group_name}" ]; then echo "name = \"${directory_memory_group_name}\""; fi)
-$(if [ -n "${directory_memory_group_description}" ]; then echo "description = \"${directory_memory_ugroup_description}\""; fi)
+$(if [ -n "${directory_memory_group_name}" ]; then echo "name = \"group\""; fi)
+$(if [ -n "${directory_memory_group_description}" ]; then echo "description = \"${directory_memory_group_description}\""; fi)
 EOF
                                                                                         )"
                             ## TODO Cleanup blank lines
@@ -1150,9 +1164,11 @@ EOF
 
 $(toml_block show "${!block_directory_memory}")
 
-$(for block_user in $(set -o posix ; set | sort | grep -P "^block_directory_memory_user_.*="); do echo "${block_user}" ; done)
+$(for block_admin in $(set -o posix ; set | sort | grep -P "^block_directory_memory_admin_([0-9+]+)="); do echo "${block_admin}" ; done)
 
-$(for block_group in $(set -o posix ; set | sort | grep -P "^block_directory_memory_group_.*="); do echo "${block_group}" ; done)
+$(for block_user in $(set -o posix ; set | sort | grep -P "^block_directory_memory_user_([0-9+]+)="); do echo "${block_user}" ; done)
+
+$(for block_group in $(set -o posix ; set | sort | grep -P "^block_directory_memory_group_([0-9+]+)="); do echo "${block_group}" ; done)
 
 $(toml_block show "${!block_directory_memory_lookup}")
 
