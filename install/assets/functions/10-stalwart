@@ -957,13 +957,13 @@ EOF
                         toml_block add directory.dynamic.pool.timeout ${directory_name,,} recycle quotes "${directory_ldap_pool_timeout_recycle}"
 
                         toml_block add directory.dynamic.attributes ${directory_name,,} name quotes "${directory_ldap_attributes_name}"
+                        toml_block add directory.dynamic.attributes ${directory_name,,} type quotes "${directory_ldap_attributes_type}"
                         toml_block add directory.dynamic.attributes ${directory_name,,} description array "$(array_tools doublequote comma directory_ldap_attributes_description)"
                         toml_block add directory.dynamic.attributes ${directory_name,,} secret quotes "${directory_ldap_attributes_pass}"
                         toml_block add directory.dynamic.attributes ${directory_name,,} groups array "$(array_tools doublequote comma directory_ldap_attributes_groups)"
                         toml_block add directory.dynamic.attributes ${directory_name,,} email quotes "${directory_ldap_attributes_email}"
                         toml_block add directory.dynamic.attributes ${directory_name,,} email-alias quotes "${directory_ldap_attributes_email_alias}"
                         toml_block add directory.dynamic.attributes ${directory_name,,} quota quotes "${directory_ldap_attributes_quota}"
-                        toml_block add directory.dynamic.attributes ${directory_name,,} type quotes "${directory_ldap_attributes_type}"
 
                         block_directory_ldap="block_directory_${directory_name,,}"
                         block_directory_ldap_bind="block_directory_${directory_name,,}_bind"
