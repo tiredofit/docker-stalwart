@@ -916,8 +916,6 @@ EOF
                         populate_variable ldap_filter_expand
                         populate_variable ldap_filter_name
                         populate_variable ldap_filter_verify
-                        populate_variable ldap_objectclasses_group
-                        populate_variable ldap_objectclasses_user
 
                         populate_variable ldap_attributes_name
                         populate_variable ldap_attributes_type
@@ -1005,8 +1003,6 @@ $(toml_block show "${!block_directory_ldap_pool}")
 $(toml_block show "${!block_directory_ldap_pool_timeout}")
 
 $(toml_block show "${!block_directory_ldap_filter}")
-
-$(toml_block show "${!block_directory_ldap_object_classes}")
 
 $(toml_block show "${!block_directory_ldap_attributes}")
 
