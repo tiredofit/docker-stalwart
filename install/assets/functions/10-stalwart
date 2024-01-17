@@ -933,8 +933,8 @@ EOF
                         sanity_var directory_ldap_bind_pass "LDAP Bind Password"
                         toml_block add directory.dynamic.bind ${directory_name,,} secret quotes "${directory_ldap_bind_pass}"
 
-                        toml_block add directory.dynamic.bind.auth ${directory_name,,} enable "${directory_ldap_auth_enable,,}"
-                        toml_block add directory.dynamic.bind.auth ${directory_name,,} dn quotes "${directory_ldap_auth_dn}"
+                        toml_block add directory.dynamic.bind.auth ${directory_name,,} enable "${directory_ldap_bind_auth_enable,,}"
+                        toml_block add directory.dynamic.bind.auth ${directory_name,,} dn quotes "${directory_ldap_bind_auth_dn}"
 
                         toml_block add directory.dynamic.tls ${directory_name,,} enable "${directory_ldap_tls_enable,,}"
                         toml_block add directory.dynamic.tls ${directory_name,,} allow-invalid-certs "${directory_ldap_tls_allow_invalid_certs,,}"
