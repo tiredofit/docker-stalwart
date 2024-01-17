@@ -784,11 +784,11 @@ configure_directory() {
                     if [ -v "DIRECTORY_${directory_name^^}_${1^^}" ]; then
                         export directory_${1,,}="$(printenv | grep "^DIRECTORY_${directory_name^^}_${1^^}=" | cut -d = -f2-)"
                     else
-                        export directory_${1,,}="$(printenv | grep "^DIRECTORY_DEFAULT_${directory_type^^}_${1^^}=" | cut -d = -f2-)"
+                        export directory_${1,,}="$(printenv | grep "^DIRECTORY_DEFAULT_${1^^}=" | cut -d = -f2-)"
                     fi
                 }
 
-                config_file="${directory_type,,}_${directory_name,,}.toml"
+                config_file="${directory_type,,}-${directory_name,,}.toml"
                 config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
                 case "${directory_type,,}" in
@@ -887,19 +887,30 @@ EOF
                     ;;
                     ldap )
                         populate_variable ldap_address
-                        populate_variable ldap_attributes_description
-                        populate_variable ldap_attributes_email
-                        populate_variable ldap_attributes_email_alias
-                        populate_variable ldap_attributes_groups
-                        populate_variable ldap_attributes_name
-                        populate_variable ldap_attributes_quota
-                        populate_variable ldap_attributes_pass
-                        populate_variable ldap_attributes_type
+
                         populate_variable ldap_base_dn
+                        populate_variable ldap_timeout
+
                         populate_variable ldap_bind_dn
                         populate_variable ldap_bind_pass
+
+                        populate_variable ldap_bind_auth_enable
+                        populate_variable ldap_bind_auth_dn
+
+                        populate_variable ldap_tls_enable
+                        populate_variable ldap_tls_allow_invalid_certs
+
                         populate_variable ldap_cache_entries
                         populate_variable ldap_cache_ttl
+
+                        populate_variable ldap_options_catch_all
+                        populate_variable ldap_options_subaddressing
+
+                        populate_variable ldap_pool_max_connections
+                        populate_variable ldap_pool_timeout_create
+                        populate_variable ldap_pool_timeout_wait
+                        populate_variable ldap_pool_timeout_recycle
+
                         populate_variable ldap_filter_domains
                         populate_variable ldap_filter_email
                         populate_variable ldap_filter_expand
@@ -907,24 +918,32 @@ EOF
                         populate_variable ldap_filter_verify
                         populate_variable ldap_objectclasses_group
                         populate_variable ldap_objectclasses_user
-                        populate_variable ldap_options_catch_all
-                        populate_variable ldap_options_subaddressing
-                        populate_variable ldap_pool_connect_timeout
-                        populate_variable ldap_pool_idle_timeout
-                        populate_variable ldap_pool_max_connections
-                        populate_variable ldap_pool_max_lifetime
-                        populate_variable ldap_pool_min_connections
+
+                        populate_variable ldap_attributes_name
+                        populate_variable ldap_attributes_type
+                        populate_variable ldap_attributes_description
+                        populate_variable ldap_attributes_pass
+                        populate_variable ldap_attributes_groups
+                        populate_variable ldap_attributes_email
+                        populate_variable ldap_attributes_email_alias
+                        populate_variable ldap_attributes_quota
 
                         toml_block add directory.dynamic ${directory_name,,} type quotes "ldap"
                         toml_block add directory.dynamic ${directory_name,,} address quotes "${directory_ldap_address}"
                         sanity_var directory_ldap_base_dn "LDAP Base DN"
                         toml_block add directory.dynamic ${directory_name,,} base-dn quotes "${directory_ldap_base_dn}"
+                        toml_block add directory.dynamic ${directory_name,,} timeout quotes "${directory_ldap_timeout}"
 
                         sanity_var directory_ldap_bind_dn "LDAP Bind DN"
                         toml_block add directory.dynamic.bind ${directory_name,,} dn quotes "${directory_ldap_bind_dn}"
                         sanity_var directory_ldap_bind_pass "LDAP Bind Password"
-
                         toml_block add directory.dynamic.bind ${directory_name,,} secret quotes "${directory_ldap_bind_pass}"
+
+                        toml_block add directory.dynamic.bind.auth ${directory_name,,} enable "${directory_ldap_auth_enable}"
+                        toml_block add directory.dynamic.bind.auth ${directory_name,,} dn quotes "${directory_ldap_auth_dn}"
+
+                        toml_block add directory.dynamic.tls ${directory_name,,} enable "${directory_ldap_tls_enable}"
+                        toml_block add directory.dynamic.tls ${directory_name,,} allow-invalid-certs "${directory_ldap_tls_allow_invalid_certs}"
 
                         toml_block add directory.dynamic.cache ${directory_name,,} entries "${directory_ldap_cache_entries}"
                         toml_block add directory.dynamic.cache ${directory_name,,} ttl "${directory_ldap_cache_ttl}"
@@ -938,19 +957,15 @@ EOF
                         toml_block add directory.dynamic.options ${directory_name,,} catch-all "${directory_ldap_options_catch_all,,}"
                         toml_block add directory.dynamic.options ${directory_name,,} subaddressing "${directory_ldap_options_subaddressing,,}"
 
-                        toml_block add directory.dynamic.pool ${directory_name,,} max-connections ${directory_ldap_pool_max_connections}
-                        toml_block add directory.dynamic.pool ${directory_name,,} min-connections ${directory_ldap_pool_min_connections}
-                        toml_block add directory.dynamic.pool ${directory_name,,} max-lifetime quotes "${directory_ldap_pool_max_lifetime}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} idle-timeout quotes "${directory_ldap_pool_idle_timeout}"
-                        toml_block add directory.dynamic.pool ${directory_name,,} connect-timeout quotes "${directory_ldap_pool_connect_timeout}"
-
-                        toml_block add directory.dynamic.object-classes ${directory_name,,} user quotes "${directory_ldap_objectclasses_user}"
-                        toml_block add directory.dynamic.object-classes ${directory_name,,} group quotes "${directory_ldap_objectclasses_group}"
+                        toml_block add directory.dynamic.pool ${directory_name,,} max-connections "${directory_ldap_pool_max_connections}"
+                        toml_block add directory.dynamic.pool.timeout ${directory_name,,} create quotes "${directory_ldap_pool_timeout_create}"
+                        toml_block add directory.dynamic.pool.timeout ${directory_name,,} wait quotes "${directory_ldap_pool_timeout_wait}"
+                        toml_block add directory.dynamic.pool.timeout ${directory_name,,} recycle quotes "${directory_ldap_pool_timeout_recycle}"
 
                         toml_block add directory.dynamic.attributes ${directory_name,,} name quotes "${directory_ldap_attributes_name}"
-                        toml_block add directory.dynamic.attributes ${directory_name,,} description array "$(array_tools quote comma directory_ldap_attributes_description)"
+                        toml_block add directory.dynamic.attributes ${directory_name,,} description array "$(array_tools doublequote comma directory_ldap_attributes_description)"
                         toml_block add directory.dynamic.attributes ${directory_name,,} secret quotes "${directory_ldap_attributes_pass}"
-                        toml_block add directory.dynamic.attributes ${directory_name,,} groups array "$(array_tools quote comma directory_ldap_attributes_groups)"
+                        toml_block add directory.dynamic.attributes ${directory_name,,} groups array "$(array_tools doublequote comma directory_ldap_attributes_groups)"
                         toml_block add directory.dynamic.attributes ${directory_name,,} email quotes "${directory_ldap_attributes_email}"
                         toml_block add directory.dynamic.attributes ${directory_name,,} email-alias quotes "${directory_ldap_attributes_email_alias}"
                         toml_block add directory.dynamic.attributes ${directory_name,,} quota quotes "${directory_ldap_attributes_quota}"
@@ -958,11 +973,13 @@ EOF
 
                         block_directory_ldap="block_directory_${directory_name,,}"
                         block_directory_ldap_bind="block_directory_${directory_name,,}_bind"
+                        block_directory_ldap_bind_auth="block_directory_${directory_name,,}_bind_auth"
+                        block_directory_ldap_tls="block_directory_${directory_name,,}_tls"
                         block_directory_ldap_cache="block_directory_${directory_name,,}_cache"
                         block_directory_ldap_options="block_directory_${directory_name,,}_options"
                         block_directory_ldap_pool="block_directory_${directory_name,,}_pool"
+                        block_directory_ldap_pool_timeout="block_directory_${directory_name,,}_pool_timeout"
                         block_directory_ldap_filter="block_directory_${directory_name,,}_filter"
-                        block_directory_ldap_object_classes="block_directory_${directory_name,,}_object_classes"
                         block_directory_ldap_attributes="block_directory_${directory_name,,}_attributes"
 
                         cat <<EOF > "${config_dir}"/"${config_file,,}"
@@ -975,11 +992,17 @@ $(toml_block show "${!block_directory_ldap}")
 
 $(toml_block show "${!block_directory_ldap_bind}")
 
+$(toml_block show "${!block_directory_ldap_bind_auth}")
+
+$(toml_block show "${!block_directory_ldap_tls}")
+
 $(toml_block show "${!block_directory_ldap_cache}")
 
 $(toml_block show "${!block_directory_ldap_options}")
 
 $(toml_block show "${!block_directory_ldap_pool}")
+
+$(toml_block show "${!block_directory_ldap_pool_timeout}")
 
 $(toml_block show "${!block_directory_ldap_filter}")
 
