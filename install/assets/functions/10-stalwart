@@ -2090,7 +2090,7 @@ EOF
             toml_block add resolver attempts "${SMTP_RESOLVER_ATTEMPTS}"
             toml_block add resolver try-tcp-on-error "${SMTP_RESOLVER_TRY_TCP_ON_ERROR,,}"
             array_tools verify transform SMTP_RESOLVER_PUBLIC_SUFFIX /assets/stalwart/config/spamfilter/maps/
-            toml_block add resolver public-suffix array "$(array_tools quote comma SMTP_RESOLVER_PUBLIC_SUFFIX)"
+            toml_block add resolver public-suffix array "$(array_tools doublequote comma SMTP_RESOLVER_PUBLIC_SUFFIX)"
             toml_block add resolver.cache txt "${SMTP_RESOLVER_CACHE_TXT}"
             toml_block add resolver.cache mx "${SMTP_RESOLVER_CACHE_MX}"
             toml_block add resolver.cache ipv4 "${SMTP_RESOLVER_CACHE_IPV4}"
