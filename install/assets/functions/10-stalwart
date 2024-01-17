@@ -1064,7 +1064,7 @@ $(toml_block show "${!block_directory_lmtp_limits}")
 
 $(toml_block show "${!block_directory_lmtp_pool}")
 
-$(toml_block show "${!block_directory_lmtp_pool_options}")
+$(toml_block show "${!block_directory_lmtp_pool_timeout}")
 
 $(toml_block show "${!block_directory_lmtp_tls}")
 
