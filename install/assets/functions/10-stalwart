@@ -2769,13 +2769,11 @@ EOF
                         if [ "$(stat -c %U "${store_filesystem_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${store_filesystem_path}" ; fi
 
                         populate_variable filesystem_depth
-                        populate_variable filesystem_disable
                         populate_variable filesystem_purge_frequency
 
                         toml_block add store.dynamic ${store_name,,} type quotes "fs"
                         toml_block add store.dynamic ${store_name,,} path quotes "${store_filesystem_path}"
                         toml_block add store.dynamic ${store_name,,} depth "${store_filesystem_depth,,}"
-                        toml_block add store.dynamic ${store_name,,} disable "${store_filesystem_disable,,}"
 
                         toml_block add store.dynamic.purge ${store_name,,} frequency quotes "${store_filesystem_purge_frequency}"
 
@@ -2800,7 +2798,6 @@ EOF
                         if [ ! -d "${store_foundationdb_path}" ]; then mkdir -p "${store_foundationdb_path}" ; fi
                         if [ "$(stat -c %U "${store_foundationdb_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${store_foundationdb_path}" ; fi
 
-                        populate_variable foundationdb_disable
                         populate_variable foundationdb_transaction_timeout
                         populate_variable foundationdb_transaction_retry_limit
                         populate_variable foundationdb_transaction_max_retry_delay
@@ -2810,7 +2807,6 @@ EOF
 
                         toml_block add store.dynamic ${store_name,,} type quotes "foundationdb"
                         toml_block add store.dynamic ${store_name,,} path quotes "${store_foundationdb_path}"
-                        toml_block add store.dynamic ${store_name,,} disable "${store_foundationdb_disable,,}"
 
                         toml_block add store.dynamic.transaction ${store_name,,} timeout quotes "${store_foundationdb_transaction_timeout}"
                         toml_block add store.dynamic.transaction ${store_name,,} retry-limit "${store_foundationdb_transaction_retry_limit}"
@@ -2845,14 +2841,10 @@ EOF
                         populate_variable mysql_name
                         populate_variable mysql_user
                         populate_variable mysql_pass
-                        populate_variable mysql_disable
-
                         populate_variable mysql_max_allowed_packet
                         populate_variable mysql_timeout_wait
-
                         populate_variable mysql_pool_max_connections
                         populate_variable mysql_pool_min_connections
-
                         populate_variable mysql_init_execute
                         populate_variable mysql_query_name
                         populate_variable mysql_query_members
@@ -2860,7 +2852,6 @@ EOF
                         populate_variable mysql_query_emails
                         populate_variable mysql_query_verify
                         populate_variable mysql_query_domains
-
                         populate_variable mysql_purge_frequency
 
                         toml_block add store.dynamic ${store_name,,} type quotes "mysql"
@@ -2869,7 +2860,6 @@ EOF
                         toml_block add store.dynamic ${store_name,,} name quotes "${store_mysql_name}"
                         toml_block add store.dynamic ${store_name,,} user quotes "${store_mysql_user}"
                         toml_block add store.dynamic ${store_name,,} pass quotes "${store_mysql_pass}"
-                        toml_block add store.dynamic ${store_name,,} disable "${store_mysql_disable,,}"
                         toml_block add store.dynamic ${store_name,,} max-allowed-packet "${store_mysql_max_allowed_packet}"
 
                         toml_block add store.dynamic.timeout ${store_name,,} wait quotes "${store_mysql_timeout_wait}"
@@ -2921,15 +2911,10 @@ EOF
                         populate_variable pgsql_name
                         populate_variable pgsql_user
                         populate_variable pgsql_pass
-                        populate_variable pgsql_disable
-
                         populate_variable pgsql_timeout_connect
-
                         populate_variable pgsql_pool_max_connections
-
                         populate_variable pgsql_tls_enable
                         populate_variable pgsql_tls_allow_invalid_certs
-
                         populate_variable pgsql_init_execute
                         populate_variable pgsql_query_name
                         populate_variable pgsql_query_members
@@ -2937,7 +2922,6 @@ EOF
                         populate_variable pgsql_query_emails
                         populate_variable pgsql_query_verify
                         populate_variable pgsql_query_domains
-
                         populate_variable pgsql_purge_frequency
 
                         toml_block add store.dynamic ${store_name,,} type quotes "postgresql"
@@ -2946,7 +2930,6 @@ EOF
                         toml_block add store.dynamic ${store_name,,} name quotes "${store_pgsql_name}"
                         toml_block add store.dynamic ${store_name,,} user quotes "${store_pgsql_user}"
                         toml_block add store.dynamic ${store_name,,} pass quotes "${store_pgsql_pass}"
-                        toml_block add store.dynamic ${store_name,,} disable "${store_pgsql_disable,,}"
 
                         toml_block add store.dynamic.timeout ${store_name,,} connect quotes "${store_pgsql_timeout_connect}"
 
@@ -3003,7 +2986,6 @@ EOF
                         populate_variable redis_max_retry_wait
                         populate_variable redis_min_retry_wait
                         populate_variable redis_read_from_replicas
-                        populate_variable redis_diable
 
                         toml_block add store.dynamic ${store_name,,} type quotes "redis"
                         toml_block add directory.dynamic.lookup ${directory_name,,} domains array "$(array_tools quote comma directory_imap_lookup_domains)"
@@ -3016,7 +2998,6 @@ EOF
                         toml_block add store.dynamic ${store_name,,} max-retry-wait quotes "${store_redis_max_retry_wait}"
                         toml_block add store.dynamic ${store_name,,} min-retry-wait quotes "${store_redis_min_retry_wait}"
                         toml_block add store.dynamic ${store_name,,} read-from-replicas quotes "${store_redis_read_from_replicas,,}"
-                        toml_block add store.dynamic ${store_name,,} disable "${store_redis_disable,,}"
 
                         block_store_redis="block_store_${store_name,,}"
 
@@ -3036,18 +3017,13 @@ EOF
                         if [ ! -d "${store_rocksdb_path}" ]; then mkdir -p "${store_rocksdb_path}" ; fi
                         if [ "$(stat -c %U "${store_rocksdb_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${store_rocksdb_path}" ; fi
 
-                        populate_variable rocksdb_disable
-
                         populate_variable rocksdb_settings_min_blob_size
                         populate_variable rocksdb_settings_write_buffer_size
-
                         populate_variable rocksdb_pool_workers
-
                         populate_variable rocksdb_purge_frequency
 
                         toml_block add store.dynamic ${store_name,,} type quotes "rocksdb"
                         toml_block add store.dynamic ${store_name,,} path quotes "${store_rocksdb_path}"
-                        toml_block add store.dynamic ${store_name,,} disable "${store_rocksdb_disable,,}"
 
                         toml_block add store.dynamic.settings ${store_name,,} min-blob-size "${store_rocksdb_settings_min_blob_size}"
                         toml_block add store.dynamic.settings ${store_name,,} write-buffer-size "${store_rocksdb_settings_write_buffer_size}"
@@ -3087,7 +3063,6 @@ EOF
                         populate_variable s3_security_token
                         populate_variable s3_profile
                         populate_variable s3_timeout
-                        populate_variable s3_disable
                         populate_variable s3_purge_frequency
 
                         toml_block add store.dynamic ${store_name,,} type quotes "s3"
@@ -3099,7 +3074,7 @@ EOF
                         toml_block add store.dynamic ${store_name,,} security-token quotes "${store_s3_security_token}"
                         toml_block add store.dynamic ${store_name,,} profile quotes "${store_s3_profile}"
                         toml_block add store.dynamic ${store_name,,} timeout quotes "${store_s3_timeout}"
-                        toml_block add store.dynamic ${store_name,,} disable "${store_s3_disable,,}"
+
                         toml_block add store.dynamic.purge ${store_name,,} frequency quotes "${store_s3_purge_frequency}"
 
                         block_store_s3="block_store_${store_name,,}"
@@ -3123,13 +3098,9 @@ EOF
                         if [ ! -d "${store_sqlite_path}" ]; then mkdir -p "${store_sqlite_path}" ; fi
                         if [ "$(stat -c %U "${store_sqlite_path}")" != "${SERVER_USER}" ] ; then chown -R "${SERVER_USER}":"${SERVER_GROUP}" "${store_sqlite_path}" ; fi
 
-                        populate_variable sqlite_disable
-
                         populate_variable sqlite_pool_max_connections
                         populate_variable sqlite_pool_workers
-
                         populate_variable sqlite_init
-
                         populate_variable sqlite_query_domains
                         populate_variable sqlite_query_emails
                         populate_variable sqlite_query_expand
@@ -3137,12 +3108,10 @@ EOF
                         populate_variable sqlite_query_name
                         populate_variable sqlite_query_recipients
                         populate_variable sqlite_query_verify
-
                         populate_variable sqlite_purge_frequency
 
                         toml_block add store.dynamic ${store_name,,} type quotes "sqlite"
                         toml_block add store.dynamic ${store_name,,} path quotes "${store_sqlite_path}"
-                        toml_block add store.dynamic ${store_name,,} disable "${store_sqlite_disable}"
 
                         toml_block add store.dynamic.pool ${store_name,,} max_connections "${store_sqlite_pool_max_connections}"
                         toml_block add store.dynamic.pool ${store_name,,} workers "${store_sqlite_pool_workers}"
