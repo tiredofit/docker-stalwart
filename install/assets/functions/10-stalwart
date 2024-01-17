@@ -3260,8 +3260,8 @@ This record was generated on $(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S %Z')
 Add the following DNS records to your domain in order to enable DKIM, SPF and DMARC:
 
 ${_dkim_selector}._domainkey.${_dkim_domain/./_}. IN TXT "v=DKIM1; k=${_dkim_type,,}; p=$(echo "${_dkim_dns_pubkey}")"
-${_dkim_domain/./_}. IN TXT "v=spf1 a:${SERVER_NAME}.${_dkim_domain/./_} mx -all ra=postmaster"
-${SERVER_NAME}.${_dkim_domain/./_}. IN TXT "v=spf1 a -all ra=postmaster"
+${_dkim_domain/./_}. IN TXT "v=spf1 a:<YOUR_HOSTNAME>.${_dkim_domain/./_} mx -all ra=postmaster"
+<YOUR_HOSTNAME>.${_dkim_domain/./_}. IN TXT "v=spf1 a -all ra=postmaster"
 _dmarc.${_dkim_domain/./_}. IN TXT "v=DMARC1; p=none; rua=mailto:postmaster@${_dkim_domain/_/.}; ruf=mailto:postmaster@${_dkim_domain/_/.}"
 EOF
         ;;
