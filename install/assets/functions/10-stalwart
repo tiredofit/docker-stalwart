@@ -2717,7 +2717,7 @@ configure_store() {
                     fi
                 }
 
-                config_file="${store_type,,}_${store_name,,}.toml"
+                config_file="${store_type,,}-${store_name,,}.toml"
                 config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
                 case "${store_type,,}" in
