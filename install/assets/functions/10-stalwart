@@ -495,15 +495,15 @@ EOF
 
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-            if [ -z "${STORAGE_DATA}" ] && [ -n "${DEFAULT_STORE}" ]; then STORAGE_DATA="${DEFAULT_STORE}" ; fi
+            if [ -z "${STORAGE_DATA}" ] && [ -n "${DEFAULT_STORE}" ]; then STORAGE_DATA="${DEFAULT_STORE,,}" ; fi
             toml_block add storage data quotes "${STORAGE_DATA}"
-            if [ -z "${STORAGE_FTS}" ] && [ -n "${DEFAULT_STORE}" ]; then STORAGE_FTS="${DEFAULT_STORE}" ; fi
+            if [ -z "${STORAGE_FTS}" ] && [ -n "${DEFAULT_STORE}" ]; then STORAGE_FTS="${DEFAULT_STORE,,}" ; fi
             toml_block add storage fts quotes "${STORAGE_FTS}"
-            if [ -z "${STORAGE_BLOB}" ] && [ -n "${DEFAULT_STORE}" ]; then STORAGE_BLOB="${DEFAULT_STORE}" ; fi
+            if [ -z "${STORAGE_BLOB}" ] && [ -n "${DEFAULT_STORE}" ]; then STORAGE_BLOB="${DEFAULT_STORE,,}" ; fi
             toml_block add storage blob quotes "${STORAGE_BLOB}"
-            if [ -z "${STORAGE_LOOKUP}" ] && [ -n "${DEFAULT_STORE}" ]; then STORAGE_LOOKUP="${DEFAULT_STORE}" ; fi ## TODO SPAM Filter DB?
+            if [ -z "${STORAGE_LOOKUP}" ] && [ -n "${DEFAULT_STORE}" ]; then STORAGE_LOOKUP="${DEFAULT_STORE,,}" ; fi ## TODO SPAM Filter DB?
             toml_block add storage lookup quotes "${STORAGE_LOOKUP}"
-            if [ -z "${STORAGE_DIRECTORY}" ] && [ -n "${DEFAULT_STORE}" ]; then STORAGE_DIRECTORY="${DEFAULT_DIRECTORY}" ; fi
+            if [ -z "${STORAGE_DIRECTORY}" ] && [ -n "${DEFAULT_STORE}" ]; then STORAGE_DIRECTORY="${DEFAULT_DIRECTORY,,}" ; fi
             toml_block add storage directory quotes "${STORAGE_DIRECTORY}"
 
             toml_block add storage.encryption enable "${STORAGE_ENCRYPTION_ENABLE,,}"
