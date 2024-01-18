@@ -2426,10 +2426,14 @@ EOF
             if var_true "${ENABLE_SIEVE}" ; then
                 array_tools verify transform SPAMFILTER_SCRIPTS_FILTER /assets/stalwart/config/spamfilter/scripts/
                 toml_block add sieve.trusted.scripts spam-filter array "$(array_tools quote comma SPAMFILTER_SCRIPTS_FILTER)"
-                array_tools verify transform SPAMFILTER_SCRIPTS_TRACK_REPLIES /assets/stalwart/config/spamfilter/scripts/
-                toml_block add sieve.trusted.scripts track-replies array "$(array_tools quote comma SPAMFILTER_SCRIPTS_TRACK_REPLIES)"
-                array_tools verify transform SPAMFILTER_SCRIPTS_GREYLIST /assets/stalwart/config/spamfilter/scripts/
-                toml_block add sieve.trusted.scripts greylist array "$(array_tools quote comma SPAMFILTER_SCRIPTS_GREYLIST)"
+                if var_true "${SPAMFILTER_ENABLE_TRACK_REPLIES}"; then
+                    array_tools verify transform SPAMFILTER_SCRIPTS_TRACK_REPLIES /assets/stalwart/config/spamfilter/scripts/
+                    toml_block add sieve.trusted.scripts track-replies array "$(array_tools quote comma SPAMFILTER_SCRIPTS_TRACK_REPLIES)"
+                fi
+                if var_true "${SPAMFILTER_ENABLE_GREYLISTING}"; then
+                    array_tools verify transform SPAMFILTER_SCRIPTS_GREYLIST /assets/stalwart/config/spamfilter/scripts/
+                    toml_block add sieve.trusted.scripts greylist array "$(array_tools quote comma SPAMFILTER_SCRIPTS_GREYLIST)"
+                fi
             fi
 
             cat <<EOF | silent sudo -u "${SERVER_USER}" tee "${config_dir}"/"${config_file}"
@@ -2485,7 +2489,7 @@ EOF
             update_spam_config SCORE_DISCARD_THRESHOLD "${SPAMFILTER_THRESHOLD_DISCARD}" "${spamfilter_config_file}"
             update_spam_config SCORE_REJECT_THRESHOLD "${SPAMFILTER_THRESHOLD_REJECT}" "${spamfilter_config_file}"
             update_spam_config DOMAIN_DIRECTORY "${SPAMFILTER_DIRECTORY}" "${spamfilter_config_file}"
-            update_spam_config SPAM_DB "${SPAMFILTER_STORE_BAYESIAN}" "${spamfilter_config_file}"
+            update_spam_config SPAM_DB "${SPAMFILTER_STORE_BAYESIAN,,}" '"${spamfilter_config_file}"'
             if var_true "${SPAMFILTER_ENABLE_GREYLISTING}" ; then SMTP_SESSION_RCPT_SCRIPT="greylist" ; fi
 
             ## AllowDMARC domains
