@@ -34,6 +34,7 @@ This is a work in progress and not stable for production use.
   - [Networking](#networking)
 - [Maintenance](#maintenance)
   - [Shell Access](#shell-access)
+  - [Notes](#notes)
 - [Support](#support)
   - [Usage](#usage)
   - [Bugfixes](#bugfixes)
@@ -119,6 +120,15 @@ For debugging and maintenance purposes you may want access the containers shell.
 ```bash
 docker exec -it (whatever your container name is) bash
 ```
+
+### Notes
+
+Must set DEFAULT_DOMAIN
+Must set a STORE_TYPE
+Must set a DIRECTORY_TYPE
+Must set a SMTP_SIGNATURE_SELECTOR
+
+
 ## Support
 
 These images were built to serve a specific need in a production environment and gradually have had more functionality added based on requests from the community.
