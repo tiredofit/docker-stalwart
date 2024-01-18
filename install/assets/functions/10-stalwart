@@ -408,9 +408,9 @@ EOF
 
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
-            toml_block add sieve.untrusted disable-capabilities array "$(array_tools quote comma SIEVE_UNTRUSTED_DISABLE_CAPABILITIES)"
-            toml_block add sieve.untrusted notification-uris array "$(array_tools quote comma SIEVE_UNTRUSTED_NOTIFICATION_URIS)"
-            toml_block add sieve.untrusted protected-headers array "$(array_tools quote comma SIEVE_UNTRUSTED_PROTECTED_HEADERS)"
+            toml_block add sieve.untrusted disable-capabilities array "$(array_tools doublequote comma SIEVE_UNTRUSTED_DISABLE_CAPABILITIES)"
+            toml_block add sieve.untrusted notification-uris array "$(array_tools doublequote comma SIEVE_UNTRUSTED_NOTIFICATION_URIS)"
+            toml_block add sieve.untrusted protected-headers array "$(array_tools doublequote comma SIEVE_UNTRUSTED_PROTECTED_HEADERS)"
 
             toml_block add sieve.untrusted.limits name-length "${SIEVE_UNTRUSTED_LIMITS_NAME_LENGTH}"
             toml_block add sieve.untrusted.limits max-scripts "${SIEVE_UNTRUSTED_LIMITS_MAX_SCRIPTS}"
@@ -1251,18 +1251,18 @@ configure_imap() {
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             if var_true "${IMAP_ENABLE_IMAP}"; then
-                toml_block add server.listener.dynamic imap bind array "$(array_tools quote comma IMAP_LISTENER_IMAP_BIND)"
+                toml_block add server.listener.dynamic imap bind array "$(array_tools comma IMAP_LISTENER_IMAP_BIND)"
                 toml_block add server.listener.dynamic imap protocol quotes "imap"
             fi
 
             if var_true "${IMAP_ENABLE_IMAPS}"; then
-                toml_block add server.listener.dynamic imaps bind array "$(array_tools quote comma IMAP_LISTENER_IMAPS_BIND)"
+                toml_block add server.listener.dynamic imaps bind array "$(array_tools comma IMAP_LISTENER_IMAPS_BIND)"
                 toml_block add server.listener.dynamic imaps tls.implicit "${IMAP_LISTENER_IMAPS_TLS_IMPLICIT}"
                 toml_block add server.listener.dynamic imaps protocol quotes "imap"
             fi
 
             if var_true "${IMAP_ENABLE_SIEVE}"; then
-                toml_block add server.listener.dynamic sieve bind array "$(array_tools quote comma IMAP_LISTENER_SIEVE_BIND)"
+                toml_block add server.listener.dynamic sieve bind array "$(array_tools comma IMAP_LISTENER_SIEVE_BIND)"
                 toml_block add server.listener.dynamic sieve tls.implicit "${IMAP_LISTENER_SIEVE_TLS_IMPLICIT}"
                 toml_block add server.listener.dynamic sieve protocol quotes "managesieve"
             fi
@@ -1280,7 +1280,6 @@ $(toml_block show "${block_server_listener_imaps}")
 $(toml_block show "${block_server_listener_sieve}")
 
 EOF
-
         else
             :
         fi
@@ -1377,7 +1376,7 @@ EOF
         if [ "${SETUP_TYPE,,}" = "auto" ]; then
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
-            toml_block add server.listener.dynamic jmap bind array "$(array_tools quote comma JMAP_LISTENER_JMAP_BIND)"
+            toml_block add server.listener.dynamic jmap bind array "$(array_tools comma JMAP_LISTENER_JMAP_BIND)"
             toml_block add server.listener.dynamic jmap url quotes "${JMAP_LISTENER_JMAP_URL}"
             toml_block add server.listener.dynamic jmap protocol quotes "jmap"
 
@@ -1717,14 +1716,14 @@ EOF
             config_files=$(echo ${config_files} ; echo "${config_dir}/${config_file},")
 
             if var_true "${SMTP_ENABLE_SMTP}" ; then
-                toml_block add server.listener.dynamic smtp bind array "$(array_tools doublequote comma SMTP_LISTENER_SMTP_BIND)"
+                toml_block add server.listener.dynamic smtp bind array "$(array_tools quote comma SMTP_LISTENER_SMTP_BIND)"
                 SMTP_LISTENER_SMTP_GREETING=${SMTP_LISTENER_SMTP_GREETING:-"${SMTP_LISTENER_GREETING}"}
                 toml_block add server.listener.dynamic smtp greeting quotes "${SMTP_LISTENER_SMTP_GREETING}"
                 toml_block add server.listener.dynamic smtp protocol quotes "${SMTP_LISTENER_SMTP_PROTOCOL}"
             fi
 
             if var_true "${SMTP_ENABLE_SUBMISSION}" ; then
-                toml_block add server.listener.dynamic submission bind array "$(array_tools doublequote comma SMTP_LISTENER_SUBMISSION_BIND)"
+                toml_block add server.listener.dynamic submission bind array "$(array_tools quote comma SMTP_LISTENER_SUBMISSION_BIND)"
                 SMTP_LISTENER_SUBMISSION_GREETING=${SMTP_LISTENER_SUBMISSION_GREETING:-"${SMTP_LISTENER_GREETING}"}
                 toml_block add server.listener.dynamic submission greeting quotes "${SMTP_LISTENER_SUBMISSION_GREETING}"
                 toml_block add server.listener.dynamic submission protocol quotes "${SMTP_LISTENER_SUBMISSION_PROTOCOL}"
@@ -1732,7 +1731,7 @@ EOF
             fi
 
             if var_true "${SMTP_ENABLE_SUBMISSIONS}" ; then
-                toml_block add server.listener.dynamic submissions bind array "$(array_tools doublequote comma SMTP_LISTENER_SUBMISSIONS_BIND)"
+                toml_block add server.listener.dynamic submissions bind array "$(array_tools quote comma SMTP_LISTENER_SUBMISSIONS_BIND)"
                 SMTP_LISTENER_SUBMISSIONS_GREETING=${SMTP_LISTENER_SUBMISSIONS_GREETING:-"${SMTP_LISTENER_GREETING}"}
                 toml_block add server.listener.dynamic submissions greeting quotes "${SMTP_LISTENER_SUBMISSIONS_GREETING}"
                 toml_block add server.listener.dynamic submissions protocol quotes "${SMTP_LISTENER_SUBMISSIONS_PROTOCOL,,}"
@@ -1740,7 +1739,7 @@ EOF
             fi
 
             if var_true "${SMTP_ENABLE_MANAGEMENT}" ; then
-                toml_block add server.listener.dynamic management bind array "$(array_tools doublequote comma SMTP_LISTENER_MANAGEMENT_BIND)"
+                toml_block add server.listener.dynamic management bind array "$(array_tools quote comma SMTP_LISTENER_MANAGEMENT_BIND)"
                 toml_block add server.listener.dynamic management protocol quotes "${SMTP_LISTENER_MANAGEMENT_PROTOCOL,,}"
             fi
 
