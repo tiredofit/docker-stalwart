@@ -20,7 +20,7 @@ if [ -z "${certificates// }" ] ; then
     s6-svc -d /var/run/s6/legacy-services/11/stalwart-config-reload
 else
     while inotifywait -q -e create,delete,modify,attrib ${certificates} ; do
-        if pidof 2&>1 stalwart-mail ; then
+        if pidof 2>&1 stalwart-mail ; then
             print_info "Reloading Stalwart Mail configuration do to a detected certificate change"
             sudo -u "${SERER_USER}" stalwart-mail -u ${JMAP_LISTENER_JMAP_URL} server reload-certificates
             exit 0

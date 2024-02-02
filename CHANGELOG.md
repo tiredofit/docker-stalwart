@@ -1,3 +1,9 @@
+## 0.196.0 2024-02-02 <dave at tiredofit dot ca>
+
+   ### Changed
+      - Fix certificate reloader
+
+
 ## 0.195.0 2024-01-18 <dave at tiredofit dot ca>
 
    ### Changed
