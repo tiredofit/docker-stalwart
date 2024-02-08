@@ -268,7 +268,7 @@ SMTP_AUTH_ARC_VERIFY=${SMTP_AUTH_ARC_VERIFY:-"relaxed"}
 SMTP_AUTH_DKIM_SIGN=${SMTP_AUTH_DKIM_SIGN:-'{ if = "listener", ne = "smtp", then = ["DEFAULT_SMTP_SIGNATURE"] }, { else = [] }'}
 SMTP_AUTH_DKIM_VERIFY=${SMTP_AUTH_DKIM_VERIFY:-"relaxed"}
 SMTP_AUTH_DMARC_VERIFY=${SMTP_AUTH_DMARC_VERIFY:-'{ if = "listener", eq = "smtp", then = "relaxed" }, { else = "disable" }'}
-SMTP_AUTH_IPREV_VERIFY=${SMTP_AUTH_IPREV_VERIFY:-'{ if = "listener", eq = "smtp", then = "relaxed" }, { else = "disable" }'}
+SMTP_AUTH_IPREV_VERIFY=${SMTP_AUTH_IPREV_VERIFY:-'{ if = "listener = 'smtp'", then = "relaxed" }, { else = "disable" }'}
 SMTP_AUTH_SPF_VERIFY_EHLO=${SMTP_AUTH_SPF_VERIFY_EHLO:-'{ if = "listener", eq = "smtp", then = "relaxed" }, { else = "disable" }'}
 SMTP_AUTH_SPF_VERIFY_MAIL_FROM=${SMTP_AUTH_SPF_VERIFY_MAIL_FROM:-'{ if = "listener", eq = "smtp", then = "relaxed" }, { else = "disable" }'}
 SMTP_ENABLE_AUTH=${SMTP_ENABLE_AUTH:-"TRUE"}
