@@ -7,7 +7,7 @@ LABEL maintainer="Dave Conroy (github.com/tiredofit)"
 ARG STALWART_VERSION
 ARG STALWART_REPO_URL
 
-ENV STALWART_VERSION=${STALWART_VERSION:-"v0.6.0"} \
+ENV STALWART_VERSION=${STALWART_VERSION:-"v0.7.0"} \
     STALWART_REPO_URL=${STALWART_REPO_URL:-"https://github.com/stalwartlabs/mail-server"} \
     CONTAINER_ENABLE_MESSAGING=FALSE \
     IMAGE_NAME="tiredofit/stalwart" \
@@ -55,20 +55,14 @@ RUN source /assets/functions/00-container && \
     curl https://sh.rustup.rs -sSf | env CARGO_HOME=/opt/rust/cargo sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path && \
     \
     clone_git_repo "${STALWART_REPO_URL}" "${STALWART_VERSION}" /usr/src/stalwart && \
-    CARGO_HOME=/opt/rust/cargo /opt/rust/cargo/bin/cargo build --manifest-path=crates/cli/Cargo.toml --release && \
+    CARGO_HOME=/opt/rust/cargo /opt/rust/cargo/bin/cargo build -p mail-server -p stalwart-cli --no-default-features --features "elastic s3 redis" --release && \
     strip /usr/src/stalwart/target/release/stalwart-cli && \
     cp -R /usr/src/stalwart/target/release/stalwart-cli /usr/sbin && \
-    CARGO_HOME=/opt/rust/cargo /opt/rust/cargo/bin/cargo build --manifest-path=crates/install/Cargo.toml --release && \
-    strip /usr/src/stalwart/target/release/stalwart-install && \
-    cp -R /usr/src/stalwart/target/release/stalwart-install /usr/sbin && \
-    CARGO_HOME=/opt/rust/cargo /opt/rust/cargo/bin/cargo build --manifest-path=crates/main/Cargo.toml --release && \
     strip /usr/src/stalwart/target/release/stalwart-mail && \
     cp -R /usr/src/stalwart/target/release/stalwart-mail /usr/sbin && \
     mkdir -p /assets/stalwart/config && \
     cp -R resources/config/* /assets/stalwart/config/ && \
     for filename in $(find /assets/stalwart/config/* -type f) ; do if [[ ! ${filename##*.} =~ gz*|tar|zip|zst* ]] ; then sed -i "1 i\# Originally copied for ${IMAGE_NAME}. Stalwart version: ${STALWART_VERSION} on $(date +'%Y-%m-%d %H:%M:%S')" $filename ; fi ; done && \
-    mkdir -p /assets/stalwart/htx && \
-    cp -R resources/htx /assets/stalwart/htx/ &&\
     chown -R stalwart:stalwart /assets/stalwart && \
     \
     CARGO_HOME=/opt/rust/cargo /opt/rust/cargo/bin/rustup self uninstall -y && \
